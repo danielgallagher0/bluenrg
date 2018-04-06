@@ -23,7 +23,7 @@ struct ActiveBlueNRG<'spi, 'dbuf: 'spi, SPI: 'spi, OutputPin: 'spi, InputPin: 's
 #[derive(Copy, Clone, Debug)]
 pub enum Error<E> {
     Comm(E),
-    BLE(ble::hci::EventError),
+    BLE(ble::event::Error),
 }
 
 fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<Error<E>>> {
@@ -120,12 +120,12 @@ where
     }
 
     fn take_next_event(&mut self) -> nb::Result<ble::Event, Error<E>> {
-        if self.d.rx_buffer.available_len() < ble::hci::EVENT_PACKET_HEADER_LENGTH {
+        if self.d.rx_buffer.available_len() < ble::event::PACKET_HEADER_LENGTH {
             return Err(nb::Error::WouldBlock);
         }
 
         let param_len = self.d.rx_buffer.peek(1) as usize;
-        if self.d.rx_buffer.available_len() < ble::hci::EVENT_PACKET_HEADER_LENGTH + param_len {
+        if self.d.rx_buffer.available_len() < ble::event::PACKET_HEADER_LENGTH + param_len {
             return Err(nb::Error::WouldBlock);
         }
 
@@ -133,8 +133,8 @@ where
         let mut bytes: [u8; MAX_EVENT_SIZE] = [0; MAX_EVENT_SIZE];
         self.d
             .rx_buffer
-            .take_slice(ble::hci::EVENT_PACKET_HEADER_LENGTH + param_len, &mut bytes);
-        ble::hci::parse_event(ble::hci::EventPacket(&bytes))
+            .take_slice(ble::event::PACKET_HEADER_LENGTH + param_len, &mut bytes);
+        ble::event::parse_event(ble::event::Packet(&bytes))
             .map_err(|e| nb::Error::Other(Error::BLE(e)))
     }
 }
@@ -215,7 +215,7 @@ pub trait LocalVersionInfoExt {
     fn bluenrg_version(&self) -> Version;
 }
 
-impl LocalVersionInfoExt for ble::LocalVersionInfo {
+impl LocalVersionInfoExt for ble::event::command::LocalVersionInfo {
     fn bluenrg_version(&self) -> Version {
         Version {
             hw_version: (self.hci_revision >> 8) as u8,
