@@ -10,7 +10,7 @@ repository = "https://github.com/danielgallagher0/bluenrg"
 
 [dependencies]
 nb = "0.1.1"
-ble = { path = "../ble" }
+ble = { git = "https://github.com/danielgallagher0/ble-rs" }
 
 [dependencies.embedded-hal]
 version = "0.1.0"
