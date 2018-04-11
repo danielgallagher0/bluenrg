@@ -24,6 +24,7 @@ struct ActiveBlueNRG<'spi, 'dbuf: 'spi, SPI: 'spi, OutputPin: 'spi, InputPin: 's
 pub enum Error<E> {
     Comm(E),
     BLE(ble::event::Error),
+    UnsupportedPacketType(u8),
 }
 
 fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<Error<E>>> {
@@ -63,12 +64,20 @@ where
             return Err(nb::Error::WouldBlock);
         }
 
+        const PACKET_TYPE_HCI_COMMAND: u8 = 0x01;
         self.spi
-            .write(header)
+            .write(&[PACKET_TYPE_HCI_COMMAND])
             .map_err(|e| nb::Error::Other(Error::Comm(e)))?;
-        self.spi
-            .write(payload)
-            .map_err(|e| nb::Error::Other(Error::Comm(e)))?;
+        if header.len() > 0 {
+            self.spi
+                .write(header)
+                .map_err(|e| nb::Error::Other(Error::Comm(e)))?;
+        }
+        if payload.len() > 0 {
+            self.spi
+                .write(payload)
+                .map_err(|e| nb::Error::Other(Error::Comm(e)))?;
+        }
 
         Ok(())
     }
@@ -120,12 +129,19 @@ where
     }
 
     fn take_next_event(&mut self) -> nb::Result<ble::Event, Error<E>> {
-        if self.d.rx_buffer.available_len() < ble::event::PACKET_HEADER_LENGTH {
+        if self.d.rx_buffer.size() < 1 + ble::event::PACKET_HEADER_LENGTH {
             return Err(nb::Error::WouldBlock);
         }
 
-        let param_len = self.d.rx_buffer.peek(1) as usize;
-        if self.d.rx_buffer.available_len() < ble::event::PACKET_HEADER_LENGTH + param_len {
+        const PACKET_TYPE_HCI_EVENT: u8 = 0x04;
+        if self.d.rx_buffer.peek(0) != PACKET_TYPE_HCI_EVENT {
+            return Err(nb::Error::Other(Error::UnsupportedPacketType(
+                self.d.rx_buffer.peek(0),
+            )));
+        }
+
+        let param_len = self.d.rx_buffer.peek(2) as usize;
+        if self.d.rx_buffer.size() < 1 + ble::event::PACKET_HEADER_LENGTH + param_len {
             return Err(nb::Error::WouldBlock);
         }
 
@@ -133,9 +149,10 @@ where
         let mut bytes: [u8; MAX_EVENT_SIZE] = [0; MAX_EVENT_SIZE];
         self.d
             .rx_buffer
-            .take_slice(ble::event::PACKET_HEADER_LENGTH + param_len, &mut bytes);
-        ble::event::parse_event(ble::event::Packet(&bytes))
-            .map_err(|e| nb::Error::Other(Error::BLE(e)))
+            .take_slice(1 + ble::event::PACKET_HEADER_LENGTH + param_len, &mut bytes);
+        ble::event::parse_event(ble::event::Packet(
+            &bytes[1..1 + ble::event::PACKET_HEADER_LENGTH + param_len],
+        )).map_err(|e| nb::Error::Other(Error::BLE(e)))
     }
 }
 
