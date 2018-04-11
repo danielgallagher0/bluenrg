@@ -200,7 +200,7 @@ where
     }
 
     fn data_ready(&self) -> bool {
-        self.data_ready.is_high()
+        self.data_ready.is_low()
     }
 }
 
