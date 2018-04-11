@@ -76,7 +76,7 @@ where
         for i in 0..n {
             buf[i] = self.buffer[(self.read_index + i) % self.buffer.len()];
         }
-        self.read_index = (self.read_index + buf.len()) % self.buffer.len();
+        self.read_index = (self.read_index + n) % self.buffer.len();
     }
 }
 
@@ -191,6 +191,7 @@ mod tests {
                 writable[i] = 1 + i as u8;
             }
         }
+        assert_eq!(cbuf.size(), 5);
 
         // Read 3; throw away (3 + 2 available)
         let mut read_from: [u8; 3] = [0; 3];

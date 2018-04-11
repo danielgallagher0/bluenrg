@@ -38,11 +38,11 @@ fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<Error<E
     }
 }
 
-fn max<T: PartialOrd>(lhs: T, rhs: T) -> T {
+fn min<T: PartialOrd>(lhs: T, rhs: T) -> T {
     if lhs < rhs {
-        rhs
-    } else {
         lhs
+    } else {
+        rhs
     }
 }
 
@@ -100,7 +100,7 @@ where
         let (_write_len, read_len) = parse_spi_header(&read_header)?;
         let mut bytes_available = read_len as usize;
         while bytes_available > 0 && self.d.rx_buffer.next_contiguous_slice_len() > 0 {
-            let transfer_count = max(
+            let transfer_count = min(
                 bytes_available,
                 self.d.rx_buffer.next_contiguous_slice_len(),
             );
