@@ -4,6 +4,8 @@ extern crate ble;
 extern crate embedded_hal as hal;
 extern crate nb;
 
+use ble::hci::uart::Error;
+use core::cmp::min;
 use core::marker::PhantomData;
 
 mod cb;
@@ -20,13 +22,6 @@ struct ActiveBlueNRG<'spi, 'dbuf: 'spi, SPI: 'spi, OutputPin: 'spi, InputPin: 's
     spi: &'spi mut SPI,
 }
 
-#[derive(Copy, Clone, Debug)]
-pub enum Error<E> {
-    Comm(E),
-    BLE(ble::event::Error),
-    UnsupportedPacketType(u8),
-}
-
 fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<Error<E>>> {
     const BNRG_READY: u8 = 0x02;
     if header[0] != BNRG_READY {
@@ -36,14 +31,6 @@ fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<Error<E
             (header[2] as u16) << 8 | header[1] as u16,
             (header[4] as u16) << 8 | header[3] as u16,
         ))
-    }
-}
-
-fn min<T: PartialOrd>(lhs: T, rhs: T) -> T {
-    if lhs < rhs {
-        lhs
-    } else {
-        rhs
     }
 }
 
@@ -64,10 +51,6 @@ where
             return Err(nb::Error::WouldBlock);
         }
 
-        const PACKET_TYPE_HCI_COMMAND: u8 = 0x01;
-        self.spi
-            .write(&[PACKET_TYPE_HCI_COMMAND])
-            .map_err(|e| nb::Error::Other(Error::Comm(e)))?;
         if header.len() > 0 {
             self.spi
                 .write(header)
@@ -80,20 +63,6 @@ where
         }
 
         Ok(())
-    }
-
-    fn try_read(&mut self) -> nb::Result<ble::Event, Error<E>> {
-        // Always read whatever data is available, then get the next event from the internal buffer.
-        // If there is no valid event, then use the return value from reading the data.  This
-        // ensures that we can get a known pending event even if reading data would block.
-        let data_result = self.read_available_data();
-        match self.take_next_event() {
-            Err(nb::Error::WouldBlock) => match data_result {
-                Ok(_) => Err(nb::Error::WouldBlock),
-                Err(e) => Err(e),
-            },
-            x => x,
-        }
     }
 
     fn read_available_data(&mut self) -> nb::Result<(), Error<E>> {
@@ -127,33 +96,6 @@ where
 
         Ok(())
     }
-
-    fn take_next_event(&mut self) -> nb::Result<ble::Event, Error<E>> {
-        if self.d.rx_buffer.size() < 1 + ble::event::PACKET_HEADER_LENGTH {
-            return Err(nb::Error::WouldBlock);
-        }
-
-        const PACKET_TYPE_HCI_EVENT: u8 = 0x04;
-        if self.d.rx_buffer.peek(0) != PACKET_TYPE_HCI_EVENT {
-            return Err(nb::Error::Other(Error::UnsupportedPacketType(
-                self.d.rx_buffer.peek(0),
-            )));
-        }
-
-        let param_len = self.d.rx_buffer.peek(2) as usize;
-        if self.d.rx_buffer.size() < 1 + ble::event::PACKET_HEADER_LENGTH + param_len {
-            return Err(nb::Error::WouldBlock);
-        }
-
-        const MAX_EVENT_SIZE: usize = 128;
-        let mut bytes: [u8; MAX_EVENT_SIZE] = [0; MAX_EVENT_SIZE];
-        self.d
-            .rx_buffer
-            .take_slice(1 + ble::event::PACKET_HEADER_LENGTH + param_len, &mut bytes);
-        ble::event::parse_event(ble::event::Packet(
-            &bytes[1..1 + ble::event::PACKET_HEADER_LENGTH + param_len],
-        )).map_err(|e| nb::Error::Other(Error::BLE(e)))
-    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin, InputPin, E> ble::Controller
@@ -173,12 +115,53 @@ where
         result
     }
 
-    fn read(&mut self) -> nb::Result<ble::Event, Self::Error> {
-        self.d.chip_select.set_low();
-        let result = self.try_read();
-        self.d.chip_select.set_high();
+    fn read_into(&mut self, buffer: &mut [u8]) -> nb::Result<(), Self::Error> {
+        let result = if buffer.len() > self.d.rx_buffer.size() {
+            self.d.chip_select.set_low();
+            let r = self.read_available_data();
+            self.d.chip_select.set_high();
 
-        result
+            r
+        } else {
+            Ok(())
+        };
+
+        if buffer.len() <= self.d.rx_buffer.size() {
+            self.d.rx_buffer.take_slice(buffer.len(), buffer);
+            Ok(())
+        } else {
+            if let Err(e) = result {
+                Err(e)
+            } else {
+                Err(nb::Error::WouldBlock)
+            }
+        }
+    }
+
+    fn peek(&mut self, n: usize) -> nb::Result<u8, Self::Error> {
+        if n >= self.d.rx_buffer.size() {
+            if !self.d.data_ready() {
+                return Err(nb::Error::WouldBlock);
+            }
+
+            self.d.chip_select.set_low();
+            let result = self.read_available_data();
+            self.d.chip_select.set_high();
+
+            if n >= self.d.rx_buffer.size() {
+                if let Err(e) = result {
+                    return Err(e);
+                }
+
+                // Returns WouldBlock below
+            }
+        }
+
+        if n < self.d.rx_buffer.size() {
+            Ok(self.d.rx_buffer.peek(n))
+        } else {
+            Err(nb::Error::WouldBlock)
+        }
     }
 }
 
@@ -208,12 +191,12 @@ where
 
     pub fn with_spi<'spi, T, F, E>(&mut self, spi: &'spi mut SPI, body: F) -> T
     where
-        F: FnOnce(&mut ble::Controller<Error = Error<E>>) -> T,
+        F: FnOnce(&mut ble::hci::uart::Hci<E>) -> T,
         SPI: hal::blocking::spi::transfer::Default<u8, Error = E>
             + hal::blocking::spi::write::Default<u8, Error = E>,
     {
         let mut active = ActiveBlueNRG::<SPI, OutputPin, InputPin> { spi: spi, d: self };
-        body(&mut active as &mut ble::Controller<Error = Error<E>>)
+        body(&mut active)
     }
 
     fn data_ready(&self) -> bool {
