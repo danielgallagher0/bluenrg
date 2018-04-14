@@ -191,7 +191,7 @@ where
 
     pub fn with_spi<'spi, T, F, E>(&mut self, spi: &'spi mut SPI, body: F) -> T
     where
-        F: FnOnce(&mut ble::hci::uart::Hci<E>) -> T,
+        F: FnOnce(&mut ble::hci::uart::Hci<ble::hci::uart::Error<E>>) -> T,
         SPI: hal::blocking::spi::transfer::Default<u8, Error = E>
             + hal::blocking::spi::write::Default<u8, Error = E>,
     {
