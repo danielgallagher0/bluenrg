@@ -4,11 +4,17 @@ extern crate ble;
 extern crate embedded_hal as hal;
 extern crate nb;
 
-use ble::hci::uart::Error;
+use ble::hci::uart::Error as UartError;
 use core::cmp::min;
 use core::marker::PhantomData;
 
 mod cb;
+
+#[derive(Clone, Copy, Debug)]
+pub struct BlueNRGEvent;
+
+#[derive(Clone, Copy, Debug)]
+pub struct Error;
 
 pub struct BlueNRG<'buf, SPI, OutputPin, InputPin> {
     chip_select: OutputPin,
@@ -22,7 +28,7 @@ struct ActiveBlueNRG<'spi, 'dbuf: 'spi, SPI: 'spi, OutputPin: 'spi, InputPin: 's
     spi: &'spi mut SPI,
 }
 
-fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<Error<E>>> {
+fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<UartError<E, Error>>> {
     const BNRG_READY: u8 = 0x02;
     if header[0] != BNRG_READY {
         Err(nb::Error::WouldBlock)
@@ -40,11 +46,11 @@ where
     OutputPin: hal::digital::OutputPin,
     InputPin: hal::digital::InputPin,
 {
-    fn try_write(&mut self, header: &[u8], payload: &[u8]) -> nb::Result<(), Error<E>> {
+    fn try_write(&mut self, header: &[u8], payload: &[u8]) -> nb::Result<(), UartError<E, Error>> {
         let mut write_header = [0x0a, 0x00, 0x00, 0x00, 0x00];
         self.spi
             .transfer(&mut write_header)
-            .map_err(|e| nb::Error::Other(Error::Comm(e)))?;
+            .map_err(|e| nb::Error::Other(UartError::Comm(e)))?;
 
         let (write_len, _read_len) = parse_spi_header(&write_header)?;
         if (write_len as usize) < header.len() + payload.len() {
@@ -54,18 +60,18 @@ where
         if header.len() > 0 {
             self.spi
                 .write(header)
-                .map_err(|e| nb::Error::Other(Error::Comm(e)))?;
+                .map_err(|e| nb::Error::Other(UartError::Comm(e)))?;
         }
         if payload.len() > 0 {
             self.spi
                 .write(payload)
-                .map_err(|e| nb::Error::Other(Error::Comm(e)))?;
+                .map_err(|e| nb::Error::Other(UartError::Comm(e)))?;
         }
 
         Ok(())
     }
 
-    fn read_available_data(&mut self) -> nb::Result<(), Error<E>> {
+    fn read_available_data(&mut self) -> nb::Result<(), UartError<E, Error>> {
         if !self.d.data_ready() {
             return Err(nb::Error::WouldBlock);
         }
@@ -73,7 +79,7 @@ where
         let mut read_header = [0x0b, 0x00, 0x00, 0x00, 0x00];
         self.spi
             .transfer(&mut read_header)
-            .map_err(|e| nb::Error::Other(Error::Comm(e)))?;
+            .map_err(|e| nb::Error::Other(UartError::Comm(e)))?;
 
         let (_write_len, read_len) = parse_spi_header(&read_header)?;
         let mut bytes_available = read_len as usize;
@@ -89,7 +95,7 @@ where
                 }
                 self.spi
                     .transfer(rx)
-                    .map_err(|e| nb::Error::Other(Error::Comm(e)))?;
+                    .map_err(|e| nb::Error::Other(UartError::Comm(e)))?;
             }
             bytes_available -= transfer_count;
         }
@@ -105,7 +111,7 @@ where
     OutputPin: hal::digital::OutputPin,
     InputPin: hal::digital::InputPin,
 {
-    type Error = Error<E>;
+    type Error = UartError<E, Error>;
 
     fn write(&mut self, header: &[u8], payload: &[u8]) -> nb::Result<(), Self::Error> {
         self.d.chip_select.set_low();
@@ -191,7 +197,7 @@ where
 
     pub fn with_spi<'spi, T, F, E>(&mut self, spi: &'spi mut SPI, body: F) -> T
     where
-        F: FnOnce(&mut ble::hci::uart::Hci<ble::hci::uart::Error<E>>) -> T,
+        F: FnOnce(&mut ble::hci::uart::Hci<UartError<E, Error>, BlueNRGEvent, Error>) -> T,
         SPI: hal::blocking::spi::transfer::Default<u8, Error = E>
             + hal::blocking::spi::write::Default<u8, Error = E>,
     {
@@ -223,5 +229,13 @@ impl LocalVersionInfoExt for ble::event::command::LocalVersionInfo {
             minor: ((self.lmp_subversion >> 4) & 0xF) as u8,
             patch: (self.lmp_subversion & 0xF) as u8,
         }
+    }
+}
+
+impl ble::event::VendorEvent for BlueNRGEvent {
+    type Error = Error;
+
+    fn new(_buffer: &[u8]) -> Result<BlueNRGEvent, ble::event::Error<Error>> {
+        Ok(BlueNRGEvent {})
     }
 }
