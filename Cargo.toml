@@ -15,3 +15,7 @@ ble = { git = "https://github.com/danielgallagher0/ble-rs" }
 [dependencies.embedded-hal]
 version = "0.1.0"
 features = ["unproven"]
+
+[dependencies.byteorder]
+version = "1"
+default-features = false

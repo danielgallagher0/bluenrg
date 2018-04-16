@@ -1,6 +1,7 @@
 #![no_std]
 
 extern crate ble;
+extern crate byteorder;
 extern crate embedded_hal as hal;
 extern crate nb;
 
@@ -9,12 +10,10 @@ use core::cmp::min;
 use core::marker::PhantomData;
 
 mod cb;
+pub mod event;
 
-#[derive(Clone, Copy, Debug)]
-pub struct BlueNRGEvent;
-
-#[derive(Clone, Copy, Debug)]
-pub struct Error;
+pub use event::BlueNRGEvent;
+pub use event::Error;
 
 pub struct BlueNRG<'buf, SPI, OutputPin, InputPin> {
     chip_select: OutputPin,
@@ -229,13 +228,5 @@ impl LocalVersionInfoExt for ble::event::command::LocalVersionInfo {
             minor: ((self.lmp_subversion >> 4) & 0xF) as u8,
             patch: (self.lmp_subversion & 0xF) as u8,
         }
-    }
-}
-
-impl ble::event::VendorEvent for BlueNRGEvent {
-    type Error = Error;
-
-    fn new(_buffer: &[u8]) -> Result<BlueNRGEvent, ble::event::Error<Error>> {
-        Ok(BlueNRGEvent {})
     }
 }
