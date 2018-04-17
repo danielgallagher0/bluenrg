@@ -5,7 +5,7 @@ extern crate byteorder;
 extern crate embedded_hal as hal;
 extern crate nb;
 
-use ble::hci::uart::Error as UartError;
+use ble::host::uart::Error as UartError;
 use core::cmp::min;
 use core::marker::PhantomData;
 
@@ -196,7 +196,7 @@ where
 
     pub fn with_spi<'spi, T, F, E>(&mut self, spi: &'spi mut SPI, body: F) -> T
     where
-        F: FnOnce(&mut ble::hci::uart::Hci<UartError<E, Error>, BlueNRGEvent, Error>) -> T,
+        F: FnOnce(&mut ble::host::uart::Hci<UartError<E, Error>, BlueNRGEvent, Error>) -> T,
         SPI: hal::blocking::spi::transfer::Default<u8, Error = E>
             + hal::blocking::spi::write::Default<u8, Error = E>,
     {
