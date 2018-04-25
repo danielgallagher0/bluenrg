@@ -55,7 +55,7 @@ impl ble::event::VendorEvent for BlueNRGEvent {
             return Err(ble::event::Error::BadLength(buffer.len(), 2));
         }
 
-        let event_code = LittleEndian::read_u16(&buffer[0..1]);
+        let event_code = LittleEndian::read_u16(&buffer[0..=1]);
         match event_code {
             0x0001 => {
                 if buffer.len() != 3 {
