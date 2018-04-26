@@ -15,7 +15,7 @@ pub enum BlueNRGEvent {
     UnknownEvent(u16),
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ResetReason {
     Normal,
     UpdaterAci,
