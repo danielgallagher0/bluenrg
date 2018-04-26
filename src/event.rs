@@ -1,4 +1,4 @@
-extern crate ble;
+extern crate bluetooth_hci as hci;
 
 use byteorder::{ByteOrder, LittleEndian};
 use core::convert::{TryFrom, TryInto};
@@ -47,26 +47,26 @@ impl TryFrom<u8> for ResetReason {
     }
 }
 
-impl ble::event::VendorEvent for BlueNRGEvent {
+impl hci::event::VendorEvent for BlueNRGEvent {
     type Error = Error;
 
-    fn new(buffer: &[u8]) -> Result<BlueNRGEvent, ble::event::Error<Error>> {
+    fn new(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
         if buffer.len() < 2 {
-            return Err(ble::event::Error::BadLength(buffer.len(), 2));
+            return Err(hci::event::Error::BadLength(buffer.len(), 2));
         }
 
         let event_code = LittleEndian::read_u16(&buffer[0..=1]);
         match event_code {
             0x0001 => {
                 if buffer.len() != 3 {
-                    return Err(ble::event::Error::BadLength(buffer.len(), 3));
+                    return Err(hci::event::Error::BadLength(buffer.len(), 3));
                 }
 
                 Ok(BlueNRGEvent::HalInitialized(buffer[2]
                     .try_into()
-                    .map_err(|e| ble::event::Error::Vendor(e))?))
+                    .map_err(|e| hci::event::Error::Vendor(e))?))
             }
-            _ => Err(ble::event::Error::Vendor(Error::UnknownEvent(event_code))),
+            _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
 }

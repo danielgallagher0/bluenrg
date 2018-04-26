@@ -1,13 +1,13 @@
 #![no_std]
 
-extern crate ble;
+extern crate bluetooth_hci as hci;
 extern crate byteorder;
 extern crate embedded_hal as hal;
 extern crate nb;
 
-use ble::host::uart::Error as UartError;
 use core::cmp::min;
 use core::marker::PhantomData;
+use hci::host::uart::Error as UartError;
 
 mod cb;
 pub mod event;
@@ -103,7 +103,7 @@ where
     }
 }
 
-impl<'spi, 'dbuf, SPI, OutputPin, InputPin, E> ble::Controller
+impl<'spi, 'dbuf, SPI, OutputPin, InputPin, E> hci::Controller
     for ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin, InputPin>
 where
     SPI: hal::blocking::spi::Transfer<u8, Error = E> + hal::blocking::spi::Write<u8, Error = E>,
@@ -196,7 +196,7 @@ where
 
     pub fn with_spi<'spi, T, F, E>(&mut self, spi: &'spi mut SPI, body: F) -> T
     where
-        F: FnOnce(&mut ble::host::uart::Hci<UartError<E, Error>, BlueNRGEvent, Error>) -> T,
+        F: FnOnce(&mut hci::host::uart::Hci<UartError<E, Error>, BlueNRGEvent, Error>) -> T,
         SPI: hal::blocking::spi::transfer::Default<u8, Error = E>
             + hal::blocking::spi::write::Default<u8, Error = E>,
     {
@@ -220,7 +220,7 @@ pub trait LocalVersionInfoExt {
     fn bluenrg_version(&self) -> Version;
 }
 
-impl LocalVersionInfoExt for ble::event::command::LocalVersionInfo {
+impl LocalVersionInfoExt for hci::event::command::LocalVersionInfo {
     fn bluenrg_version(&self) -> Version {
         Version {
             hw_version: (self.hci_revision >> 8) as u8,
