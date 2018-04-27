@@ -1,5 +1,7 @@
 #![no_std]
 
+#[macro_use]
+extern crate bitflags;
 extern crate bluetooth_hci as hci;
 extern crate byteorder;
 extern crate embedded_hal as hal;
