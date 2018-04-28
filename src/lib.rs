@@ -1,5 +1,43 @@
+//! Bluetooth HCI for STMicro's BlueNRG-MS Bluetooth controllers.
+//!
+//! *Note*: This crate does not provide support for the BlueNRG-1 or BlueNRG-2 SoCs!
+//!
+//! # Design
+//!
+//! The BlueNRG-MS is an external Bluetooth Radio Controller that communicates with the application
+//! processor over SPI and two dedicated pins: (1) a SPI chip select pin, and (2) a data ready
+//! signal. This crate defines a public struct, [`BlueNRG`] that owns the chip select and data ready
+//! pins, and a receive buffer for the data that comes from the controller. It also defines a
+//! private struct, [`ActiveBlueNRG`] that borrows a handle to the SPI bus. `ActiveBlueNRG`
+//! implements [`bluetooth_hci::Controller`], which provides access to the full Bluetooth HCI.
+//!
+//! BlueNRG-MS implements parts of version 4.1 of the Bluetooth [`specification`].
+//!
+//! The fundamental way to use the `BlueNRG` is its [`with_spi`] function, which invokes its closure
+//! on at `ActiveBlueNRG`, so sending HCI commands and reading HCI events can only be done from
+//! within that closure.
+//!
+//! # Vendor-Specific Commands
+//!
+//! BlueNRG-MS provides several vendor-specific commands that control the behavior of the
+//! controller.
+//!
+//! # Vendor-Specific Events
+//!
+//! BlueNRG-MS provides several vendor-specific events that provide data related to the
+//! controller. Many of these events are forwarded from the link layer, and these are documented
+//! with a reference to the appropriate section of the Bluetooth specification.
+//!
+//! # Example
+//!
+//! TODO
+//!
+//! [`bluetooth_hci::Controller`]: https://docs.rs/bluetooth-hci/
+//! [`specification`]: https://www.bluetooth.com/specifications/bluetooth-core-specification
+
 #![no_std]
 #![feature(try_from)]
+#![deny(missing_docs)]
 
 #[macro_use]
 extern crate bitflags;
@@ -18,18 +56,47 @@ pub mod event;
 pub use event::BlueNRGEvent;
 pub use event::Error;
 
+/// Handle for interfacing with the BlueNRG-MS.
 pub struct BlueNRG<'buf, SPI, OutputPin, InputPin> {
+    /// Dedicated GPIO pin that is used to select the BlueNRG-MS chip on the SPI bus. This allows
+    /// multiple chips to share the same SPI bus.
     chip_select: OutputPin,
+
+    /// Dedicated GPIO pin that the controller uses to indicate that it has data to send to the
+    /// processor.
     data_ready: InputPin,
+
+    /// Buffer used to hold bytes read from the controller until the application can process them.
+    /// Should be at least 257 bytes (to hold a header and maximum BLE payload of 255 bytes).
     rx_buffer: cb::Buffer<'buf, u8>,
+
+    #[doc(hidden)]
     _spi: PhantomData<SPI>,
 }
 
+/// Handle for actively communicating with the controller over the SPI bus.
+///
+/// An ActiveBlueNRG should not be created by the application, but is passed to closures given to
+/// [BlueNRG::with_spi].  ActiveBlueNRG implements [`bluetooth_hci::Controller`], so it is used to
+/// access the HCI functions for the controller.
 struct ActiveBlueNRG<'spi, 'dbuf: 'spi, SPI: 'spi, OutputPin: 'spi, InputPin: 'spi> {
+    /// Mutably borrow the BlueNRG handle so we can access pin and buffer.
     d: &'spi mut BlueNRG<'dbuf, SPI, OutputPin, InputPin>,
+
+    /// Mutably borrow the SPI bus so we can communicate with the controller.
     spi: &'spi mut SPI,
 }
 
+/// Read the SPI header.
+///
+/// The SPI header is 5 bytes. Checks the header to ensure that the controller is ready, and if it
+/// is, returns the number of bytes the controller can receive and the number of bytes it has ready
+/// to transmit.
+///
+/// # Errors
+///
+/// - Returns nb::Error::WouldBlock if the first byte indicates that the controller is not yet
+///   ready.
 fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<UartError<E, Error>>> {
     const BNRG_READY: u8 = 0x02;
     if header[0] != BNRG_READY {
@@ -48,6 +115,21 @@ where
     OutputPin: hal::digital::OutputPin,
     InputPin: hal::digital::InputPin,
 {
+    /// Write data to the chip over the SPI bus. First writes a BlueNRG SPI header to the
+    /// controller, indicating the host wants to write. The controller returns one byte indicating
+    /// whether or not it is ready, followed by a pair of u16s in little endian: the first is the
+    /// number of bytes the controller can receive, and the second is the number of bytes the
+    /// controller has ready to transmit.
+    ///
+    /// If the controller claims to have enough room to receive the header and payload, this writes
+    /// the header immediately followed by the payload.
+    ///
+    /// # Errors
+    ///
+    /// - Returns nb::Error::WouldBlock if the controller is not ready to receive data or if it
+    ///   reports that it does not have enough space to accept the combined header and payload.
+    ///
+    /// - Returns a communication error if there is an error communicating over the SPI bus.
     fn try_write(&mut self, header: &[u8], payload: &[u8]) -> nb::Result<(), UartError<E, Error>> {
         let mut write_header = [0x0a, 0x00, 0x00, 0x00, 0x00];
         self.spi
@@ -73,6 +155,21 @@ where
         Ok(())
     }
 
+    /// Read data from the chip over the SPI bus. First writes a BlueNRG SPI header to the
+    /// controller, indicating that the host wants to read. The controller returns one byte
+    /// indicating whether or not it is ready, followed by a pair of u16s in little endian: the
+    /// first is the number of bytes the controller can receive, and the second is the number of
+    /// bytes the controller has ready to transmit.
+    ///
+    /// If the controller is ready and has data available, reads the available data into the host's
+    /// RX buffer, until either there is no more data or the RX buffer is full, whichever comes
+    /// first.
+    ///
+    /// # Errors
+    ///
+    /// - Returns nb::Error::WouldBlock if the controller is not ready.
+    ///
+    /// - Returns a communication error if there is an error communicating over the SPI bus.
     fn read_available_data(&mut self) -> nb::Result<(), UartError<E, Error>> {
         if !self.d.data_ready() {
             return Err(nb::Error::WouldBlock);
@@ -178,6 +275,7 @@ where
     OutputPin: hal::digital::OutputPin,
     InputPin: hal::digital::InputPin,
 {
+    /// Returns a new BlueNRG struct with the given RX Buffer and pins. Resets the controller.
     pub fn new<Reset>(
         rx_buffer: &'buf mut [u8],
         cs: OutputPin,
@@ -197,6 +295,10 @@ where
         }
     }
 
+    /// Invokes the given body function with an ActiveBlueNRG that uses this BlueNRG struct and the
+    /// provided SPI bus handle.
+    ///
+    /// Returns the result of the invoked body.
     pub fn with_spi<'spi, T, F, E>(&mut self, spi: &'spi mut SPI, body: F) -> T
     where
         F: FnOnce(&mut hci::host::uart::Hci<UartError<E, Error>, BlueNRGEvent, Error>) -> T,
@@ -207,19 +309,32 @@ where
         body(&mut active)
     }
 
+    /// Returns true if the controller has data ready to transmit to the host.
     fn data_ready(&self) -> bool {
         self.data_ready.is_high()
     }
 }
 
+/// Vendor-specific interpretation of the local version information from the controller.
 pub struct Version {
+    /// Version of the controller hardware.
     pub hw_version: u8,
+
+    /// Major version of the controller firmware
     pub major: u8,
+
+    /// Minor version of the controller firmware
     pub minor: u8,
+
+    /// Patch version of the controller firmware
     pub patch: u8,
 }
 
+/// Extension trait to convert [`hci::event::command::LocalVersionInfo`] into the BlueNRG-specific
+/// [`Version`] struct.
 pub trait LocalVersionInfoExt {
+    /// Converts LocalVersionInfo as returned by the controller into a BlueNRG-specific [`Version`]
+    /// struct.
     fn bluenrg_version(&self) -> Version;
 }
 

@@ -37,14 +37,15 @@ fn hal_events_lost() {
                 | EventFlags::GAP_PAIRING_COMPLETE | EventFlags::GAP_PASS_KEY_REQUEST
                 | EventFlags::GAP_BOND_LOST | EventFlags::GAP_PROCEDURE_COMPLETE
                 | EventFlags::GATT_ATTRIBUTE_MODIFIED
-                | EventFlags::GATT_PROCEDURE_TIMEOUT | EventFlags::EXCHANGE_MTU_RESPONSE
+                | EventFlags::GATT_PROCEDURE_TIMEOUT
+                | EventFlags::ATT_EXCHANGE_MTU_RESPONSE
                 | EventFlags::ATT_FIND_INFORMATION_RESPONSE
                 | EventFlags::ATT_FIND_BY_TYPE_VALUE_RESPONSE
                 | EventFlags::ATT_READ_BY_TYPE_RESPONSE | EventFlags::ATT_READ_RESPONSE
                 | EventFlags::ATT_READ_BLOB_RESPONSE
                 | EventFlags::ATT_EXECUTE_WRITE_RESPONSE | EventFlags::GATT_INDICATION
                 | EventFlags::GATT_ERROR_RESPONSE
-                | EventFlags::GATT_DISC_READ_CHARACTERISTIC_BY_UUID_RESPONSE
+                | EventFlags::GATT_DISCOVER_OR_READ_CHARACTERISTIC_BY_UUID_RESPONSE
                 | EventFlags::GATT_READ_MULTIPLE_PERMIT_REQUEST
                 | EventFlags::GATT_SERVER_RX_CONFIRMATION
                 | EventFlags::LINK_LAYER_CONNECTION_COMPLETE
