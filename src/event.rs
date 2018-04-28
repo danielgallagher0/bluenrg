@@ -7,6 +7,7 @@ extern crate bluetooth_hci as hci;
 
 use byteorder::{ByteOrder, LittleEndian};
 use core::convert::{TryFrom, TryInto};
+use core::fmt::{Debug, Formatter, Result as FmtResult};
 
 /// Enumeration of potential errors when deserializing events.
 #[derive(Clone, Copy, Debug)]
@@ -21,6 +22,10 @@ pub enum Error {
     /// For the EventsLost event: The event included unrecognized event flags. Includes the entire
     /// bitfield.
     BadEventFlags(u64),
+
+    /// For the CrashReport event: The crash reason was not recognized. Includes the unrecognized
+    /// byte.
+    UnknownCrashReason(u8),
 }
 
 /// Vendor-specific events for the BlueNRG-MS controllers.
@@ -35,9 +40,31 @@ pub enum BlueNRGEvent {
     /// available in the Tx queue.
     EventsLost(EventFlags),
 
+    /// The fault data event is automatically sent after the HalInitialized event in case of NMI or
+    /// Hard fault (ResetReason::Crash).
+    CrashReport(FaultData),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
+}
+
+impl hci::event::VendorEvent for BlueNRGEvent {
+    type Error = Error;
+
+    fn new(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
+        if buffer.len() < 2 {
+            return Err(hci::event::Error::BadLength(buffer.len(), 2));
+        }
+
+        let event_code = LittleEndian::read_u16(&buffer[0..=1]);
+        match event_code {
+            0x0001 => to_hal_initialized(buffer),
+            0x0002 => to_lost_event(buffer),
+            0x0003 => to_crash_report(buffer),
+            _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
+        }
+    }
 }
 
 /// Potential reasons the controller sent the HalInitialized event.
@@ -225,19 +252,121 @@ fn to_lost_event(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>
     }
 }
 
-impl hci::event::VendorEvent for BlueNRGEvent {
+/// The maximum length of [`debug_data`] in [`FaultData`]. The maximum length of an event is 255
+/// bytes, and the non-variable data of the event takes up 40 bytes.
+pub const MAX_DEBUG_DATA_LEN: usize = 215;
+
+/// Specific reason for the fault reported with FaultData.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum CrashReason {
+    /// The controller reset because an assertion failed.
+    Assertion,
+
+    /// The controller reset because of an NMI fault.
+    NmiFault,
+
+    /// The controller reset because of a hard fault.
+    HardFault,
+}
+
+impl TryFrom<u8> for CrashReason {
     type Error = Error;
 
-    fn new(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
-        if buffer.len() < 2 {
-            return Err(hci::event::Error::BadLength(buffer.len(), 2));
-        }
+    fn try_from(value: u8) -> Result<CrashReason, Self::Error> {
+        match value {
+            0 => Ok(CrashReason::Assertion),
 
-        let event_code = LittleEndian::read_u16(&buffer[0..=1]);
-        match event_code {
-            0x0001 => to_hal_initialized(buffer),
-            0x0002 => to_lost_event(buffer),
-            _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
+            // The documentation is conflicting for the numeric value of NMI Fault. The
+            // CubeExpansion source code says 1, but the user manual says 6.
+            1 | 6 => Ok(CrashReason::NmiFault),
+
+            // The documentation is conflicting for the numeric value of hard Fault. The
+            // CubeExpansion source code says 2, but the user manual says 7.
+            2 | 7 => Ok(CrashReason::HardFault),
+            _ => Err(Error::UnknownCrashReason(value)),
         }
     }
+}
+
+/// Fault data reported after a crash.
+#[derive(Clone, Copy)]
+pub struct FaultData {
+    /// Fault reason.
+    pub reason: CrashReason,
+
+    /// MCP SP register
+    pub sp: u32,
+    /// MCU R0 register
+    pub r0: u32,
+    /// MCU R1 register
+    pub r1: u32,
+    /// MCU R2 register
+    pub r2: u32,
+    /// MCU R3 register
+    pub r3: u32,
+    /// MCU R12 register
+    pub r12: u32,
+    /// MCU LR register
+    pub lr: u32,
+    /// MCU PC register
+    pub pc: u32,
+    /// MCU xPSR register
+    pub xpsr: u32,
+
+    /// Number of valid bytes in debug_data
+    pub debug_data_len: usize,
+
+    /// Additional crash dump data
+    pub debug_data: [u8; MAX_DEBUG_DATA_LEN],
+}
+
+impl Debug for FaultData {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(
+            f,
+            "FaultData {{ reason: {:?}, sp: {:x}, r0: {:x}, r1: {:x}, r2: {:x}, r3: {:x}, ",
+            self.reason, self.sp, self.r0, self.r1, self.r2, self.r3
+        )?;
+        write!(
+            f,
+            "r12: {:x}, lr: {:x}, pc: {:x}, xpsr: {:x}, debug_data: [",
+            self.r12, self.lr, self.pc, self.xpsr
+        )?;
+        for byte in &self.debug_data[..self.debug_data_len] {
+            write!(f, " {:x}", byte)?;
+        }
+        write!(f, " ] }}")
+    }
+}
+
+fn to_crash_report(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
+    if buffer.len() < 40 {
+        return Err(hci::event::Error::BadLength(buffer.len(), 40));
+    }
+
+    let debug_data_len = buffer[39] as usize;
+    if buffer.len() != 40 + debug_data_len {
+        return Err(hci::event::Error::BadLength(
+            buffer.len(),
+            40 + debug_data_len,
+        ));
+    }
+
+    let mut fault_data = FaultData {
+        reason: buffer[2].try_into().map_err(hci::event::Error::Vendor)?,
+        sp: LittleEndian::read_u32(&buffer[3..]),
+        r0: LittleEndian::read_u32(&buffer[7..]),
+        r1: LittleEndian::read_u32(&buffer[11..]),
+        r2: LittleEndian::read_u32(&buffer[15..]),
+        r3: LittleEndian::read_u32(&buffer[19..]),
+        r12: LittleEndian::read_u32(&buffer[23..]),
+        lr: LittleEndian::read_u32(&buffer[27..]),
+        pc: LittleEndian::read_u32(&buffer[31..]),
+        xpsr: LittleEndian::read_u32(&buffer[35..]),
+        debug_data_len: debug_data_len,
+        debug_data: [0; MAX_DEBUG_DATA_LEN],
+    };
+    fault_data.debug_data[..debug_data_len].copy_from_slice(&buffer[40..]);
+
+    Ok(BlueNRGEvent::CrashReport(fault_data))
 }
