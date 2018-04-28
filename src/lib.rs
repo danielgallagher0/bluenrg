@@ -46,6 +46,7 @@ extern crate byteorder;
 extern crate embedded_hal as hal;
 extern crate nb;
 
+use byteorder::{ByteOrder, LittleEndian};
 use core::cmp::min;
 use core::marker::PhantomData;
 use hci::host::uart::Error as UartError;
@@ -103,8 +104,8 @@ fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<UartErr
         Err(nb::Error::WouldBlock)
     } else {
         Ok((
-            (header[2] as u16) << 8 | header[1] as u16,
-            (header[4] as u16) << 8 | header[3] as u16,
+            LittleEndian::read_u16(&header[1..]),
+            LittleEndian::read_u16(&header[3..]),
         ))
     }
 }
