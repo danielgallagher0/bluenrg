@@ -44,6 +44,7 @@ extern crate bitflags;
 extern crate bluetooth_hci as hci;
 extern crate byteorder;
 extern crate embedded_hal as hal;
+#[macro_use(block)]
 extern crate nb;
 
 use byteorder::{ByteOrder, LittleEndian};
@@ -58,10 +59,13 @@ pub use event::BlueNRGEvent;
 pub use event::Error;
 
 /// Handle for interfacing with the BlueNRG-MS.
-pub struct BlueNRG<'buf, SPI, OutputPin, InputPin> {
+pub struct BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin> {
     /// Dedicated GPIO pin that is used to select the BlueNRG-MS chip on the SPI bus. This allows
     /// multiple chips to share the same SPI bus.
-    chip_select: OutputPin,
+    chip_select: OutputPin1,
+
+    /// Dedicated GPIO pin to reset the controller.
+    reset: OutputPin2,
 
     /// Dedicated GPIO pin that the controller uses to indicate that it has data to send to the
     /// processor.
@@ -80,9 +84,16 @@ pub struct BlueNRG<'buf, SPI, OutputPin, InputPin> {
 /// An ActiveBlueNRG should not be created by the application, but is passed to closures given to
 /// [BlueNRG::with_spi].  ActiveBlueNRG implements [`bluetooth_hci::Controller`], so it is used to
 /// access the HCI functions for the controller.
-struct ActiveBlueNRG<'spi, 'dbuf: 'spi, SPI: 'spi, OutputPin: 'spi, InputPin: 'spi> {
+struct ActiveBlueNRG<
+    'spi,
+    'dbuf: 'spi,
+    SPI: 'spi,
+    OutputPin1: 'spi,
+    OutputPin2: 'spi,
+    InputPin: 'spi,
+> {
     /// Mutably borrow the BlueNRG handle so we can access pin and buffer.
-    d: &'spi mut BlueNRG<'dbuf, SPI, OutputPin, InputPin>,
+    d: &'spi mut BlueNRG<'dbuf, SPI, OutputPin1, OutputPin2, InputPin>,
 
     /// Mutably borrow the SPI bus so we can communicate with the controller.
     spi: &'spi mut SPI,
@@ -110,10 +121,12 @@ fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<UartErr
     }
 }
 
-impl<'spi, 'dbuf, SPI, OutputPin, InputPin, E> ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin, InputPin>
+impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E>
+    ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
 where
     SPI: hal::blocking::spi::Transfer<u8, Error = E> + hal::blocking::spi::Write<u8, Error = E>,
-    OutputPin: hal::digital::OutputPin,
+    OutputPin1: hal::digital::OutputPin,
+    OutputPin2: hal::digital::OutputPin,
     InputPin: hal::digital::InputPin,
 {
     /// Write data to the chip over the SPI bus. First writes a BlueNRG SPI header to the
@@ -204,11 +217,12 @@ where
     }
 }
 
-impl<'spi, 'dbuf, SPI, OutputPin, InputPin, E> hci::Controller
-    for ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin, InputPin>
+impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller
+    for ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
 where
     SPI: hal::blocking::spi::Transfer<u8, Error = E> + hal::blocking::spi::Write<u8, Error = E>,
-    OutputPin: hal::digital::OutputPin,
+    OutputPin1: hal::digital::OutputPin,
+    OutputPin2: hal::digital::OutputPin,
     InputPin: hal::digital::InputPin,
 {
     type Error = UartError<E, Error>;
@@ -271,27 +285,25 @@ where
     }
 }
 
-impl<'buf, SPI, OutputPin, InputPin> BlueNRG<'buf, SPI, OutputPin, InputPin>
+impl<'buf, SPI, OutputPin1, OutputPin2, InputPin>
+    BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin>
 where
-    OutputPin: hal::digital::OutputPin,
+    OutputPin1: hal::digital::OutputPin,
+    OutputPin2: hal::digital::OutputPin,
     InputPin: hal::digital::InputPin,
 {
     /// Returns a new BlueNRG struct with the given RX Buffer and pins. Resets the controller.
-    pub fn new<Reset>(
+    pub fn new(
         rx_buffer: &'buf mut [u8],
-        cs: OutputPin,
+        cs: OutputPin1,
         dr: InputPin,
-        reset: &mut Reset,
-    ) -> BlueNRG<'buf, SPI, OutputPin, InputPin>
-    where
-        Reset: FnMut(),
-    {
-        reset();
-
+        rst: OutputPin2,
+    ) -> BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin> {
         BlueNRG {
             chip_select: cs,
             rx_buffer: cb::Buffer::new(rx_buffer),
             data_ready: dr,
+            reset: rst,
             _spi: PhantomData,
         }
     }
@@ -306,8 +318,25 @@ where
         SPI: hal::blocking::spi::transfer::Default<u8, Error = E>
             + hal::blocking::spi::write::Default<u8, Error = E>,
     {
-        let mut active = ActiveBlueNRG::<SPI, OutputPin, InputPin> { spi: spi, d: self };
+        let mut active =
+            ActiveBlueNRG::<SPI, OutputPin1, OutputPin2, InputPin> { spi: spi, d: self };
         body(&mut active)
+    }
+
+    /// Resets the BlueNRG Controller. Uses the given timer to delay 1 cycle at |freq| Hz after
+    /// toggling the reset pin.
+    pub fn reset<T, Time>(&mut self, timer: &mut T, freq: Time)
+    where
+        T: hal::timer::CountDown<Time = Time>,
+        Time: Copy,
+    {
+        self.reset.set_low();
+        timer.start(freq);
+        block!(timer.wait()).unwrap();
+
+        self.reset.set_high();
+        timer.start(freq);
+        block!(timer.wait()).unwrap();
     }
 
     /// Returns true if the controller has data ready to transmit to the host.
