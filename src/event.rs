@@ -49,13 +49,27 @@ pub enum BlueNRGEvent {
     UnknownEvent(u16),
 }
 
+macro_rules! require_len {
+    ($left:expr, $right:expr) => {
+        if $left.len() != $right {
+            return Err(hci::event::Error::BadLength($left.len(), $right));
+        }
+    };
+}
+
+macro_rules! require_len_at_least {
+    ($left:expr, $right:expr) => {
+        if $left.len() < $right {
+            return Err(hci::event::Error::BadLength($left.len(), $right));
+        }
+    };
+}
+
 impl hci::event::VendorEvent for BlueNRGEvent {
     type Error = Error;
 
     fn new(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
-        if buffer.len() < 2 {
-            return Err(hci::event::Error::BadLength(buffer.len(), 2));
-        }
+        require_len_at_least!(buffer, 2);
 
         let event_code = LittleEndian::read_u16(&buffer[0..=1]);
         match event_code {
@@ -117,9 +131,7 @@ impl TryFrom<u8> for ResetReason {
 ///
 /// - Returns a UnknownResetReason BlueNRG error if the reset reason is not recognized.
 fn to_hal_initialized(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
-    if buffer.len() != 3 {
-        return Err(hci::event::Error::BadLength(buffer.len(), 3));
-    }
+    require_len!(buffer, 3);
 
     Ok(BlueNRGEvent::HalInitialized(buffer[2]
         .try_into()
@@ -241,9 +253,7 @@ bitflags! {
 ///
 /// - Returns BadEventFlags if a bit is set that does not represent a lost event.
 fn to_lost_event(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
-    if buffer.len() != 10 {
-        return Err(hci::event::Error::BadLength(buffer.len(), 10));
-    }
+    require_len!(buffer, 10);
 
     let bits = LittleEndian::read_u64(&buffer[2..]);
     match EventFlags::from_bits(bits) {
@@ -340,17 +350,10 @@ impl Debug for FaultData {
 }
 
 fn to_crash_report(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
-    if buffer.len() < 40 {
-        return Err(hci::event::Error::BadLength(buffer.len(), 40));
-    }
+    require_len_at_least!(buffer, 40);
 
     let debug_data_len = buffer[39] as usize;
-    if buffer.len() != 40 + debug_data_len {
-        return Err(hci::event::Error::BadLength(
-            buffer.len(),
-            40 + debug_data_len,
-        ));
-    }
+    require_len!(buffer, 40 + debug_data_len);
 
     let mut fault_data = FaultData {
         reason: buffer[2].try_into().map_err(hci::event::Error::Vendor)?,
