@@ -70,6 +70,10 @@ pub enum BlueNRGEvent {
     /// Bluetooth Core v4.0 spec.
     L2CapConnectionUpdateResponse(L2CapConnectionUpdateResponse),
 
+    /// This event is generated when the master does not respond to the connection update request
+    /// within 30 seconds.
+    L2CapProcedureTimeout(L2CapProcedureTimeout),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -103,6 +107,7 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0002 => to_lost_event(buffer),
             0x0003 => to_crash_report(buffer),
             0x0800 => to_l2cap_connection_update_response(buffer),
+            0x0801 => to_l2cap_procedure_timeout(buffer),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
@@ -514,3 +519,21 @@ fn to_l2cap_connection_update_response(
         },
     ))
 }
+
+/// This event is generated when the master does not respond to the connection update request within
+/// 30 seconds.
+#[derive(Copy, Clone, Debug)]
+pub struct L2CapProcedureTimeout {
+    /// The connection handle related to the event.
+    pub conn_handle: u16,
+}
+
+fn to_l2cap_procedure_timeout(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
+    require_len!(buffer, 5);
+    require_l2cap_event_data_len!(buffer, 0);
+
+    Ok(BlueNRGEvent::L2CapProcedureTimeout(L2CapProcedureTimeout {
+        conn_handle: LittleEndian::read_u16(&buffer[2..]),
+    }))
+}
+

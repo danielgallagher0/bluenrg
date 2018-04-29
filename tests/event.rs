@@ -341,3 +341,23 @@ fn l2cap_connection_update_response_failed_unknown_rejection_reason() {
         other => panic!("Did not get bad rejection reason: {:?}", other),
     }
 }
+
+#[test]
+fn l2cap_procedure_timeout() {
+    let buffer = [0x01, 0x08, 0x01, 0x02, 0x00];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::L2CapProcedureTimeout(evt)) => {
+            assert_eq!(evt.conn_handle, 0x0201);
+        }
+        other => panic!("Did not get L2CAP procedure timeout: {:?}", other),
+    }
+}
+
+#[test]
+fn l2cap_procedure_timeout_failed() {
+    let buffer = [0x01, 0x08, 0x01, 0x02, 0x01];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadL2CapDataLength(len, 0))) => assert_eq!(len, 1),
+        other => panic!("Did not get L2Cap data length code: {:?}", other),
+    }
+}
