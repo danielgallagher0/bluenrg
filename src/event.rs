@@ -143,12 +143,18 @@ impl hci::event::VendorEvent for BlueNRGEvent {
 
         let event_code = LittleEndian::read_u16(&buffer[0..=1]);
         match event_code {
-            0x0001 => to_hal_initialized(buffer),
-            0x0002 => to_lost_event(buffer),
-            0x0003 => to_crash_report(buffer),
-            0x0800 => to_l2cap_connection_update_response(buffer),
-            0x0801 => to_l2cap_procedure_timeout(buffer),
-            0x0802 => to_l2cap_connection_update_request(buffer),
+            0x0001 => Ok(BlueNRGEvent::HalInitialized(to_hal_initialized(buffer)?)),
+            0x0002 => Ok(BlueNRGEvent::EventsLost(to_lost_event(buffer)?)),
+            0x0003 => Ok(BlueNRGEvent::CrashReport(to_crash_report(buffer)?)),
+            0x0800 => Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(
+                to_l2cap_connection_update_response(buffer)?,
+            )),
+            0x0801 => Ok(BlueNRGEvent::L2CapProcedureTimeout(
+                to_l2cap_procedure_timeout(buffer)?,
+            )),
+            0x0802 => Ok(BlueNRGEvent::L2CapConnectionUpdateRequest(
+                to_l2cap_connection_update_request(buffer)?,
+            )),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
@@ -203,12 +209,12 @@ impl TryFrom<u8> for ResetReason {
 /// - Returns a BadLength HCI error if the buffer is not exactly 3 bytes long
 ///
 /// - Returns a UnknownResetReason BlueNRG error if the reset reason is not recognized.
-fn to_hal_initialized(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
+fn to_hal_initialized(buffer: &[u8]) -> Result<ResetReason, hci::event::Error<Error>> {
     require_len!(buffer, 3);
 
-    Ok(BlueNRGEvent::HalInitialized(buffer[2]
+    Ok(buffer[2]
         .try_into()
-        .map_err(|e| hci::event::Error::Vendor(e))?))
+        .map_err(|e| hci::event::Error::Vendor(e))?)
 }
 
 bitflags! {
@@ -325,14 +331,11 @@ bitflags! {
 /// - Returns a BadLength HCI error if the buffer is not exactly 10 bytes long
 ///
 /// - Returns BadEventFlags if a bit is set that does not represent a lost event.
-fn to_lost_event(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
+fn to_lost_event(buffer: &[u8]) -> Result<EventFlags, hci::event::Error<Error>> {
     require_len!(buffer, 10);
 
     let bits = LittleEndian::read_u64(&buffer[2..]);
-    match EventFlags::from_bits(bits) {
-        Some(flags) => Ok(BlueNRGEvent::EventsLost(flags)),
-        None => Err(hci::event::Error::Vendor(Error::BadEventFlags(bits))),
-    }
+    EventFlags::from_bits(bits).ok_or(hci::event::Error::Vendor(Error::BadEventFlags(bits)))
 }
 
 /// The maximum length of [`debug_data`] in [`FaultData`]. The maximum length of an event is 255
@@ -422,7 +425,7 @@ impl Debug for FaultData {
     }
 }
 
-fn to_crash_report(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
+fn to_crash_report(buffer: &[u8]) -> Result<FaultData, hci::event::Error<Error>> {
     require_len_at_least!(buffer, 40);
 
     let debug_data_len = buffer[39] as usize;
@@ -444,7 +447,7 @@ fn to_crash_report(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Erro
     };
     fault_data.debug_data[..debug_data_len].copy_from_slice(&buffer[40..]);
 
-    Ok(BlueNRGEvent::CrashReport(fault_data))
+    Ok(fault_data)
 }
 
 macro_rules! require_l2cap_event_data_len {
@@ -547,18 +550,16 @@ fn extract_l2cap_connection_update_response_result(
 
 fn to_l2cap_connection_update_response(
     buffer: &[u8],
-) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
+) -> Result<L2CapConnectionUpdateResponse, hci::event::Error<Error>> {
     require_len!(buffer, 11);
     require_l2cap_event_data_len!(buffer, 6);
     require_l2cap_len!(LittleEndian::read_u16(&buffer[7..]), 2);
 
-    Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(
-        L2CapConnectionUpdateResponse {
-            conn_handle: LittleEndian::read_u16(&buffer[2..]),
-            result: extract_l2cap_connection_update_response_result(buffer)
-                .map_err(hci::event::Error::Vendor)?,
-        },
-    ))
+    Ok(L2CapConnectionUpdateResponse {
+        conn_handle: LittleEndian::read_u16(&buffer[2..]),
+        result: extract_l2cap_connection_update_response_result(buffer)
+            .map_err(hci::event::Error::Vendor)?,
+    })
 }
 
 /// This event is generated when the master does not respond to the connection update request within
@@ -569,13 +570,15 @@ pub struct L2CapProcedureTimeout {
     pub conn_handle: u16,
 }
 
-fn to_l2cap_procedure_timeout(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
+fn to_l2cap_procedure_timeout(
+    buffer: &[u8],
+) -> Result<L2CapProcedureTimeout, hci::event::Error<Error>> {
     require_len!(buffer, 5);
     require_l2cap_event_data_len!(buffer, 0);
 
-    Ok(BlueNRGEvent::L2CapProcedureTimeout(L2CapProcedureTimeout {
+    Ok(L2CapProcedureTimeout {
         conn_handle: LittleEndian::read_u16(&buffer[2..]),
-    }))
+    })
 }
 
 /// The event is given by the L2CAP layer when a connection update request is received from the
@@ -626,7 +629,7 @@ fn outside_interval_range(value: u16) -> bool {
 
 fn to_l2cap_connection_update_request(
     buffer: &[u8],
-) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
+) -> Result<L2CapConnectionUpdateRequest, hci::event::Error<Error>> {
     require_len!(buffer, 16);
     require_l2cap_event_data_len!(buffer, 11);
     require_l2cap_len!(LittleEndian::read_u16(&buffer[6..]), 8);
@@ -663,14 +666,12 @@ fn to_l2cap_connection_update_request(
         ));
     }
 
-    Ok(BlueNRGEvent::L2CapConnectionUpdateRequest(
-        L2CapConnectionUpdateRequest {
-            conn_handle: LittleEndian::read_u16(&buffer[2..]),
-            identifier: buffer[5],
-            interval_min: interval_min,
-            interval_max: interval_max,
-            slave_latency: slave_latency,
-            timeout_mult: timeout_mult,
-        },
-    ))
+    Ok(L2CapConnectionUpdateRequest {
+        conn_handle: LittleEndian::read_u16(&buffer[2..]),
+        identifier: buffer[5],
+        interval_min: interval_min,
+        interval_max: interval_max,
+        slave_latency: slave_latency,
+        timeout_mult: timeout_mult,
+    })
 }
