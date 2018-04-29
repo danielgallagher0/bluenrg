@@ -6,6 +6,7 @@
 extern crate bluetooth_hci as hci;
 
 use byteorder::{ByteOrder, LittleEndian};
+use core::cmp::min;
 use core::convert::{TryFrom, TryInto};
 use core::fmt::{Debug, Formatter, Result as FmtResult};
 
@@ -47,6 +48,40 @@ pub enum Error {
     /// not recognized. It did not indicate the parameters were either updated or rejected. Includes
     /// the unknown value.
     BadL2CapConnectionResponseResult(u16),
+
+    /// For the L2CapconnectionUpdateRequest event: The provided interval is invalid. Potential
+    /// errors:
+    ///
+    /// - Either the minimum or maximum is out of range. The minimum value for either is 6, and the
+    ///   maximum is 3200.
+    ///
+    /// - The min is greater than the max
+    ///
+    /// See the Bluetooth specification, Vol 3, Part A, Section 4.20. Versions 4.1, 4.2 and 5.0.
+    ///
+    /// Inclues the provided minimum and maximum, respectively.
+    BadL2CapConnectionUpdateRequestInterval(u16, u16),
+
+    /// For the L2CapconnectionUpdateRequest event: The provided slave latency is invalid. The
+    /// maximum value for slave latency is defined in terms of the timeout and maximum connection
+    /// interval.
+    ///
+    /// - connIntervalMax = Interval Max * 1.25 ms
+    /// - connSupervisionTimeout = Timeout Multiplier * 10 ms
+    /// - maxSlaveLatency = min(500, ((connSupervisionTimeout / (2 * connIntervalMax)) - 1))
+    ///
+    /// See the Bluetooth specification, Vol 3, Part A, Section 4.20. Versions 4.1, 4.2 and 5.0.
+    ///
+    /// Inclues the provided value and maximum allowed value, respectively.
+    BadL2CapConnectionUpdateRequestLatency(u16, u16),
+
+    /// For the L2CapconnectionUpdateRequest event: The provided timeout multiplier is invalid. The
+    /// timeout multiplier field shall have a value in the range of 10 to 3200 (inclusive).
+    ///
+    /// See the Bluetooth specification, Vol 3, Part A, Section 4.20. Versions 4.1, 4.2 and 5.0.
+    ///
+    /// Inclues the provided value.
+    BadL2CapConnectionUpdateRequestTimeoutMult(u16),
 }
 
 /// Vendor-specific events for the BlueNRG-MS controllers.
@@ -73,6 +108,11 @@ pub enum BlueNRGEvent {
     /// This event is generated when the master does not respond to the connection update request
     /// within 30 seconds.
     L2CapProcedureTimeout(L2CapProcedureTimeout),
+
+    /// The event is given by the L2CAP layer when a connection update request is received from the
+    /// slave.  The application has to respond by calling
+    /// aci_l2cap_connection_parameter_update_response().
+    L2CapConnectionUpdateRequest(L2CapConnectionUpdateRequest),
 
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
@@ -108,6 +148,7 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0003 => to_crash_report(buffer),
             0x0800 => to_l2cap_connection_update_response(buffer),
             0x0801 => to_l2cap_procedure_timeout(buffer),
+            0x0802 => to_l2cap_connection_update_request(buffer),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
@@ -537,3 +578,99 @@ fn to_l2cap_procedure_timeout(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event:
     }))
 }
 
+/// The event is given by the L2CAP layer when a connection update request is received from the
+/// slave.  The application has to respond by calling
+/// aci_l2cap_connection_parameter_update_response().
+///
+/// Defined in Vol 3, Part A, section 4.20 of the Bluetooth specification. The definition is the
+/// same for version 4.1, 4.2, and 5.0.
+#[derive(Copy, Clone, Debug)]
+pub struct L2CapConnectionUpdateRequest {
+    /// Handle of the connection for which the connection update request has been received.  The
+    /// same handle has to be returned while responding to the event with the command
+    /// aci_l2cap_connection_parameter_update_response().
+    pub conn_handle: u16,
+
+    /// This is the identifier which associates the request to the response. The same identifier has
+    /// to be returned by the upper layer in the command
+    /// aci_l2cap_connection_parameter_update_response().
+    pub identifier: u8,
+
+    /// Defines minimum value for the connection interval in the following manner:
+    /// `connIntervalMin = Interval Min * 1.25 ms`. Interval Min range: 6 to 3200 frames where 1
+    /// frame is 1.25 ms and equivalent to 2 BR/EDR slots. Values outside the range are reserved for
+    /// future use. Interval Min shall be less than or equal to Interval Max.
+    pub interval_min: u16,
+
+    /// Defines maximum value for the connection interval in the following manner:
+    /// `connIntervalMax = Interval Max * 1.25 ms`. Interval Max range: 6 to 3200 frames. Values
+    /// outside the range are reserved for future use. Interval Max shall be equal to or greater
+    /// than the Interval Min.
+    pub interval_max: u16,
+
+    /// Defines the slave latency parameter (as number of LL connection events) in the following
+    /// manner: `connSlaveLatency = Slave Latency`. The Slave Latency field shall have a value in
+    /// the range of 0 to ((connSupervisionTimeout / (connIntervalMax*2)) -1). The Slave Latency
+    /// field shall be less than 500.
+    pub slave_latency: u16,
+
+    /// Defines connection timeout parameter in the following manner: `connSupervisionTimeout =
+    /// Timeout Multiplier * 10 ms`. The Timeout Multiplier field shall have a value in the range of
+    /// 10 to 3200.
+    pub timeout_mult: u16,
+}
+
+fn outside_interval_range(value: u16) -> bool {
+    value < 6 || value > 3200
+}
+
+fn to_l2cap_connection_update_request(
+    buffer: &[u8],
+) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
+    require_len!(buffer, 16);
+    require_l2cap_event_data_len!(buffer, 11);
+    require_l2cap_len!(LittleEndian::read_u16(&buffer[6..]), 8);
+
+    let interval_min = LittleEndian::read_u16(&buffer[8..]);
+    let interval_max = LittleEndian::read_u16(&buffer[10..]);
+    if outside_interval_range(interval_min) || outside_interval_range(interval_max)
+        || interval_min > interval_max
+    {
+        return Err(hci::event::Error::Vendor(
+            Error::BadL2CapConnectionUpdateRequestInterval(interval_min, interval_max),
+        ));
+    }
+
+    let timeout_mult = LittleEndian::read_u16(&buffer[14..]);
+    if timeout_mult < 10 || timeout_mult > 3200 {
+        return Err(hci::event::Error::Vendor(
+            Error::BadL2CapConnectionUpdateRequestTimeoutMult(timeout_mult),
+        ));
+    }
+
+    let slave_latency = LittleEndian::read_u16(&buffer[12..]);
+
+    // The maximum allowed slave latency is defined by ((supervision_timeout / (2 *
+    // connection_interval_max)) - 1), where
+    //   supervision_timeout = 10 * timeout_mult
+    //   connection_interval_max = 1.25 * interval_max
+    // This simplifies to the expression below. Regardless of the other values, the slave latency
+    // must be less than 500.
+    let slave_latency_limit = min(500, (4 * timeout_mult) / interval_max - 1);
+    if slave_latency >= slave_latency_limit {
+        return Err(hci::event::Error::Vendor(
+            Error::BadL2CapConnectionUpdateRequestLatency(slave_latency, slave_latency_limit),
+        ));
+    }
+
+    Ok(BlueNRGEvent::L2CapConnectionUpdateRequest(
+        L2CapConnectionUpdateRequest {
+            conn_handle: LittleEndian::read_u16(&buffer[2..]),
+            identifier: buffer[5],
+            interval_min: interval_min,
+            interval_max: interval_max,
+            slave_latency: slave_latency,
+            timeout_mult: timeout_mult,
+        },
+    ))
+}

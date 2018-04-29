@@ -361,3 +361,225 @@ fn l2cap_procedure_timeout_failed() {
         other => panic!("Did not get L2Cap data length code: {:?}", other),
     }
 }
+
+const L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN: u8 = 11;
+const L2CAP_CONN_UPDATE_REQ_L2CAP_LEN: u16 = 8;
+fn l2cap_connection_update_request_buffer(
+    event_data_len: u8,
+    l2cap_len: u16,
+    interval_min: u16,
+    interval_max: u16,
+    slave_latency: u16,
+    timeout_mult: u16,
+) -> [u8; 16] {
+    let mut buffer = [0; 16];
+    LittleEndian::write_u16(&mut buffer[0..], 0x0802);
+    LittleEndian::write_u16(&mut buffer[2..], 0x0001);
+    buffer[4] = event_data_len;
+    buffer[5] = 0x02;
+    LittleEndian::write_u16(&mut buffer[6..], l2cap_len);
+    LittleEndian::write_u16(&mut buffer[8..], interval_min);
+    LittleEndian::write_u16(&mut buffer[10..], interval_max);
+    LittleEndian::write_u16(&mut buffer[12..], slave_latency);
+    LittleEndian::write_u16(&mut buffer[14..], timeout_mult);
+
+    buffer
+}
+
+#[test]
+fn l2cap_connection_update_request() {
+    let buffer = l2cap_connection_update_request_buffer(
+        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
+        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
+        6,
+        10,
+        10,
+        3200,
+    );
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::L2CapConnectionUpdateRequest(req)) => {
+            assert_eq!(req.conn_handle, 1);
+            assert_eq!(req.identifier, 2);
+            assert_eq!(req.interval_min, 6);
+            assert_eq!(req.interval_max, 10);
+            assert_eq!(req.slave_latency, 10);
+            assert_eq!(req.timeout_mult, 3200);
+        }
+        other => panic!("Did not get L2CAP connection update request: {:?}", other),
+    }
+}
+
+#[test]
+fn l2cap_connection_update_request_failed_event_data_len() {
+    let buffer = l2cap_connection_update_request_buffer(
+        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN - 1,
+        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
+        6,
+        3200,
+        499,
+        3200,
+    );
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadL2CapDataLength(
+            len,
+            L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
+        ))) => assert_eq!(len, L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN - 1),
+        other => panic!("Did not get L2CAP data length code: {:?}", other),
+    }
+}
+
+#[test]
+fn l2cap_connection_update_request_failed_l2cap_len() {
+    let buffer = l2cap_connection_update_request_buffer(
+        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
+        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN - 1,
+        6,
+        3200,
+        499,
+        3200,
+    );
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadL2CapLength(len, L2CAP_CONN_UPDATE_REQ_L2CAP_LEN))) => {
+            assert_eq!(len, L2CAP_CONN_UPDATE_REQ_L2CAP_LEN - 1)
+        }
+        other => panic!("Did not get L2CAP length: {:?}", other),
+    }
+}
+
+#[test]
+fn l2cap_connection_update_request_failed_bad_interval() {
+    let buffer_bad_min = l2cap_connection_update_request_buffer(
+        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
+        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
+        5,
+        3200,
+        499,
+        3200,
+    );
+    match BlueNRGEvent::new(&buffer_bad_min) {
+        Err(HciError::Vendor(BNRGError::BadL2CapConnectionUpdateRequestInterval(min, max))) => {
+            assert_eq!(min, 5);
+            assert_eq!(max, 3200);
+        }
+        other => panic!(
+            "Did not get L2CAP connection update request interval: {:?}",
+            other
+        ),
+    }
+
+    let buffer_bad_max = l2cap_connection_update_request_buffer(
+        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
+        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
+        6,
+        3201,
+        499,
+        3200,
+    );
+    match BlueNRGEvent::new(&buffer_bad_max) {
+        Err(HciError::Vendor(BNRGError::BadL2CapConnectionUpdateRequestInterval(min, max))) => {
+            assert_eq!(min, 6);
+            assert_eq!(max, 3201);
+        }
+        other => panic!(
+            "Did not get L2CAP connection update request interval: {:?}",
+            other
+        ),
+    }
+
+    let buffer_bad_range = l2cap_connection_update_request_buffer(
+        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
+        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
+        100,
+        99,
+        499,
+        3200,
+    );
+    match BlueNRGEvent::new(&buffer_bad_range) {
+        Err(HciError::Vendor(BNRGError::BadL2CapConnectionUpdateRequestInterval(min, max))) => {
+            assert_eq!(min, 100);
+            assert_eq!(max, 99);
+        }
+        other => panic!(
+            "Did not get L2CAP connection update request interval: {:?}",
+            other
+        ),
+    }
+}
+
+#[test]
+fn l2cap_connection_update_request_failed_bad_slave_latency() {
+    let buffer_absolute_max = l2cap_connection_update_request_buffer(
+        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
+        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
+        6,
+        10,
+        500,
+        3200,
+    );
+    match BlueNRGEvent::new(&buffer_absolute_max) {
+        Err(HciError::Vendor(BNRGError::BadL2CapConnectionUpdateRequestLatency(latency, 500))) => {
+            assert_eq!(latency, 500);
+        }
+        other => panic!(
+            "Did not get L2CAP connection update request slave latency: {:?}",
+            other
+        ),
+    }
+
+    let buffer_relative_max = l2cap_connection_update_request_buffer(
+        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
+        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
+        6,
+        10,
+        6,
+        10,
+    );
+    match BlueNRGEvent::new(&buffer_relative_max) {
+        Err(HciError::Vendor(BNRGError::BadL2CapConnectionUpdateRequestLatency(latency, 3))) => {
+            assert_eq!(latency, 6);
+        }
+        other => panic!(
+            "Did not get L2CAP connection update request slave latency: {:?}",
+            other
+        ),
+    }
+}
+
+#[test]
+fn l2cap_connection_update_request_failed_bad_timeout_mult() {
+    let buffer_low = l2cap_connection_update_request_buffer(
+        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
+        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
+        6,
+        3200,
+        0,
+        9,
+    );
+    match BlueNRGEvent::new(&buffer_low) {
+        Err(HciError::Vendor(BNRGError::BadL2CapConnectionUpdateRequestTimeoutMult(mult))) => {
+            assert_eq!(mult, 9);
+        }
+        other => panic!(
+            "Did not get L2CAP connection update request timeout multiplier: {:?}",
+            other
+        ),
+    }
+
+    let buffer_high = l2cap_connection_update_request_buffer(
+        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
+        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
+        6,
+        3200,
+        0,
+        3201,
+    );
+    match BlueNRGEvent::new(&buffer_high) {
+        Err(HciError::Vendor(BNRGError::BadL2CapConnectionUpdateRequestTimeoutMult(mult))) => {
+            assert_eq!(mult, 3201);
+        }
+        other => panic!(
+            "Did not get L2CAP connection update request timeout multiplier: {:?}",
+            other
+        ),
+    }
+}
