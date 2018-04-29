@@ -26,6 +26,27 @@ pub enum Error {
     /// For the CrashReport event: The crash reason was not recognized. Includes the unrecognized
     /// byte.
     UnknownCrashReason(u8),
+
+    /// For any L2CAP event: The event data length did not match the expected length. The first
+    /// field is the required length, and the second is the actual length.
+    BadL2CapDataLength(u8, u8),
+
+    /// For any L2CAP event: The L2CAP length did not match the expected length. The first field is
+    /// the required length, and the second is the actual length.
+    BadL2CapLength(u16, u16),
+
+    /// For any L2CAP response event: The L2CAP command was rejected, but the rejection reason was
+    /// not recognized. Includes the unknown value.
+    BadL2CapRejectionReason(u16),
+
+    /// For the L2CapConnectionUpdateResponse event: The code byte did not indicate either Rejected
+    /// or Updated. Includes the invalid byte.
+    BadL2CapConnectionResponseCode(u8),
+
+    /// For the L2CapConnectionUpdateResponse event: The command was accepted, but the result was
+    /// not recognized. It did not indicate the parameters were either updated or rejected. Includes
+    /// the unknown value.
+    BadL2CapConnectionResponseResult(u16),
 }
 
 /// Vendor-specific events for the BlueNRG-MS controllers.
@@ -43,6 +64,11 @@ pub enum BlueNRGEvent {
     /// The fault data event is automatically sent after the HalInitialized event in case of NMI or
     /// Hard fault (ResetReason::Crash).
     CrashReport(FaultData),
+
+    /// This event is generated when the master responds to the L2CAP connection update request
+    /// packet. For more info see CONNECTION PARAMETER UPDATE RESPONSE and COMMAND REJECT in
+    /// Bluetooth Core v4.0 spec.
+    L2CapConnectionUpdateResponse(L2CapConnectionUpdateResponse),
 
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
@@ -76,6 +102,7 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0001 => to_hal_initialized(buffer),
             0x0002 => to_lost_event(buffer),
             0x0003 => to_crash_report(buffer),
+            0x0800 => to_l2cap_connection_update_response(buffer),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
@@ -372,4 +399,118 @@ fn to_crash_report(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Erro
     fault_data.debug_data[..debug_data_len].copy_from_slice(&buffer[40..]);
 
     Ok(BlueNRGEvent::CrashReport(fault_data))
+}
+
+macro_rules! require_l2cap_event_data_len {
+    ($left:expr, $right:expr) => {
+        let actual = $left[4];
+        if actual != $right {
+            return Err(hci::event::Error::Vendor(Error::BadL2CapDataLength(
+                actual, $right,
+            )));
+        }
+    };
+}
+
+macro_rules! require_l2cap_len {
+    ($actual:expr, $expected:expr) => {
+        if $actual != $expected {
+            return Err(hci::event::Error::Vendor(Error::BadL2CapLength(
+                $actual, $expected,
+            )));
+        }
+    };
+}
+
+/// This event is generated when the master responds to the L2CAP connection update request packet.
+/// For more info see CONNECTION PARAMETER UPDATE RESPONSE and COMMAND REJECT in Bluetooth Core v4.0
+/// spec.
+#[derive(Copy, Clone, Debug)]
+pub struct L2CapConnectionUpdateResponse {
+    /// The connection handle related to the event
+    pub conn_handle: u16,
+
+    /// The result of the update request, including details about the result.
+    pub result: L2CapConnectionUpdateResult,
+}
+
+/// Reasons why an L2CAP command was rejected. see the Bluetooth specification, Vol 3, Part A,
+/// Section 4.1 (versions 4.1, 4.2, and 5.0).
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum L2CapRejectionReason {
+    /// The controller sent an unknown command
+    CommandNotUnderstood,
+    /// When multiple commands are included in an L2CAP packet and the packet exceeds the signaling
+    /// MTU (MTUsig) of the receiver, a single Command Reject packet shall be sent in response.
+    SignalingMtuExceeded,
+    /// Invalid CID in request
+    InvalidCid,
+}
+
+impl TryFrom<u16> for L2CapRejectionReason {
+    type Error = Error;
+
+    fn try_from(value: u16) -> Result<L2CapRejectionReason, Self::Error> {
+        match value {
+            0 => Ok(L2CapRejectionReason::CommandNotUnderstood),
+            1 => Ok(L2CapRejectionReason::SignalingMtuExceeded),
+            2 => Ok(L2CapRejectionReason::InvalidCid),
+            _ => Err(Error::BadL2CapRejectionReason(value)),
+        }
+    }
+}
+
+/// Potential results that can be used in the L2CAP connection update response.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum L2CapConnectionUpdateResult {
+    /// The update request was rejected. The code indicates the reason for the rejection.
+    CommandRejected(L2CapRejectionReason),
+
+    /// The L2CAP connection update response is valid. The code indicates if the parameters were
+    /// rejected.
+    ParametersRejected,
+
+    /// The L2CAP connection update response is valid. The code indicates if the parameters were
+    /// updated.
+    ParametersUpdated,
+}
+
+fn to_l2cap_connection_update_accepted_result(
+    value: u16,
+) -> Result<L2CapConnectionUpdateResult, Error> {
+    match value {
+        0x0000 => Ok(L2CapConnectionUpdateResult::ParametersUpdated),
+        0x0001 => Ok(L2CapConnectionUpdateResult::ParametersRejected),
+        _ => {
+            return Err(Error::BadL2CapConnectionResponseResult(value));
+        }
+    }
+}
+
+fn extract_l2cap_connection_update_response_result(
+    buffer: &[u8],
+) -> Result<L2CapConnectionUpdateResult, Error> {
+    match buffer[5] {
+        0x01 => Ok(L2CapConnectionUpdateResult::CommandRejected(
+            LittleEndian::read_u16(&buffer[9..]).try_into()?,
+        )),
+        0x13 => to_l2cap_connection_update_accepted_result(LittleEndian::read_u16(&buffer[9..])),
+        _ => Err(Error::BadL2CapConnectionResponseCode(buffer[5])),
+    }
+}
+
+fn to_l2cap_connection_update_response(
+    buffer: &[u8],
+) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
+    require_len!(buffer, 11);
+    require_l2cap_event_data_len!(buffer, 6);
+    require_l2cap_len!(LittleEndian::read_u16(&buffer[7..]), 2);
+
+    Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(
+        L2CapConnectionUpdateResponse {
+            conn_handle: LittleEndian::read_u16(&buffer[2..]),
+            result: extract_l2cap_connection_update_response_result(buffer)
+                .map_err(hci::event::Error::Vendor)?,
+        },
+    ))
 }

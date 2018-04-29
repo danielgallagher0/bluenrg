@@ -1,8 +1,10 @@
 extern crate bluenrg;
 extern crate bluetooth_hci as hci;
+extern crate byteorder;
 
 use bluenrg::event::Error as BNRGError;
 use bluenrg::event::*;
+use byteorder::{ByteOrder, LittleEndian};
 use hci::event::{Error as HciError, VendorEvent};
 
 #[test]
@@ -177,5 +179,165 @@ fn hal_crash_info_failed_bad_debug_data_len() {
             assert_eq!(expected, 41);
         }
         other => panic!("Did not get bad length: {:?}", other),
+    }
+}
+
+fn l2cap_connection_update_response_buffer(
+    event_data_len: u8,
+    response_code: u8,
+    l2cap_len: u16,
+    result: u16,
+) -> [u8; 11] {
+    let mut buffer = [0; 11];
+    LittleEndian::write_u16(&mut buffer[0..], 0x0800);
+    LittleEndian::write_u16(&mut buffer[2..], 0x0201);
+    buffer[4] = event_data_len;
+    buffer[5] = response_code;
+    buffer[6] = 0x03; // identifier
+    LittleEndian::write_u16(&mut buffer[7..], l2cap_len);
+    LittleEndian::write_u16(&mut buffer[9..], result);
+    buffer
+}
+
+const CONNECTION_UPDATE_RESP_EVENT_DATA_LEN: u8 = 6;
+const CONNECTION_UPDATE_RESP_L2CAP_LEN: u16 = 2;
+fn l2cap_connection_update_response_command_rejected_buffer() -> [u8; 11] {
+    l2cap_connection_update_response_buffer(
+        CONNECTION_UPDATE_RESP_EVENT_DATA_LEN,
+        0x01,
+        CONNECTION_UPDATE_RESP_L2CAP_LEN,
+        0x0000,
+    )
+}
+
+#[test]
+fn l2cap_connection_update_response_cmd_rejected() {
+    let buffer = l2cap_connection_update_response_command_rejected_buffer();
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(resp)) => {
+            assert_eq!(resp.conn_handle, 0x0201);
+            assert_eq!(
+                resp.result,
+                L2CapConnectionUpdateResult::CommandRejected(
+                    L2CapRejectionReason::CommandNotUnderstood
+                )
+            );
+        }
+        other => panic!("Did not get L2CAP connection update response: {:?}", other),
+    }
+}
+
+#[test]
+fn l2cap_connection_update_response_updated_accepted() {
+    let buffer = l2cap_connection_update_response_buffer(
+        CONNECTION_UPDATE_RESP_EVENT_DATA_LEN,
+        0x13,
+        CONNECTION_UPDATE_RESP_L2CAP_LEN,
+        0x0000,
+    );
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(resp)) => {
+            assert_eq!(resp.conn_handle, 0x0201);
+            assert_eq!(resp.result, L2CapConnectionUpdateResult::ParametersUpdated);
+        }
+        other => panic!("Did not get L2CAP connection update response: {:?}", other),
+    }
+}
+
+#[test]
+fn l2cap_connection_update_response_updated_param_rejected() {
+    let buffer = l2cap_connection_update_response_buffer(
+        CONNECTION_UPDATE_RESP_EVENT_DATA_LEN,
+        0x13,
+        CONNECTION_UPDATE_RESP_L2CAP_LEN,
+        0x0001,
+    );
+
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(resp)) => {
+            assert_eq!(resp.conn_handle, 0x0201);
+            assert_eq!(resp.result, L2CapConnectionUpdateResult::ParametersRejected);
+        }
+        other => panic!("Did not get L2CAP connection update response: {:?}", other),
+    }
+}
+
+#[test]
+fn l2cap_connection_update_response_failed_code() {
+    let buffer = l2cap_connection_update_response_buffer(
+        CONNECTION_UPDATE_RESP_EVENT_DATA_LEN,
+        0x02,
+        CONNECTION_UPDATE_RESP_L2CAP_LEN,
+        0x0504,
+    );
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadL2CapConnectionResponseCode(code))) => {
+            assert_eq!(code, 0x02)
+        }
+        other => panic!("Did not get bad response code: {:?}", other),
+    }
+}
+
+#[test]
+fn l2cap_connection_update_response_failed_data_length() {
+    let buffer = l2cap_connection_update_response_buffer(
+        CONNECTION_UPDATE_RESP_EVENT_DATA_LEN - 1,
+        0x01,
+        CONNECTION_UPDATE_RESP_L2CAP_LEN,
+        0x0504,
+    );
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadL2CapDataLength(len, 6))) => {
+            assert_eq!(len, CONNECTION_UPDATE_RESP_EVENT_DATA_LEN - 1)
+        }
+        other => panic!("Did not get L2Cap data length code: {:?}", other),
+    }
+}
+
+#[test]
+fn l2cap_connection_update_response_failed_l2cap_length() {
+    let buffer = l2cap_connection_update_response_buffer(
+        CONNECTION_UPDATE_RESP_EVENT_DATA_LEN,
+        0x01,
+        CONNECTION_UPDATE_RESP_L2CAP_LEN + 1,
+        0x0504,
+    );
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadL2CapLength(len, 2))) => {
+            assert_eq!(len, CONNECTION_UPDATE_RESP_L2CAP_LEN + 1)
+        }
+        other => panic!("Did not get L2CAP length: {:?}", other),
+    }
+}
+
+#[test]
+fn l2cap_connection_update_response_failed_unknown_result() {
+    let buffer = l2cap_connection_update_response_buffer(
+        CONNECTION_UPDATE_RESP_EVENT_DATA_LEN,
+        0x13,
+        CONNECTION_UPDATE_RESP_L2CAP_LEN,
+        0x0002,
+    );
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadL2CapConnectionResponseResult(result))) => {
+            assert_eq!(result, 0x0002)
+        }
+        other => panic!("Did not get bad result: {:?}", other),
+    }
+}
+
+#[test]
+fn l2cap_connection_update_response_failed_unknown_rejection_reason() {
+    let buffer = l2cap_connection_update_response_buffer(
+        CONNECTION_UPDATE_RESP_EVENT_DATA_LEN,
+        0x01,
+        CONNECTION_UPDATE_RESP_L2CAP_LEN,
+        0x0003,
+    );
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadL2CapRejectionReason(reason))) => {
+            assert_eq!(reason, 0x0003)
+        }
+        other => panic!("Did not get bad rejection reason: {:?}", other),
     }
 }
