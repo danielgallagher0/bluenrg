@@ -215,7 +215,7 @@ fn l2cap_connection_update_response_cmd_rejected() {
     let buffer = l2cap_connection_update_response_command_rejected_buffer();
     match BlueNRGEvent::new(&buffer) {
         Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(resp)) => {
-            assert_eq!(resp.conn_handle, 0x0201);
+            assert_eq!(resp.conn_handle.0, 0x0201);
             assert_eq!(
                 resp.result,
                 L2CapConnectionUpdateResult::CommandRejected(
@@ -237,7 +237,7 @@ fn l2cap_connection_update_response_updated_accepted() {
     );
     match BlueNRGEvent::new(&buffer) {
         Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(resp)) => {
-            assert_eq!(resp.conn_handle, 0x0201);
+            assert_eq!(resp.conn_handle.0, 0x0201);
             assert_eq!(resp.result, L2CapConnectionUpdateResult::ParametersUpdated);
         }
         other => panic!("Did not get L2CAP connection update response: {:?}", other),
@@ -255,7 +255,7 @@ fn l2cap_connection_update_response_updated_param_rejected() {
 
     match BlueNRGEvent::new(&buffer) {
         Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(resp)) => {
-            assert_eq!(resp.conn_handle, 0x0201);
+            assert_eq!(resp.conn_handle.0, 0x0201);
             assert_eq!(resp.result, L2CapConnectionUpdateResult::ParametersRejected);
         }
         other => panic!("Did not get L2CAP connection update response: {:?}", other),
@@ -346,8 +346,8 @@ fn l2cap_connection_update_response_failed_unknown_rejection_reason() {
 fn l2cap_procedure_timeout() {
     let buffer = [0x01, 0x08, 0x01, 0x02, 0x00];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::L2CapProcedureTimeout(evt)) => {
-            assert_eq!(evt.conn_handle, 0x0201);
+        Ok(BlueNRGEvent::L2CapProcedureTimeout(conn_handle)) => {
+            assert_eq!(conn_handle.0, 0x0201);
         }
         other => panic!("Did not get L2CAP procedure timeout: {:?}", other),
     }
@@ -398,7 +398,7 @@ fn l2cap_connection_update_request() {
     );
     match BlueNRGEvent::new(&buffer) {
         Ok(BlueNRGEvent::L2CapConnectionUpdateRequest(req)) => {
-            assert_eq!(req.conn_handle, 1);
+            assert_eq!(req.conn_handle.0, 1);
             assert_eq!(req.identifier, 2);
             assert_eq!(req.interval_min, 6);
             assert_eq!(req.interval_max, 10);
@@ -598,7 +598,7 @@ fn gap_pairing_complete() {
     let buffer = [0x01, 0x04, 0x01, 0x02, 0x00];
     match BlueNRGEvent::new(&buffer) {
         Ok(BlueNRGEvent::GapPairingComplete(evt)) => {
-            assert_eq!(evt.conn_handle, 0x0201);
+            assert_eq!(evt.conn_handle.0, 0x0201);
             assert_eq!(evt.status, GapPairingStatus::Success);
         }
         other => panic!("Did not get GAP Pairing complete: {:?}", other),

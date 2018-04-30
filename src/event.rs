@@ -121,7 +121,7 @@ pub enum BlueNRGEvent {
 
     /// This event is generated when the master does not respond to the connection update request
     /// within 30 seconds.
-    L2CapProcedureTimeout(L2CapProcedureTimeout),
+    L2CapProcedureTimeout(ConnectionHandle),
 
     /// The event is given by the L2CAP layer when a connection update request is received from the
     /// slave.  The application has to respond by calling
@@ -132,6 +132,11 @@ pub enum BlueNRGEvent {
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
 }
+
+/// Newtype for a connection handle. For several events, the only data is a connection handle. Other
+/// events include a connection handle as one of the parameters.
+#[derive(Clone, Copy, Debug)]
+pub struct ConnectionHandle(pub u16);
 
 macro_rules! require_len {
     ($left:expr, $right:expr) => {
@@ -495,7 +500,7 @@ macro_rules! require_l2cap_len {
 #[derive(Copy, Clone, Debug)]
 pub struct L2CapConnectionUpdateResponse {
     /// The connection handle related to the event
-    pub conn_handle: u16,
+    pub conn_handle: ConnectionHandle,
 
     /// The result of the update request, including details about the result.
     pub result: L2CapConnectionUpdateResult,
@@ -574,7 +579,7 @@ fn to_l2cap_connection_update_response(
     require_l2cap_len!(LittleEndian::read_u16(&buffer[7..]), 2);
 
     Ok(L2CapConnectionUpdateResponse {
-        conn_handle: LittleEndian::read_u16(&buffer[2..]),
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         result: extract_l2cap_connection_update_response_result(buffer)
             .map_err(hci::event::Error::Vendor)?,
     })
@@ -585,18 +590,14 @@ fn to_l2cap_connection_update_response(
 #[derive(Copy, Clone, Debug)]
 pub struct L2CapProcedureTimeout {
     /// The connection handle related to the event.
-    pub conn_handle: u16,
+    pub conn_handle: ConnectionHandle,
 }
 
-fn to_l2cap_procedure_timeout(
-    buffer: &[u8],
-) -> Result<L2CapProcedureTimeout, hci::event::Error<Error>> {
+fn to_l2cap_procedure_timeout(buffer: &[u8]) -> Result<ConnectionHandle, hci::event::Error<Error>> {
     require_len!(buffer, 5);
     require_l2cap_event_data_len!(buffer, 0);
 
-    Ok(L2CapProcedureTimeout {
-        conn_handle: LittleEndian::read_u16(&buffer[2..]),
-    })
+    Ok(ConnectionHandle(LittleEndian::read_u16(&buffer[2..])))
 }
 
 /// The event is given by the L2CAP layer when a connection update request is received from the
@@ -610,7 +611,7 @@ pub struct L2CapConnectionUpdateRequest {
     /// Handle of the connection for which the connection update request has been received.  The
     /// same handle has to be returned while responding to the event with the command
     /// aci_l2cap_connection_parameter_update_response().
-    pub conn_handle: u16,
+    pub conn_handle: ConnectionHandle,
 
     /// This is the identifier which associates the request to the response. The same identifier has
     /// to be returned by the upper layer in the command
@@ -685,7 +686,7 @@ fn to_l2cap_connection_update_request(
     }
 
     Ok(L2CapConnectionUpdateRequest {
-        conn_handle: LittleEndian::read_u16(&buffer[2..]),
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         identifier: buffer[5],
         interval_min: interval_min,
         interval_max: interval_max,
@@ -701,7 +702,7 @@ fn to_l2cap_connection_update_request(
 #[derive(Copy, Clone, Debug)]
 pub struct GapPairingComplete {
     /// Connection handle on which the pairing procedure completed
-    pub conn_handle: u16,
+    pub conn_handle: ConnectionHandle,
 
     /// Reason the pairing is complete.
     pub status: GapPairingStatus,
@@ -734,7 +735,7 @@ impl TryFrom<u8> for GapPairingStatus {
 fn to_gap_pairing_complete(buffer: &[u8]) -> Result<GapPairingComplete, hci::event::Error<Error>> {
     require_len!(buffer, 5);
     Ok(GapPairingComplete {
-        conn_handle: LittleEndian::read_u16(&buffer[2..]),
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         status: buffer[4].try_into().map_err(hci::event::Error::Vendor)?,
     })
 }
