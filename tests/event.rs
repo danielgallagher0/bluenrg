@@ -592,3 +592,24 @@ fn gap_limited_discoverable() {
         other => panic!("Did not get GAP Limited discoverable: {:?}", other),
     }
 }
+
+#[test]
+fn gap_pairing_complete() {
+    let buffer = [0x01, 0x04, 0x01, 0x02, 0x00];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GapPairingComplete(evt)) => {
+            assert_eq!(evt.conn_handle, 0x0201);
+            assert_eq!(evt.status, GapPairingStatus::Success);
+        }
+        other => panic!("Did not get GAP Pairing complete: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_pairing_complete_failed() {
+    let buffer = [0x01, 0x04, 0x01, 0x02, 0x03];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadGapPairingStatus(value))) => assert_eq!(value, 3),
+        other => panic!("Did not get bad pairing status: {:?}", other),
+    }
+}

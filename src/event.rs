@@ -28,6 +28,10 @@ pub enum Error {
     /// byte.
     UnknownCrashReason(u8),
 
+    /// For the GAP Pairing Complete event: The status was not recognized. Includes the unrecognized
+    /// byte.
+    BadGapPairingStatus(u8),
+
     /// For any L2CAP event: The event data length did not match the expected length. The first
     /// field is the required length, and the second is the actual length.
     BadL2CapDataLength(u8, u8),
@@ -104,6 +108,12 @@ pub enum BlueNRGEvent {
     /// timeout (180 seconds). No parameters in the event.
     GapLimitedDiscoverable,
 
+    /// This event is generated when the pairing process has completed successfully or a pairing
+    /// procedure timeout has occurred or the pairing has failed.  This is to notify the application
+    /// that we have paired with a remote device so that it can take further actions or to notify
+    /// that a timeout has occurred so that the upper layer can decide to disconnect the link.
+    GapPairingComplete(GapPairingComplete),
+
     /// This event is generated when the master responds to the L2CAP connection update request
     /// packet. For more info see CONNECTION PARAMETER UPDATE RESPONSE and COMMAND REJECT in
     /// Bluetooth Core v4.0 spec.
@@ -151,6 +161,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0002 => Ok(BlueNRGEvent::EventsLost(to_lost_event(buffer)?)),
             0x0003 => Ok(BlueNRGEvent::CrashReport(to_crash_report(buffer)?)),
             0x0400 => Ok(BlueNRGEvent::GapLimitedDiscoverable),
+            0x0401 => Ok(BlueNRGEvent::GapPairingComplete(to_gap_pairing_complete(
+                buffer,
+            )?)),
             0x0800 => Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(
                 to_l2cap_connection_update_response(buffer)?,
             )),
@@ -678,5 +691,50 @@ fn to_l2cap_connection_update_request(
         interval_max: interval_max,
         slave_latency: slave_latency,
         timeout_mult: timeout_mult,
+    })
+}
+
+/// This event is generated when the pairing process has completed successfully or a pairing
+/// procedure timeout has occurred or the pairing has failed. This is to notify the application that
+/// we have paired with a remote device so that it can take further actions or to notify that a
+/// timeout has occurred so that the upper layer can decide to disconnect the link.
+#[derive(Copy, Clone, Debug)]
+pub struct GapPairingComplete {
+    /// Connection handle on which the pairing procedure completed
+    pub conn_handle: u16,
+
+    /// Reason the pairing is complete.
+    pub status: GapPairingStatus,
+}
+
+/// Reasons the GAP Pairing Complete event was generated.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum GapPairingStatus {
+    /// Pairing with a remote device was successful
+    Success,
+    /// The SMP timeout has elapsed and no further SMP commands will be processed until reconnection
+    Timeout,
+    /// The pairing failed with the remote device.
+    Failed,
+}
+
+impl TryFrom<u8> for GapPairingStatus {
+    type Error = Error;
+
+    fn try_from(value: u8) -> Result<GapPairingStatus, Self::Error> {
+        match value {
+            0 => Ok(GapPairingStatus::Success),
+            1 => Ok(GapPairingStatus::Timeout),
+            2 => Ok(GapPairingStatus::Failed),
+            _ => Err(Error::BadGapPairingStatus(value)),
+        }
+    }
+}
+
+fn to_gap_pairing_complete(buffer: &[u8]) -> Result<GapPairingComplete, hci::event::Error<Error>> {
+    require_len!(buffer, 5);
+    Ok(GapPairingComplete {
+        conn_handle: LittleEndian::read_u16(&buffer[2..]),
+        status: buffer[4].try_into().map_err(hci::event::Error::Vendor)?,
     })
 }
