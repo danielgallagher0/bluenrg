@@ -613,3 +613,12 @@ fn gap_pairing_complete_failed() {
         other => panic!("Did not get bad pairing status: {:?}", other),
     }
 }
+
+#[test]
+fn gap_pass_key_request() {
+    let buffer = [0x02, 0x04, 0x01, 0x02];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GapPassKeyRequest(conn_handle)) => assert_eq!(conn_handle.0, 0x0201),
+        other => panic!("Did not get GAP pass key request: {:?}", other),
+    }
+}
