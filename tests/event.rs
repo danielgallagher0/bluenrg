@@ -640,3 +640,12 @@ fn gap_slave_security_initiated() {
         other => panic!("Did not get GAP slave security initiated: {:?}", other),
     }
 }
+
+#[test]
+fn gap_bond_lost() {
+    let buffer = [0x05, 0x04];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GapBondLost) => (),
+        other => panic!("Did not get GAP bond lost: {:?}", other),
+    }
+}

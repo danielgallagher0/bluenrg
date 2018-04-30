@@ -128,6 +128,15 @@ pub enum BlueNRGEvent {
     /// This event is generated when the slave security request is successfully sent to the master.
     GapSlaveSecurityInitiated,
 
+    /// This event is generated on the slave when a aci_gap_slave_security_request() is called to
+    /// reestablish the bond with a master but the master has lost the bond. When this event is
+    /// received, the upper layer has to issue the command aci_gap_allow_rebond() in order to allow
+    /// the slave to continue the pairing process with the master. On the master this event is
+    /// raised when aci_gap_send_pairing_request() is called to reestablish a bond with a slave but
+    /// the slave has lost the bond. In order to create a new bond the master has to launch
+    /// aci_gap_send_pairing_request() with force_rebond set to 1.
+    GapBondLost,
+
     /// This event is generated when the master responds to the L2CAP connection update request
     /// packet. For more info see CONNECTION PARAMETER UPDATE RESPONSE and COMMAND REJECT in
     /// Bluetooth Core v4.0 spec.
@@ -188,6 +197,7 @@ impl hci::event::VendorEvent for BlueNRGEvent {
                 buffer,
             )?)),
             0x0404 => Ok(BlueNRGEvent::GapSlaveSecurityInitiated),
+            0x0405 => Ok(BlueNRGEvent::GapBondLost),
             0x0800 => Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(
                 to_l2cap_connection_update_response(buffer)?,
             )),
