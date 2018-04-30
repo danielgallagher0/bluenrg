@@ -622,3 +622,12 @@ fn gap_pass_key_request() {
         other => panic!("Did not get GAP pass key request: {:?}", other),
     }
 }
+
+#[test]
+fn gap_authorization_request() {
+    let buffer = [0x03, 0x04, 0x01, 0x02];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GapAuthorizationRequest(conn_handle)) => assert_eq!(conn_handle.0, 0x0201),
+        other => panic!("Did not get GAP authorization request: {:?}", other),
+    }
+}
