@@ -125,6 +125,9 @@ pub enum BlueNRGEvent {
     /// aci_gap_authorization_response() command should be used by the application.
     GapAuthorizationRequest(ConnectionHandle),
 
+    /// This event is generated when the slave security request is successfully sent to the master.
+    GapSlaveSecurityInitiated,
+
     /// This event is generated when the master responds to the L2CAP connection update request
     /// packet. For more info see CONNECTION PARAMETER UPDATE RESPONSE and COMMAND REJECT in
     /// Bluetooth Core v4.0 spec.
@@ -184,6 +187,7 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0403 => Ok(BlueNRGEvent::GapAuthorizationRequest(to_conn_handle(
                 buffer,
             )?)),
+            0x0404 => Ok(BlueNRGEvent::GapSlaveSecurityInitiated),
             0x0800 => Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(
                 to_l2cap_connection_update_response(buffer)?,
             )),

@@ -631,3 +631,12 @@ fn gap_authorization_request() {
         other => panic!("Did not get GAP authorization request: {:?}", other),
     }
 }
+
+#[test]
+fn gap_slave_security_initiated() {
+    let buffer = [0x04, 0x04];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GapSlaveSecurityInitiated) => (),
+        other => panic!("Did not get GAP slave security initiated: {:?}", other),
+    }
+}
