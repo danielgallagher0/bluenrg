@@ -583,3 +583,12 @@ fn l2cap_connection_update_request_failed_bad_timeout_mult() {
         ),
     }
 }
+
+#[test]
+fn gap_limited_discoverable() {
+    let buffer = [0x00, 0x04];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GapLimitedDiscoverable) => (),
+        other => panic!("Did not get GAP Limited discoverable: {:?}", other),
+    }
+}
