@@ -9,6 +9,7 @@ use byteorder::{ByteOrder, LittleEndian};
 use core::cmp::min;
 use core::convert::{TryFrom, TryInto};
 use core::fmt::{Debug, Formatter, Result as FmtResult};
+use core::mem;
 
 /// Enumeration of potential errors when deserializing events.
 #[derive(Clone, Copy, Debug)]
@@ -31,6 +32,18 @@ pub enum Error {
     /// For the GAP Pairing Complete event: The status was not recognized. Includes the unrecognized
     /// byte.
     BadGapPairingStatus(u8),
+
+    /// For the GAP Device Found event: the type of event was not recognized. Includes the
+    /// unrecognized byte.
+    BadGapDeviceFoundEvent(u8),
+
+    /// For the GAP Device Found event: the type of BDADDR was not recognized. Includes the
+    /// unrecognized byte.
+    BadGapBdAddrType(u8),
+
+    /// For the GAP Device Found event: the RSSI code at the end of the packet indicated that the
+    /// RSSI is unavailable.
+    GapRssiUnavailable,
 
     /// For any L2CAP event: The event data length did not match the expected length. The first
     /// field is the required length, and the second is the actual length.
@@ -137,6 +150,10 @@ pub enum BlueNRGEvent {
     /// aci_gap_send_pairing_request() with force_rebond set to 1.
     GapBondLost,
 
+    /// The event is given by the GAP layer to the upper layers when a device is discovered during
+    /// scanning as a consequence of one of the GAP procedures started by the upper layers.
+    GapDeviceFound(GapDeviceFound),
+
     /// This event is generated when the master responds to the L2CAP connection update request
     /// packet. For more info see CONNECTION PARAMETER UPDATE RESPONSE and COMMAND REJECT in
     /// Bluetooth Core v4.0 spec.
@@ -198,6 +215,7 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             )?)),
             0x0404 => Ok(BlueNRGEvent::GapSlaveSecurityInitiated),
             0x0405 => Ok(BlueNRGEvent::GapBondLost),
+            0x0406 => Ok(BlueNRGEvent::GapDeviceFound(to_gap_device_found(buffer)?)),
             0x0800 => Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(
                 to_l2cap_connection_update_response(buffer)?,
             )),
@@ -772,4 +790,98 @@ fn to_gap_pairing_complete(buffer: &[u8]) -> Result<GapPairingComplete, hci::eve
 fn to_conn_handle(buffer: &[u8]) -> Result<ConnectionHandle, hci::event::Error<Error>> {
     require_len!(buffer, 4);
     Ok(ConnectionHandle(LittleEndian::read_u16(&buffer[2..])))
+}
+
+/// The event is given by the GAP layer to the upper layers when a device is discovered during
+/// scanning as a consequence of one of the GAP procedures started by the upper layers.
+#[derive(Copy, Clone, Debug)]
+pub struct GapDeviceFound {
+    /// Type of event
+    pub event: GapDeviceFoundEvent,
+
+    /// Address of the peer device found during scanning
+    pub bdaddr: BdAddr,
+
+    /// Length of significant data
+    pub data_len: usize,
+
+    /// Advertising or scan response data.
+    pub data: [u8; 31],
+
+    /// Received signal strength indicator (range: -127 - 20)
+    pub rssi: i8,
+}
+
+/// Potential values for the GAP Device Found event type.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum GapDeviceFoundEvent {
+    /// Connectable undirected advertising
+    Advertisement,
+    /// Connectable directed advertising
+    DirectAdvertisement,
+    /// Scannable undirected advertising
+    Scan,
+    /// Non connectable undirected advertising
+    NonConnectableAdvertisement,
+    /// Scan Response
+    ScanResponse,
+}
+
+impl TryFrom<u8> for GapDeviceFoundEvent {
+    type Error = Error;
+
+    fn try_from(value: u8) -> Result<GapDeviceFoundEvent, Self::Error> {
+        match value {
+            0 => Ok(GapDeviceFoundEvent::Advertisement),
+            1 => Ok(GapDeviceFoundEvent::DirectAdvertisement),
+            2 => Ok(GapDeviceFoundEvent::Scan),
+            3 => Ok(GapDeviceFoundEvent::NonConnectableAdvertisement),
+            4 => Ok(GapDeviceFoundEvent::ScanResponse),
+            _ => Err(Error::BadGapDeviceFoundEvent(value)),
+        }
+    }
+}
+
+/// Potential values for BDADDR
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum BdAddr {
+    /// Public address.
+    Public([u8; 6]),
+
+    /// Random address.
+    Random([u8; 6]),
+}
+
+fn to_bdaddr(bd_addr_type: u8, addr: [u8; 6]) -> Result<BdAddr, Error> {
+    match bd_addr_type {
+        0 => Ok(BdAddr::Public(addr)),
+        1 => Ok(BdAddr::Random(addr)),
+        _ => Err(Error::BadGapBdAddrType(bd_addr_type)),
+    }
+}
+
+fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Error<Error>> {
+    require_len_at_least!(buffer, 12);
+
+    let data_len = buffer[10] as usize;
+    require_len!(buffer, 12 + data_len);
+
+    const RSSI_UNAVAILABLE: i8 = 127;
+    let rssi = unsafe { mem::transmute::<u8, i8>(buffer[buffer.len() - 1]) };
+    if rssi == RSSI_UNAVAILABLE {
+        return Err(hci::event::Error::Vendor(Error::GapRssiUnavailable));
+    }
+
+    let mut addr = [0; 6];
+    addr.copy_from_slice(&buffer[4..10]);
+    let mut event = GapDeviceFound {
+        event: buffer[2].try_into().map_err(hci::event::Error::Vendor)?,
+        bdaddr: to_bdaddr(buffer[3], addr).map_err(hci::event::Error::Vendor)?,
+        data_len: data_len,
+        data: [0; 31],
+        rssi: rssi,
+    };
+    event.data[..event.data_len].copy_from_slice(&buffer[11..buffer.len() - 1]);
+
+    Ok(event)
 }

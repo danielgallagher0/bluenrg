@@ -649,3 +649,77 @@ fn gap_bond_lost() {
         other => panic!("Did not get GAP bond lost: {:?}", other),
     }
 }
+
+#[test]
+fn gap_device_found() {
+    let buffer = [
+        0x06, 0x04, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 3, 0x01, 0x02, 0x03, 0x04,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GapDeviceFound(event)) => {
+            assert_eq!(event.event, GapDeviceFoundEvent::Advertisement);
+            assert_eq!(event.bdaddr, BdAddr::Public([1, 2, 3, 4, 5, 6]));
+            assert_eq!(event.rssi, 0x04);
+
+            let mut data = [0; 31];
+            data[0] = 1;
+            data[1] = 2;
+            data[2] = 3;
+            let data = data;
+            assert_eq!(event.data_len, 3);
+            assert_eq!(event.data, data);
+        }
+        other => panic!("Did not get GAP Device found: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_device_found_failure_bad_event() {
+    let buffer = [
+        0x06, 0x04, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 3, 0x01, 0x02, 0x03, 0x04,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadGapDeviceFoundEvent(code))) => {
+            assert_eq!(code, 0x05);
+        }
+        other => panic!("Did not get bad GAP device found event: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_device_found_failure_bad_bdaddr_type() {
+    let buffer = [
+        0x06, 0x04, 0x04, 0x02, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 3, 0x01, 0x02, 0x03, 0x04,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadGapBdAddrType(bdaddr_type))) => {
+            assert_eq!(bdaddr_type, 0x02);
+        }
+        other => panic!("Did not get bad GAP device found event: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_device_found_failure_bad_data_length() {
+    let buffer = [
+        0x06, 0x04, 0x04, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 4, 0x01, 0x02, 0x03, 0x04,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::BadLength(actual, expected)) => {
+            assert_eq!(actual, buffer.len());
+            assert_eq!(expected, buffer.len() + 1);
+        }
+        other => panic!("Did not get bad GAP device found length: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_device_found_failure_bad_rssi() {
+    let buffer = [
+        0x06, 0x04, 0x04, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 3, 0x01, 0x02, 0x03, 0x7F,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::GapRssiUnavailable)) => (),
+        other => panic!("Did not get bad GAP RSSI: {:?}", other),
+    }
+}
