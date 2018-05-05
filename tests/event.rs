@@ -658,7 +658,10 @@ fn gap_device_found() {
     match BlueNRGEvent::new(&buffer) {
         Ok(BlueNRGEvent::GapDeviceFound(event)) => {
             assert_eq!(event.event, GapDeviceFoundEvent::Advertisement);
-            assert_eq!(event.bdaddr, BdAddr::Public([1, 2, 3, 4, 5, 6]));
+            assert_eq!(
+                event.bdaddr,
+                BdAddr::Public(BdAddrBuffer([1, 2, 3, 4, 5, 6]))
+            );
             assert_eq!(event.rssi, 0x04);
 
             let mut data = [0; 31];

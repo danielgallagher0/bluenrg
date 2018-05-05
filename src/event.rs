@@ -842,17 +842,21 @@ impl TryFrom<u8> for GapDeviceFoundEvent {
     }
 }
 
+/// Newtype for BDADDR buffer.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct BdAddrBuffer(pub [u8; 6]);
+
 /// Potential values for BDADDR
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum BdAddr {
     /// Public address.
-    Public([u8; 6]),
+    Public(BdAddrBuffer),
 
     /// Random address.
-    Random([u8; 6]),
+    Random(BdAddrBuffer),
 }
 
-fn to_bdaddr(bd_addr_type: u8, addr: [u8; 6]) -> Result<BdAddr, Error> {
+fn to_bdaddr(bd_addr_type: u8, addr: BdAddrBuffer) -> Result<BdAddr, Error> {
     match bd_addr_type {
         0 => Ok(BdAddr::Public(addr)),
         1 => Ok(BdAddr::Random(addr)),
@@ -872,8 +876,8 @@ fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Erro
         return Err(hci::event::Error::Vendor(Error::GapRssiUnavailable));
     }
 
-    let mut addr = [0; 6];
-    addr.copy_from_slice(&buffer[4..10]);
+    let mut addr = BdAddrBuffer([0; 6]);
+    addr.0.copy_from_slice(&buffer[4..10]);
     let mut event = GapDeviceFound {
         event: buffer[2].try_into().map_err(hci::event::Error::Vendor)?,
         bdaddr: to_bdaddr(buffer[3], addr).map_err(hci::event::Error::Vendor)?,
