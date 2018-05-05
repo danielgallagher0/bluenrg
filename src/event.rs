@@ -6,7 +6,7 @@
 extern crate bluetooth_hci as hci;
 
 use byteorder::{ByteOrder, LittleEndian};
-use core::cmp::min;
+use core::cmp::{min, PartialEq};
 use core::convert::{TryFrom, TryInto};
 use core::fmt::{Debug, Formatter, Result as FmtResult};
 use core::mem;
@@ -40,6 +40,14 @@ pub enum Error {
     /// For the GAP Device Found event: the type of BDADDR was not recognized. Includes the
     /// unrecognized byte.
     BadGapBdAddrType(u8),
+
+    /// For the GAP Procedure Complete event: The procedure code was not recognized. Includes the
+    /// unrecognized byte.
+    BadGapProcedure(u8),
+
+    /// For the GAP Procedure Complete event: The procedure status was not recognized. Includes the
+    /// unrecognized byte.
+    BadGapProcedureStatus(u8),
 
     /// For the GAP Device Found event: the RSSI code at the end of the packet indicated that the
     /// RSSI is unavailable.
@@ -154,6 +162,10 @@ pub enum BlueNRGEvent {
     /// scanning as a consequence of one of the GAP procedures started by the upper layers.
     GapDeviceFound(GapDeviceFound),
 
+    /// This event is sent by the GAP to the upper layers when a procedure previously started has
+    /// been terminated by the upper layer or has completed for any other reason
+    GapProcedureComplete(GapProcedureComplete),
+
     /// This event is generated when the master responds to the L2CAP connection update request
     /// packet. For more info see CONNECTION PARAMETER UPDATE RESPONSE and COMMAND REJECT in
     /// Bluetooth Core v4.0 spec.
@@ -216,6 +228,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0404 => Ok(BlueNRGEvent::GapSlaveSecurityInitiated),
             0x0405 => Ok(BlueNRGEvent::GapBondLost),
             0x0406 => Ok(BlueNRGEvent::GapDeviceFound(to_gap_device_found(buffer)?)),
+            0x0407 => Ok(BlueNRGEvent::GapProcedureComplete(
+                to_gap_procedure_complete(buffer)?,
+            )),
             0x0800 => Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(
                 to_l2cap_connection_update_response(buffer)?,
             )),
@@ -888,4 +903,123 @@ fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Erro
     event.data[..event.data_len].copy_from_slice(&buffer[11..buffer.len() - 1]);
 
     Ok(event)
+}
+
+/// This event is sent by the GAP to the upper layers when a procedure previously started has been
+/// terminated by the upper layer or has completed for any other reason
+#[derive(Copy, Clone, Debug)]
+pub struct GapProcedureComplete {
+    /// Type of procedure that completed
+    pub procedure: Procedure,
+    /// Status of the procedure
+    pub status: ProcedureStatus,
+}
+
+/// Maximum length of the name returned in the NameDiscovery procedure.
+pub const MAX_NAME_LEN: usize = 248;
+
+/// Newtype for the name buffer returned after successful NameDiscovery.
+#[derive(Copy, Clone)]
+pub struct NameBuffer(pub [u8; MAX_NAME_LEN]);
+
+impl Debug for NameBuffer {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        self.0[..16].fmt(f)
+    }
+}
+
+impl PartialEq<NameBuffer> for NameBuffer {
+    fn eq(&self, other: &NameBuffer) -> bool {
+        if self.0.len() != other.0.len() {
+            return false;
+        }
+
+        for (a, b) in self.0.iter().zip(other.0.iter()) {
+            if a != b {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
+
+/// Procedures whose completion may be reported by GapProcedureComplete.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum Procedure {
+    /// See section 9.2.5, Vol 3, Part C
+    LimitedDiscovery,
+    /// See section 9.2.6, Vol 3, Part C
+    GeneralDiscovery,
+    /// See section 9.2.7, Vol 3, Part C. Contains the number of valid bytes and buffer with enough
+    /// space for the maximum length of the name that can be retuned.
+    NameDiscovery(usize, NameBuffer),
+    /// See section 9.3.5, Vol 3, Part C
+    AutoConnectionEstablishment,
+    /// See section 9.3.6, Vol 3, Part C. Contains the reconnection address.
+    GeneralConnectionEstablishment(BdAddrBuffer),
+    /// See section 9.3.7, Vol 3, Part C
+    SelectiveConnectionEstablishment,
+    /// See section 9.3.8, Vol 3, Part C
+    DirectConnectionEstablishment,
+}
+
+/// Possible results of a procedure
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum ProcedureStatus {
+    /// BLE Status Success
+    Success,
+    /// BLE Status Failed
+    Failed,
+    /// Procedure failed due to authentication requirements
+    AuthFailure,
+}
+
+impl TryFrom<u8> for ProcedureStatus {
+    type Error = Error;
+
+    fn try_from(value: u8) -> Result<ProcedureStatus, Self::Error> {
+        match value {
+            0x00 => Ok(ProcedureStatus::Success),
+            0x41 => Ok(ProcedureStatus::Failed),
+            0x05 => Ok(ProcedureStatus::AuthFailure),
+            _ => Err(Error::BadGapProcedureStatus(value)),
+        }
+    }
+}
+
+fn to_gap_procedure_complete(
+    buffer: &[u8],
+) -> Result<GapProcedureComplete, hci::event::Error<Error>> {
+    require_len_at_least!(buffer, 4);
+
+    let procedure = match buffer[2] {
+        0x01 => Procedure::LimitedDiscovery,
+        0x02 => Procedure::GeneralDiscovery,
+        0x04 => {
+            require_len_at_least!(buffer, 5);
+            let name_len = buffer.len() - 4;
+            let mut name = NameBuffer([0; MAX_NAME_LEN]);
+            name.0[..name_len].copy_from_slice(&buffer[4..]);
+
+            Procedure::NameDiscovery(name_len, name)
+        }
+        0x08 => Procedure::AutoConnectionEstablishment,
+        0x10 => {
+            require_len!(buffer, 10);
+            let mut addr = BdAddrBuffer([0; 6]);
+            addr.0.copy_from_slice(&buffer[4..10]);
+            Procedure::GeneralConnectionEstablishment(addr)
+        }
+        0x20 => Procedure::SelectiveConnectionEstablishment,
+        0x40 => Procedure::DirectConnectionEstablishment,
+        _ => {
+            return Err(hci::event::Error::Vendor(Error::BadGapProcedure(buffer[2])));
+        }
+    };
+
+    Ok(GapProcedureComplete {
+        procedure: procedure,
+        status: buffer[3].try_into().map_err(hci::event::Error::Vendor)?,
+    })
 }

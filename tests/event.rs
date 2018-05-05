@@ -726,3 +726,76 @@ fn gap_device_found_failure_bad_rssi() {
         other => panic!("Did not get bad GAP RSSI: {:?}", other),
     }
 }
+
+#[test]
+fn gap_procedure_complete() {
+    let buffer = [0x07, 0x04, 0x01, 0x00];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GapProcedureComplete(evt)) => {
+            assert_eq!(evt.procedure, Procedure::LimitedDiscovery);
+            assert_eq!(evt.status, ProcedureStatus::Success);
+        }
+        other => panic!("Did not get GAP Procedure Complete: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_procedure_complete_name_discovery() {
+    let buffer = [0x07, 0x04, 0x04, 0x00, 0x41, 0x42, 0x43];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GapProcedureComplete(evt)) => {
+            let mut name = NameBuffer([0; MAX_NAME_LEN]);
+            name.0[0] = 0x41;
+            name.0[1] = 0x42;
+            name.0[2] = 0x43;
+            let name = name;
+            assert_eq!(evt.procedure, Procedure::NameDiscovery(3, name));
+            assert_eq!(evt.status, ProcedureStatus::Success);
+        }
+        other => panic!("Did not get GAP Procedure Complete: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_procedure_complete_general_connection_establishment() {
+    let buffer = [0x07, 0x04, 0x10, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GapProcedureComplete(evt)) => {
+            assert_eq!(
+                evt.procedure,
+                Procedure::GeneralConnectionEstablishment(BdAddrBuffer([1, 2, 3, 4, 5, 6]))
+            );
+            assert_eq!(evt.status, ProcedureStatus::Success);
+        }
+        other => panic!("Did not get GAP Procedure Complete: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_procedure_complete_failed_bad_procedure() {
+    let buffer = [0x07, 0x04, 0x03, 0x00];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadGapProcedure(code))) => assert_eq!(code, 0x03),
+        other => panic!("Did not get bad GAP Procedure code: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_procedure_complete_failed_bad_status() {
+    let buffer = [0x07, 0x04, 0x02, 0x01];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadGapProcedureStatus(code))) => assert_eq!(code, 0x01),
+        other => panic!("Did not get bad GAP Procedure status: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_procedure_complete_failed_general_connection_establishment_length() {
+    let buffer = [
+        0x07, 0x04, 0x10, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::BadLength(11, 10)) => (),
+        other => panic!("Did not get bad length: {:?}", other),
+    }
+}
