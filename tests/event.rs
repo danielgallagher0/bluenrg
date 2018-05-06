@@ -829,3 +829,13 @@ fn gap_procedure_complete_failed_general_connection_establishment_length() {
         other => panic!("Did not get bad length: {:?}", other),
     }
 }
+
+#[cfg(feature = "ms")]
+#[test]
+fn gap_addr_not_resolved() {
+    let buffer = [0x08, 0x04, 0x01, 0x02];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GapAddressNotResolved(conn_handle)) => assert_eq!(conn_handle.0, 0x0201),
+        other => panic!("Did not get Address not Resolved event: {:?}", other),
+    }
+}

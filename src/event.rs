@@ -168,6 +168,12 @@ pub enum BlueNRGEvent {
     /// been terminated by the upper layer or has completed for any other reason
     GapProcedureComplete(GapProcedureComplete),
 
+    /// This event is sent only by a privacy enabled Peripheral. The event is sent to the upper
+    /// layers when the peripheral is unsuccessful in resolving the resolvable address of the peer
+    /// device after connecting to it.
+    #[cfg(feature = "ms")]
+    GapAddressNotResolved(ConnectionHandle),
+
     /// This event is generated when the master responds to the L2CAP connection update request
     /// packet. For more info see CONNECTION PARAMETER UPDATE RESPONSE and COMMAND REJECT in
     /// Bluetooth Core v4.0 spec.
@@ -253,6 +259,17 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0407 => Ok(BlueNRGEvent::GapProcedureComplete(
                 to_gap_procedure_complete(buffer)?,
             )),
+            0x0408 => {
+                #[cfg(feature = "ms")]
+                {
+                    Ok(BlueNRGEvent::GapAddressNotResolved(to_conn_handle(buffer)?))
+                }
+
+                #[cfg(not(feature = "ms"))]
+                {
+                    Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code)))
+                }
+            }
             0x0800 => Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(
                 to_l2cap_connection_update_response(buffer)?,
             )),
