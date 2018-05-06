@@ -174,6 +174,15 @@ pub enum BlueNRGEvent {
     #[cfg(feature = "ms")]
     GapAddressNotResolved(ConnectionHandle),
 
+    /// This event is generated when the reconnection address is generated during the general
+    /// connection establishment procedure. The same address is set to the peer device also as a
+    /// part of the general connection establishment procedure. In order to make use of the
+    /// reconnection address the next time while connecting to the bonded peripheral, the
+    /// application needs to set its own address as well as the peer address to which it wants to
+    /// connect to this reconnection address.
+    #[cfg(not(feature = "ms"))]
+    GapReconnectionAddress(BdAddrBuffer),
+
     /// This event is generated when the master responds to the L2CAP connection update request
     /// packet. For more info see CONNECTION PARAMETER UPDATE RESPONSE and COMMAND REJECT in
     /// Bluetooth Core v4.0 spec.
@@ -267,7 +276,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
 
                 #[cfg(not(feature = "ms"))]
                 {
-                    Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code)))
+                    Ok(BlueNRGEvent::GapReconnectionAddress(
+                        to_gap_reconnection_address(buffer)?,
+                    ))
                 }
             }
             0x0800 => Ok(BlueNRGEvent::L2CapConnectionUpdateResponse(
@@ -1069,4 +1080,12 @@ fn to_gap_procedure_complete(
         procedure: procedure,
         status: buffer[3].try_into().map_err(hci::event::Error::Vendor)?,
     })
+}
+
+#[cfg(not(feature = "ms"))]
+fn to_gap_reconnection_address(buffer: &[u8]) -> Result<BdAddrBuffer, hci::event::Error<Error>> {
+    require_len!(buffer, 8);
+    let mut addr = BdAddrBuffer([0; 6]);
+    addr.0.copy_from_slice(&buffer[2..]);
+    Ok(addr)
 }

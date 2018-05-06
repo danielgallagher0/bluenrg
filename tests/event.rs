@@ -839,3 +839,15 @@ fn gap_addr_not_resolved() {
         other => panic!("Did not get Address not Resolved event: {:?}", other),
     }
 }
+
+#[cfg(not(feature = "ms"))]
+#[test]
+fn gap_addr_not_resolved() {
+    let buffer = [0x08, 0x04, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GapReconnectionAddress(bdaddr)) => {
+            assert_eq!(bdaddr.0, [0x01, 0x02, 0x03, 0x04, 0x05, 0x06])
+        }
+        other => panic!("Did not get Address not Resolved event: {:?}", other),
+    }
+}
