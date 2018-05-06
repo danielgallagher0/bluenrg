@@ -26,6 +26,7 @@ fn hal_initialized_failure() {
 }
 
 #[test]
+#[cfg(feature = "ms")]
 fn hal_events_lost() {
     let buffer = [
         0x02, 0x00, 0b10101010, 0b11001100, 0b11110000, 0b00001111, 0b00110011, 0b01010101,
@@ -58,6 +59,7 @@ fn hal_events_lost() {
 }
 
 #[test]
+#[cfg(feature = "ms")]
 fn hal_events_lost_failure() {
     // 41 event flags (bits 0 - 40) are defined. In this buffer, bit 41 (one past the max) is set,
     // which causes the failure. The test value will need to be updated if more event flags are
@@ -68,11 +70,25 @@ fn hal_events_lost_failure() {
     ];
     match BlueNRGEvent::new(&buffer) {
         Err(HciError::Vendor(BNRGError::BadEventFlags(_))) => (),
-        other => panic!("Did not tet BadEventFlags: {:?}", other),
+        other => panic!("Did not get BadEventFlags: {:?}", other),
     }
 }
 
 #[test]
+#[cfg(not(feature = "ms"))]
+fn hal_events_lost_unknown() {
+    let buffer = [
+        0x02, 0x00, 0b10101010, 0b11001100, 0b11110000, 0b00001111, 0b00110011, 0b01010101,
+        0b00000000, 0b00000000,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::UnknownEvent(0x0002))) => (),
+        other => panic!("Did not get unknown event: {:?}", other),
+    }
+}
+
+#[test]
+#[cfg(feature = "ms")]
 fn hal_crash_info() {
     let mut buffer = [0; 46];
     buffer[0] = 0x03; // event code
@@ -154,6 +170,7 @@ fn hal_crash_info() {
 }
 
 #[test]
+#[cfg(feature = "ms")]
 fn hal_crash_info_failed_bad_crash_reason() {
     let mut buffer = [0; 40];
     buffer[0] = 0x03;
@@ -167,6 +184,7 @@ fn hal_crash_info_failed_bad_crash_reason() {
 }
 
 #[test]
+#[cfg(feature = "ms")]
 fn hal_crash_info_failed_bad_debug_data_len() {
     let mut buffer = [0; 40];
     buffer[0] = 0x03;
@@ -179,6 +197,18 @@ fn hal_crash_info_failed_bad_debug_data_len() {
             assert_eq!(expected, 41);
         }
         other => panic!("Did not get bad length: {:?}", other),
+    }
+}
+
+#[test]
+#[cfg(not(feature = "ms"))]
+fn hal_crash_info_unknown() {
+    let mut buffer = [0; 46];
+    buffer[0] = 0x03; // event code
+    buffer[1] = 0x00;
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::UnknownEvent(0x0003))) => (),
+        other => panic!("Did not get unknown event: {:?}", other),
     }
 }
 

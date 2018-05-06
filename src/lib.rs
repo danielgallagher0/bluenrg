@@ -39,6 +39,7 @@
 #![feature(try_from)]
 #![deny(missing_docs)]
 
+#[cfg(feature = "ms")]
 #[macro_use]
 extern crate bitflags;
 extern crate bluetooth_hci as hci;

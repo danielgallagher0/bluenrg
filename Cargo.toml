@@ -9,6 +9,12 @@ license = "MIT/Apache-2.0"
 repository = "https://github.com/danielgallagher0/bluenrg"
 readme = "README.md"
 
+[features]
+default = ["ms"]
+
+# The chip implements the newer BlueNRG-MS version of the HCI.
+ms = []
+
 [dependencies]
 nb = "0.1.1"
 bluetooth-hci = { git = "https://github.com/danielgallagher0/bluetooth-hci" }
