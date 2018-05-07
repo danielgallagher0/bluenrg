@@ -197,6 +197,15 @@ pub enum BlueNRGEvent {
     /// aci_l2cap_connection_parameter_update_response().
     L2CapConnectionUpdateRequest(L2CapConnectionUpdateRequest),
 
+    /// This event is generated to the application by the GATT server when a client modifies any
+    /// attribute on the server, as consequence of one of the following GATT procedures:
+    /// - write without response
+    /// - signed write without response
+    /// - write characteristic value
+    /// - write long characteristic value
+    /// - reliable write
+    GattAttributeModified(GattAttributeModified),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -204,7 +213,7 @@ pub enum BlueNRGEvent {
 
 /// Newtype for a connection handle. For several events, the only data is a connection handle. Other
 /// events include a connection handle as one of the parameters.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ConnectionHandle(pub u16);
 
 macro_rules! require_len {
@@ -289,6 +298,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             )),
             0x0802 => Ok(BlueNRGEvent::L2CapConnectionUpdateRequest(
                 to_l2cap_connection_update_request(buffer)?,
+            )),
+            0x0C01 => Ok(BlueNRGEvent::GattAttributeModified(
+                to_gatt_attribute_modified(buffer)?,
             )),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
@@ -1088,4 +1100,97 @@ fn to_gap_reconnection_address(buffer: &[u8]) -> Result<BdAddrBuffer, hci::event
     let mut addr = BdAddrBuffer([0; 6]);
     addr.0.copy_from_slice(&buffer[2..]);
     Ok(addr)
+}
+
+/// This event is generated to the application by the GATT server when a client modifies any
+/// attribute on the server, as consequence of one of the following GATT procedures:
+/// - write without response
+/// - signed write without response
+/// - write characteristic value
+/// - write long characteristic value
+/// - reliable write
+#[derive(Copy, Clone, Debug)]
+pub struct GattAttributeModified {
+    /// The connection handle which modified the attribute
+    pub conn_handle: ConnectionHandle,
+    ///  Handle of the attribute that was modified
+    pub attr_handle: AttributeHandle,
+
+    /// Offset of the reported value inside the attribute.
+    #[cfg(feature = "ms")]
+    pub offset: usize,
+
+    /// If the entire value of the attribute does not fit inside a single GattAttributeModified
+    /// event, this is true to notify that other GattAttributeModified events will follow to report
+    /// the remaining value.
+    #[cfg(feature = "ms")]
+    pub continued: bool,
+
+    /// Number of valid bytes in |data|.
+    pub data_len: usize,
+    /// The new attribute value, starting from the given offset. If compiling with "ms" support, the
+    /// offset is 0.
+    pub data: AttributeValueBuffer,
+}
+
+/// Newtype for an attribute handle. These handles are IDs, not general integers, and should not be
+/// manipulated as such.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct AttributeHandle(pub u16);
+
+/// Defines the maximum length of a GATT attribute value field. This is determined by the max packet
+/// size (255) less the minimum number of bytes used by other fields in any packet.
+pub const MAX_ATTRIBUTE_LEN: usize = 248;
+
+/// Newtype for an attribute value.
+#[derive(Copy, Clone)]
+pub struct AttributeValueBuffer(pub [u8; MAX_ATTRIBUTE_LEN]);
+
+impl Debug for AttributeValueBuffer {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        self.0[..16].fmt(f)
+    }
+}
+
+#[cfg(feature = "ms")]
+fn to_gatt_attribute_modified(
+    buffer: &[u8],
+) -> Result<GattAttributeModified, hci::event::Error<Error>> {
+    require_len_at_least!(buffer, 9);
+
+    let data_len = buffer[6] as usize;
+    require_len!(buffer, 9 + data_len);
+
+    let mut data = AttributeValueBuffer([0; MAX_ATTRIBUTE_LEN]);
+    data.0[..data_len].copy_from_slice(&buffer[9..]);
+
+    let offset_field = LittleEndian::read_u16(&buffer[7..]);
+    Ok(GattAttributeModified {
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
+        attr_handle: AttributeHandle(LittleEndian::read_u16(&buffer[4..])),
+        offset: (offset_field & 0x7FFF) as usize,
+        continued: (offset_field & 0x8000) > 0,
+        data_len: data_len,
+        data: data,
+    })
+}
+
+#[cfg(not(feature = "ms"))]
+fn to_gatt_attribute_modified(
+    buffer: &[u8],
+) -> Result<GattAttributeModified, hci::event::Error<Error>> {
+    require_len_at_least!(buffer, 7);
+
+    let data_len = buffer[6] as usize;
+    require_len!(buffer, 7 + data_len);
+
+    let mut data = AttributeValueBuffer([0; MAX_ATTRIBUTE_LEN]);
+    data.0[..data_len].copy_from_slice(&buffer[7..]);
+
+    Ok(GattAttributeModified {
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
+        attr_handle: AttributeHandle(LittleEndian::read_u16(&buffer[4..])),
+        data_len: data_len,
+        data: data,
+    })
 }
