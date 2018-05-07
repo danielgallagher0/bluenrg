@@ -930,3 +930,15 @@ fn gatt_procedure_timeout() {
         other => panic!("Did not get GATT procedure timeout: {:?}", other),
     }
 }
+
+#[test]
+fn gatt_exchange_mtu_response() {
+    let buffer = [0x03, 0x0C, 0x01, 0x02, 0x01, 0x03, 0x04];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattExchangeMtuResponse(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(event.server_rx_mtu, 0x0403);
+        }
+        other => panic!("Did not get GATT Exchange MTU Response: {:?}", other),
+    }
+}

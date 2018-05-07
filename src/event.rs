@@ -210,6 +210,9 @@ pub enum BlueNRGEvent {
     /// successfully.
     GattProcedureTimeout(ConnectionHandle),
 
+    /// This event is generated in response to an Exchange MTU request.
+    GattExchangeMtuResponse(GattExchangeMtuResponse),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -307,6 +310,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
                 to_gatt_attribute_modified(buffer)?,
             )),
             0x0C02 => Ok(BlueNRGEvent::GattProcedureTimeout(to_conn_handle(buffer)?)),
+            0x0C03 => Ok(BlueNRGEvent::GattExchangeMtuResponse(
+                to_gatt_exchange_mtu_resp(buffer)?,
+            )),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
@@ -1197,5 +1203,25 @@ fn to_gatt_attribute_modified(
         attr_handle: AttributeHandle(LittleEndian::read_u16(&buffer[4..])),
         data_len: data_len,
         data: data,
+    })
+}
+
+/// This event is generated in response to an Exchange MTU request.
+#[derive(Copy, Clone, Debug)]
+pub struct GattExchangeMtuResponse {
+    ///  The connection handle related to the response.
+    pub conn_handle: ConnectionHandle,
+
+    /// Attribute server receive MTU size.
+    pub server_rx_mtu: usize,
+}
+
+fn to_gatt_exchange_mtu_resp(
+    buffer: &[u8],
+) -> Result<GattExchangeMtuResponse, hci::event::Error<Error>> {
+    require_len!(buffer, 7);
+    Ok(GattExchangeMtuResponse {
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
+        server_rx_mtu: LittleEndian::read_u16(&buffer[5..]) as usize,
     })
 }
