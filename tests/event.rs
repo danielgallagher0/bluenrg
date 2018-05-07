@@ -919,3 +919,14 @@ fn gatt_attribute_modified_failed_bad_data_len() {
         other => panic!("Did not get bad length: {:?}", other),
     }
 }
+
+#[test]
+fn gatt_procedure_timeout() {
+    let buffer = [0x02, 0x0C, 0x01, 0x02];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattProcedureTimeout(conn_handle)) => {
+            assert_eq!(conn_handle, ConnectionHandle(0x0201));
+        }
+        other => panic!("Did not get GATT procedure timeout: {:?}", other),
+    }
+}

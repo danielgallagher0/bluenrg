@@ -206,6 +206,10 @@ pub enum BlueNRGEvent {
     /// - reliable write
     GattAttributeModified(GattAttributeModified),
 
+    /// This event is generated when a GATT client procedure completes either with error or
+    /// successfully.
+    GattProcedureTimeout(ConnectionHandle),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -302,6 +306,7 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0C01 => Ok(BlueNRGEvent::GattAttributeModified(
                 to_gatt_attribute_modified(buffer)?,
             )),
+            0x0C02 => Ok(BlueNRGEvent::GattProcedureTimeout(to_conn_handle(buffer)?)),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
@@ -873,7 +878,7 @@ fn to_gap_pairing_complete(buffer: &[u8]) -> Result<GapPairingComplete, hci::eve
 }
 
 fn to_conn_handle(buffer: &[u8]) -> Result<ConnectionHandle, hci::event::Error<Error>> {
-    require_len!(buffer, 4);
+    require_len_at_least!(buffer, 4);
     Ok(ConnectionHandle(LittleEndian::read_u16(&buffer[2..])))
 }
 
