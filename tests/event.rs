@@ -942,3 +942,90 @@ fn gatt_exchange_mtu_response() {
         other => panic!("Did not get GATT Exchange MTU Response: {:?}", other),
     }
 }
+
+#[test]
+fn gatt_find_information_response_16bit_uuids() {
+    let buffer = [
+        0x04, 0x0C, 0x01, 0x02, 13, 1, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,
+        0x0d, 0x0e,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattFindInformationResponse(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            if let HandleUuidPairs::Format16(count, pairs) = event.handle_uuid_pairs {
+                assert_eq!(count, 3);
+                assert_eq!(pairs[0].handle, 0x0403);
+                assert_eq!(pairs[0].uuid, 0x0605);
+                assert_eq!(pairs[1].handle, 0x0807);
+                assert_eq!(pairs[1].uuid, 0x0a09);
+                assert_eq!(pairs[2].handle, 0x0c0b);
+                assert_eq!(pairs[2].uuid, 0x0e0d);
+            } else {
+                panic!("Did not get HandleUuidPair::Format16")
+            }
+        }
+        other => panic!("Did not get GATT find info response: {:?}", other),
+    }
+}
+
+#[test]
+fn gatt_find_information_response_128bit_uuids() {
+    let buffer = [
+        0x04, 0x0C, 0x01, 0x02, 37, 2, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,
+        0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b,
+        0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattFindInformationResponse(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            if let HandleUuidPairs::Format128(count, pairs) = event.handle_uuid_pairs {
+                assert_eq!(count, 2);
+                assert_eq!(pairs[0].handle, 0x0403);
+                assert_eq!(
+                    pairs[0].uuid,
+                    Uuid128([
+                        0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10,
+                        0x11, 0x12, 0x13, 0x14,
+                    ])
+                );
+                assert_eq!(pairs[1].handle, 0x1615);
+                assert_eq!(
+                    pairs[1].uuid,
+                    Uuid128([
+                        0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22,
+                        0x23, 0x24, 0x25, 0x26,
+                    ])
+                );
+            } else {
+                panic!("Did not get HandleUuidPair::Format128")
+            }
+        }
+        other => panic!("Did not get GATT find info response: {:?}", other),
+    }
+}
+
+#[test]
+fn gatt_find_information_response_failed_format() {
+    let buffer = [0x04, 0x0C, 0x01, 0x02, 1, 3];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadGattFindInformationResponseFormat(3))) => (),
+        other => panic!(
+            "Did not get bad GATT Find info response format: {:?}",
+            other
+        ),
+    }
+}
+
+#[test]
+fn gatt_find_information_response_failed_partial_uuid() {
+    let buffer = [
+        0x04, 0x0C, 0x01, 0x02, 11, 1, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::GattFindInformationResponsePartialPair16)) => (),
+        other => panic!(
+            "Did not get bad GATT Find info response partial pair: {:?}",
+            other
+        ),
+    }
+}

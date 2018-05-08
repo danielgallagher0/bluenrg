@@ -107,6 +107,18 @@ pub enum Error {
     ///
     /// Inclues the provided value.
     BadL2CapConnectionUpdateRequestTimeoutMult(u16),
+
+    /// For the GATT Find Information Response event: The format code is invalid. Includes the
+    /// unrecognized byte.
+    BadGattFindInformationResponseFormat(u8),
+
+    /// For the GATT Find Information Response event: The format code indicated 16-bit UUIDs, but
+    /// the packet ends with a partial pair.
+    GattFindInformationResponsePartialPair16,
+
+    /// For the GATT Find Information Response event: The format code indicated 128-bit UUIDs, but
+    /// the packet ends with a partial pair.
+    GattFindInformationResponsePartialPair128,
 }
 
 /// Vendor-specific events for the BlueNRG-MS controllers.
@@ -213,6 +225,10 @@ pub enum BlueNRGEvent {
     /// This event is generated in response to an Exchange MTU request.
     GattExchangeMtuResponse(GattExchangeMtuResponse),
 
+    /// This event is generated in response to a Find Information Request. See Find Information
+    /// Response in Bluetooth Core v4.0 spec.
+    GattFindInformationResponse(GattFindInformationResponse),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -312,6 +328,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0C02 => Ok(BlueNRGEvent::GattProcedureTimeout(to_conn_handle(buffer)?)),
             0x0C03 => Ok(BlueNRGEvent::GattExchangeMtuResponse(
                 to_gatt_exchange_mtu_resp(buffer)?,
+            )),
+            0x0C04 => Ok(BlueNRGEvent::GattFindInformationResponse(
+                to_gatt_find_information_response(buffer)?,
             )),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
@@ -1224,4 +1243,150 @@ fn to_gatt_exchange_mtu_resp(
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         server_rx_mtu: LittleEndian::read_u16(&buffer[5..]) as usize,
     })
+}
+
+/// This event is generated in response to a Find Information Request. See Find Information Response
+/// in Bluetooth Core v4.0 spec.
+#[derive(Copy, Clone, Debug)]
+pub struct GattFindInformationResponse {
+    /// The connection handle related to the response
+    pub conn_handle: ConnectionHandle,
+    /// The Find Information Response shall have complete handle-UUID pairs. Such pairs shall not be
+    /// split across response packets; this also implies that a handleUUID pair shall fit into a
+    /// single response packet. The handle-UUID pairs shall be returned in ascending order of
+    /// attribute handles.
+    pub handle_uuid_pairs: HandleUuidPairs,
+}
+
+// Assuming a maximum HCI packet size of 255, these are the maximum number of handle-UUID pairs for
+// each format that can be in one packet.  Formats cannot be mixed in a single packet.
+//
+// Packets have 6 other bytes of data preceding the handle-UUID pairs.
+//
+// max = floor((255 - 6) / pair_length)
+const MAX_FORMAT16_PAIR_COUNT: usize = 62;
+const MAX_FORMAT128_PAIR_COUNT: usize = 13;
+
+/// One format of the handle-UUID pairs in the GattFindInformationResponse event. The UUIDs are
+/// 16 bits.
+#[derive(Copy, Clone, Debug)]
+pub struct HandleUuid16Pair {
+    /// Attribute handle
+    pub handle: u16,
+    /// Attribute UUID
+    pub uuid: u16,
+}
+
+/// One format of the handle-UUID pairs in the GattFindInformationResponse event. The UUIDs are
+/// 128 bits.
+#[derive(Copy, Clone, Debug)]
+pub struct HandleUuid128Pair {
+    /// Attribute handle
+    pub handle: u16,
+    /// Attribute UUID
+    pub uuid: Uuid128,
+}
+
+/// Newtype for the 128-bit UUID buffer.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Uuid128(pub [u8; 16]);
+
+/// Possible formats of handle-UUID pairs in the GattFindInformationResponse.  The first field of
+/// each pair is the number of valid handle-UUID pairs
+#[derive(Copy, Clone)]
+pub enum HandleUuidPairs {
+    /// 16-bit UUIDs.
+    Format16(usize, [HandleUuid16Pair; MAX_FORMAT16_PAIR_COUNT]),
+    /// 128-bit UUIDs.
+    Format128(usize, [HandleUuid128Pair; MAX_FORMAT128_PAIR_COUNT]),
+}
+
+impl Debug for HandleUuidPairs {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "{{")?;
+        match *self {
+            HandleUuidPairs::Format16(count, pairs) => {
+                for handle_uuid_pair in &pairs[..count] {
+                    write!(
+                        f,
+                        "{{{:x}, {:x}}}",
+                        handle_uuid_pair.handle, handle_uuid_pair.uuid
+                    )?
+                }
+            }
+            HandleUuidPairs::Format128(count, pairs) => {
+                for handle_uuid_pair in &pairs[..count] {
+                    write!(
+                        f,
+                        "{{{:x}, {:?}}}",
+                        handle_uuid_pair.handle, handle_uuid_pair.uuid
+                    )?
+                }
+            }
+        }
+        write!(f, "}}")
+    }
+}
+
+fn to_gatt_find_information_response(
+    buffer: &[u8],
+) -> Result<GattFindInformationResponse, hci::event::Error<Error>> {
+    require_len_at_least!(buffer, 6);
+
+    let data_len = buffer[4] as usize;
+    require_len!(buffer, 5 + data_len);
+
+    Ok(GattFindInformationResponse {
+        conn_handle: to_conn_handle(buffer)?,
+        handle_uuid_pairs: match buffer[5] {
+            1 => to_handle_uuid16_pairs(&buffer[6..]).map_err(hci::event::Error::Vendor)?,
+            2 => to_handle_uuid128_pairs(&buffer[6..]).map_err(hci::event::Error::Vendor)?,
+            _ => {
+                return Err(hci::event::Error::Vendor(
+                    Error::BadGattFindInformationResponseFormat(buffer[5]),
+                ));
+            }
+        },
+    })
+}
+
+fn to_handle_uuid16_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, Error> {
+    const PAIR_LEN: usize = 4;
+    if buffer.len() % PAIR_LEN != 0 {
+        return Err(Error::GattFindInformationResponsePartialPair16);
+    }
+
+    let count = buffer.len() / PAIR_LEN;
+    let mut pairs = [HandleUuid16Pair { handle: 0, uuid: 0 }; MAX_FORMAT16_PAIR_COUNT];
+    for i in 0..count {
+        let index = i * PAIR_LEN;
+        pairs[i].handle = LittleEndian::read_u16(&buffer[index..]);
+        pairs[i].uuid = LittleEndian::read_u16(&buffer[2 + index..]);
+    }
+
+    Ok(HandleUuidPairs::Format16(count, pairs))
+}
+
+fn to_handle_uuid128_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, Error> {
+    const PAIR_LEN: usize = 18;
+    if buffer.len() % PAIR_LEN != 0 {
+        return Err(Error::GattFindInformationResponsePartialPair128);
+    }
+
+    let count = buffer.len() / PAIR_LEN;
+    let mut pairs = [HandleUuid128Pair {
+        handle: 0,
+        uuid: Uuid128([0; 16]),
+    }; MAX_FORMAT128_PAIR_COUNT];
+    for i in 0..count {
+        let index = i * PAIR_LEN;
+        let next_index = (i + 1) * PAIR_LEN;
+        pairs[i].handle = LittleEndian::read_u16(&buffer[index..]);
+        pairs[i]
+            .uuid
+            .0
+            .copy_from_slice(&buffer[2 + index..next_index]);
+    }
+
+    Ok(HandleUuidPairs::Format128(count, pairs))
 }
