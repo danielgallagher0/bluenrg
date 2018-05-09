@@ -1029,3 +1029,35 @@ fn gatt_find_information_response_failed_partial_uuid() {
         ),
     }
 }
+
+#[test]
+fn gatt_find_by_type_value_response() {
+    let buffer = [
+        0x05, 0x0C, 0x01, 0x02, 8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattFindByTypeValueResponse(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(event.handle_pair_count, 2);
+            assert_eq!(event.handles[0].attribute, 0x0201);
+            assert_eq!(event.handles[0].group_end, 0x0403);
+            assert_eq!(event.handles[1].attribute, 0x0605);
+            assert_eq!(event.handles[1].group_end, 0x0807);
+        }
+        other => panic!("Did not get find-by-type-value response: {:?}", other),
+    }
+}
+
+#[test]
+fn gatt_find_by_type_value_response_failed_partial_pair() {
+    let buffer = [
+        0x05, 0x0C, 0x01, 0x02, 7, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::GattFindByTypeValuePartial)) => (),
+        other => panic!(
+            "Did not get find-by-type-value response failure: {:?}",
+            other
+        ),
+    }
+}

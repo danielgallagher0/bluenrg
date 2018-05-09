@@ -119,6 +119,10 @@ pub enum Error {
     /// For the GATT Find Information Response event: The format code indicated 128-bit UUIDs, but
     /// the packet ends with a partial pair.
     GattFindInformationResponsePartialPair128,
+
+    /// For the GATT Find by Type Value Response event: The packet ends with a partial attribute
+    /// pair.
+    GattFindByTypeValuePartial,
 }
 
 /// Vendor-specific events for the BlueNRG-MS controllers.
@@ -229,6 +233,9 @@ pub enum BlueNRGEvent {
     /// Response in Bluetooth Core v4.0 spec.
     GattFindInformationResponse(GattFindInformationResponse),
 
+    /// This event is generated in response to a Find By Type Value Request.
+    GattFindByTypeValueResponse(GattFindByTypeValueResponse),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -331,6 +338,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             )),
             0x0C04 => Ok(BlueNRGEvent::GattFindInformationResponse(
                 to_gatt_find_information_response(buffer)?,
+            )),
+            0x0C05 => Ok(BlueNRGEvent::GattFindByTypeValueResponse(
+                to_gatt_find_by_value_type_response(buffer)?,
             )),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
@@ -1389,4 +1399,75 @@ fn to_handle_uuid128_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, Error> {
     }
 
     Ok(HandleUuidPairs::Format128(count, pairs))
+}
+
+/// This event is generated in response to a Find By Type Value Request.
+#[derive(Copy, Clone)]
+pub struct GattFindByTypeValueResponse {
+    /// The connection handle related to the response.
+    pub conn_handle: ConnectionHandle,
+
+    /// The number of valid pairs that follow.
+    pub handle_pair_count: usize,
+
+    /// Handles Information List as defined in Bluetooth Core v4.1 spec.
+    pub handles: [HandleInfoPair; MAX_HANDLE_INFO_PAIR_COUNT],
+}
+
+impl Debug for GattFindByTypeValueResponse {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "{{.conn_handle = {:?}, ", self.conn_handle)?;
+        for handle_pair in &self.handles[..self.handle_pair_count] {
+            write!(f, "{:?}", handle_pair)?;
+        }
+        write!(f, "}}")
+    }
+}
+
+// Assuming a maximum HCI packet size of 255, these are the maximum number of handle pairs that can
+// be in one packet.
+//
+// Packets have 5 other bytes of data preceding the handle-UUID pairs.
+//
+// max = floor((255 - 5) / 4)
+const MAX_HANDLE_INFO_PAIR_COUNT: usize = 62;
+
+/// Simple container for the handle information returned in GattFindByTypeValueResponse.
+#[derive(Copy, Clone, Debug)]
+pub struct HandleInfoPair {
+    /// Attribute handle
+    pub attribute: u16,
+    /// Group End handle
+    pub group_end: u16,
+}
+
+fn to_gatt_find_by_value_type_response(
+    buffer: &[u8],
+) -> Result<GattFindByTypeValueResponse, hci::event::Error<Error>> {
+    require_len_at_least!(buffer, 5);
+
+    let data_len = buffer[4] as usize;
+    require_len!(buffer, 5 + data_len);
+
+    const PAIR_LEN: usize = 4;
+    let pair_buffer = &buffer[5..];
+    if pair_buffer.len() % PAIR_LEN != 0 {
+        return Err(hci::event::Error::Vendor(Error::GattFindByTypeValuePartial));
+    }
+
+    let count = pair_buffer.len() / PAIR_LEN;
+    let mut pairs = [HandleInfoPair {
+        attribute: 0,
+        group_end: 0,
+    }; MAX_HANDLE_INFO_PAIR_COUNT];
+    for i in 0..count {
+        let index = i * PAIR_LEN;
+        pairs[i].attribute = LittleEndian::read_u16(&pair_buffer[index..]);
+        pairs[i].group_end = LittleEndian::read_u16(&pair_buffer[2 + index..]);
+    }
+    Ok(GattFindByTypeValueResponse {
+        conn_handle: to_conn_handle(buffer)?,
+        handle_pair_count: count,
+        handles: pairs,
+    })
 }
