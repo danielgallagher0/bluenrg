@@ -870,8 +870,7 @@ fn gatt_attribute_modified() {
             assert_eq!(event.attr_handle, AttributeHandle(0x0403));
             assert_eq!(event.offset, 0x0605);
             assert_eq!(event.continued, true);
-            assert_eq!(event.data_len, 2);
-            assert_eq!(event.data.0[..2], [0x07, 0x08]);
+            assert_eq!(event.data(), [0x07, 0x08]);
         }
         other => panic!("Did not get Gatt attribute modified: {:?}", other),
     }
@@ -900,8 +899,7 @@ fn gatt_attribute_modified() {
         Ok(BlueNRGEvent::GattAttributeModified(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
             assert_eq!(event.attr_handle, AttributeHandle(0x0403));
-            assert_eq!(event.data_len, 2);
-            assert_eq!(event.data.0[..2], [0x07, 0x08]);
+            assert_eq!(event.data(), [0x07, 0x08]);
         }
         other => panic!("Did not get Gatt attribute modified: {:?}", other),
     }

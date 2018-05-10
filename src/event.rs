@@ -1149,7 +1149,7 @@ fn to_gap_reconnection_address(buffer: &[u8]) -> Result<BdAddrBuffer, hci::event
 /// - write characteristic value
 /// - write long characteristic value
 /// - reliable write
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 pub struct GattAttributeModified {
     /// The connection handle which modified the attribute
     pub conn_handle: ConnectionHandle,
@@ -1167,10 +1167,18 @@ pub struct GattAttributeModified {
     pub continued: bool,
 
     /// Number of valid bytes in |data|.
-    pub data_len: usize,
+    data_len: usize,
     /// The new attribute value, starting from the given offset. If compiling with "ms" support, the
     /// offset is 0.
-    pub data: AttributeValueBuffer,
+    data_buf: [u8; MAX_ATTRIBUTE_LEN],
+}
+
+impl GattAttributeModified {
+    /// Returns the valid attribute data returned by the GATT attribute modified event as a slice of
+    /// bytes.
+    pub fn data(&self) -> &[u8] {
+        &self.data_buf[..self.data_len]
+    }
 }
 
 /// Newtype for an attribute handle. These handles are IDs, not general integers, and should not be
@@ -1178,17 +1186,35 @@ pub struct GattAttributeModified {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct AttributeHandle(pub u16);
 
-/// Defines the maximum length of a GATT attribute value field. This is determined by the max packet
-/// size (255) less the minimum number of bytes used by other fields in any packet.
-pub const MAX_ATTRIBUTE_LEN: usize = 248;
+// Defines the maximum length of a GATT attribute value field. This is determined by the max packet
+// size (255) less the minimum number of bytes used by other fields in any packet.
+const MAX_ATTRIBUTE_LEN: usize = 248;
 
-/// Newtype for an attribute value.
-#[derive(Copy, Clone)]
-pub struct AttributeValueBuffer(pub [u8; MAX_ATTRIBUTE_LEN]);
-
-impl Debug for AttributeValueBuffer {
+impl Debug for GattAttributeModified {
+    #[cfg(feature = "ms")]
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        self.0[..16].fmt(f)
+        let data = self.data();
+        write!(
+            f,
+            "{{conn_handle: {:?}, attr_handle: {:?}, offset: {}, continued: {}, data: {:?}}}",
+            self.conn_handle,
+            self.attr_handle,
+            self.offset,
+            self.continued,
+            if data.len() <= 16 { &data } else { &data[..16] }
+        )
+    }
+
+    #[cfg(not(feature = "ms"))]
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        let data = self.data();
+        write!(
+            f,
+            "{{conn_handle: {:?}, attr_handle: {:?}, data: {:?}}}",
+            self.conn_handle,
+            self.attr_handle,
+            if data.len() <= 16 { &data } else { &data[..16] }
+        )
     }
 }
 
@@ -1201,8 +1227,8 @@ fn to_gatt_attribute_modified(
     let data_len = buffer[6] as usize;
     require_len!(buffer, 9 + data_len);
 
-    let mut data = AttributeValueBuffer([0; MAX_ATTRIBUTE_LEN]);
-    data.0[..data_len].copy_from_slice(&buffer[9..]);
+    let mut data = [0; MAX_ATTRIBUTE_LEN];
+    data[..data_len].copy_from_slice(&buffer[9..]);
 
     let offset_field = LittleEndian::read_u16(&buffer[7..]);
     Ok(GattAttributeModified {
@@ -1211,7 +1237,7 @@ fn to_gatt_attribute_modified(
         offset: (offset_field & 0x7FFF) as usize,
         continued: (offset_field & 0x8000) > 0,
         data_len: data_len,
-        data: data,
+        data_buf: data,
     })
 }
 
@@ -1224,14 +1250,14 @@ fn to_gatt_attribute_modified(
     let data_len = buffer[6] as usize;
     require_len!(buffer, 7 + data_len);
 
-    let mut data = AttributeValueBuffer([0; MAX_ATTRIBUTE_LEN]);
-    data.0[..data_len].copy_from_slice(&buffer[7..]);
+    let mut data = [0; MAX_ATTRIBUTE_LEN];
+    data[..data_len].copy_from_slice(&buffer[7..]);
 
     Ok(GattAttributeModified {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         attr_handle: AttributeHandle(LittleEndian::read_u16(&buffer[4..])),
         data_len: data_len,
-        data: data,
+        data_buf: data,
     })
 }
 
