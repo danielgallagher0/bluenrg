@@ -950,14 +950,23 @@ fn gatt_find_information_response_16bit_uuids() {
     match BlueNRGEvent::new(&buffer) {
         Ok(BlueNRGEvent::GattFindInformationResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
-            if let HandleUuidPairs::Format16(count, pairs) = event.handle_uuid_pairs {
-                assert_eq!(count, 3);
-                assert_eq!(pairs[0].handle, AttributeHandle(0x0403));
-                assert_eq!(pairs[0].uuid, Uuid16(0x0605));
-                assert_eq!(pairs[1].handle, AttributeHandle(0x0807));
-                assert_eq!(pairs[1].uuid, Uuid16(0x0a09));
-                assert_eq!(pairs[2].handle, AttributeHandle(0x0c0b));
-                assert_eq!(pairs[2].uuid, Uuid16(0x0e0d));
+            if let HandleUuidPairIterator::Format16(mut iter) = event.handle_uuid_pair_iter() {
+                let actual = iter.next().unwrap();
+                assert_eq!(actual.handle, AttributeHandle(0x0403));
+                assert_eq!(actual.uuid, Uuid16(0x0605));
+
+                let actual = iter.next().unwrap();
+                assert_eq!(actual.handle, AttributeHandle(0x0807));
+                assert_eq!(actual.uuid, Uuid16(0x0a09));
+
+                let actual = iter.next().unwrap();
+                assert_eq!(actual.handle, AttributeHandle(0x0c0b));
+                assert_eq!(actual.uuid, Uuid16(0x0e0d));
+
+                match iter.next() {
+                    Some(actual) => panic!("Found extra HandleUuidPair: {:?}", actual),
+                    None => (),
+                }
             } else {
                 panic!("Did not get HandleUuidPair::Format16")
             }
@@ -976,24 +985,31 @@ fn gatt_find_information_response_128bit_uuids() {
     match BlueNRGEvent::new(&buffer) {
         Ok(BlueNRGEvent::GattFindInformationResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
-            if let HandleUuidPairs::Format128(count, pairs) = event.handle_uuid_pairs {
-                assert_eq!(count, 2);
-                assert_eq!(pairs[0].handle, AttributeHandle(0x0403));
+            if let HandleUuidPairIterator::Format128(mut iter) = event.handle_uuid_pair_iter() {
+                let actual = iter.next().unwrap();
+                assert_eq!(actual.handle, AttributeHandle(0x0403));
                 assert_eq!(
-                    pairs[0].uuid,
+                    actual.uuid,
                     Uuid128([
                         0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10,
                         0x11, 0x12, 0x13, 0x14,
                     ])
                 );
-                assert_eq!(pairs[1].handle, AttributeHandle(0x1615));
+
+                let actual = iter.next().unwrap();
+                assert_eq!(actual.handle, AttributeHandle(0x1615));
                 assert_eq!(
-                    pairs[1].uuid,
+                    actual.uuid,
                     Uuid128([
                         0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22,
                         0x23, 0x24, 0x25, 0x26,
                     ])
                 );
+
+                match iter.next() {
+                    Some(actual) => panic!("Found extra HandleUuidPair: {:?}", actual),
+                    None => (),
+                }
             } else {
                 panic!("Did not get HandleUuidPair::Format128")
             }

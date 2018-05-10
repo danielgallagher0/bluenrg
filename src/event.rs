@@ -1291,7 +1291,32 @@ pub struct GattFindInformationResponse {
     /// split across response packets; this also implies that a handleUUID pair shall fit into a
     /// single response packet. The handle-UUID pairs shall be returned in ascending order of
     /// attribute handles.
-    pub handle_uuid_pairs: HandleUuidPairs,
+    handle_uuid_pairs: HandleUuidPairs,
+}
+
+impl GattFindInformationResponse {
+    /// The Find Information Response shall have complete handle-UUID pairs. Such pairs shall not be
+    /// split across response packets; this also implies that a handleUUID pair shall fit into a
+    /// single response packet. The handle-UUID pairs shall be returned in ascending order of
+    /// attribute handles.
+    pub fn handle_uuid_pair_iter<'a>(&'a self) -> HandleUuidPairIterator<'a> {
+        match self.handle_uuid_pairs {
+            HandleUuidPairs::Format16(count, ref data) => {
+                HandleUuidPairIterator::Format16(HandleUuid16PairIterator {
+                    data: data,
+                    count: count,
+                    next_index: 0,
+                })
+            }
+            HandleUuidPairs::Format128(count, ref data) => {
+                HandleUuidPairIterator::Format128(HandleUuid128PairIterator {
+                    data: data,
+                    count: count,
+                    next_index: 0,
+                })
+            }
+        }
+    }
 }
 
 // Assuming a maximum HCI packet size of 255, these are the maximum number of handle-UUID pairs for
@@ -1331,13 +1356,9 @@ pub struct Uuid16(pub u16);
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Uuid128(pub [u8; 16]);
 
-/// Possible formats of handle-UUID pairs in the GattFindInformationResponse.  The first field of
-/// each pair is the number of valid handle-UUID pairs
 #[derive(Copy, Clone)]
-pub enum HandleUuidPairs {
-    /// 16-bit UUIDs.
+enum HandleUuidPairs {
     Format16(usize, [HandleUuid16Pair; MAX_FORMAT16_PAIR_COUNT]),
-    /// 128-bit UUIDs.
     Format128(usize, [HandleUuid128Pair; MAX_FORMAT128_PAIR_COUNT]),
 }
 
@@ -1365,6 +1386,55 @@ impl Debug for HandleUuidPairs {
             }
         }
         write!(f, "}}")
+    }
+}
+
+/// Possible iterators over handle-UUID pairs that can be returnedby the GATT find information
+/// response. All pairs from the same event have the same format.
+pub enum HandleUuidPairIterator<'a> {
+    /// The event contains 16-bit UUIDs.
+    Format16(HandleUuid16PairIterator<'a>),
+    /// The event contains 128-bit UUIDs.
+    Format128(HandleUuid128PairIterator<'a>),
+}
+
+/// Iterator over handle-UUID pairs for 16-bit UUIDs.
+pub struct HandleUuid16PairIterator<'a> {
+    data: &'a [HandleUuid16Pair; MAX_FORMAT16_PAIR_COUNT],
+    count: usize,
+    next_index: usize,
+}
+
+impl<'a> Iterator for HandleUuid16PairIterator<'a> {
+    type Item = HandleUuid16Pair;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next_index >= self.count {
+            return None;
+        }
+
+        let index = self.next_index;
+        self.next_index += 1;
+        Some(self.data[index])
+    }
+}
+
+/// Iterator over handle-UUID pairs for 128-bit UUIDs.
+pub struct HandleUuid128PairIterator<'a> {
+    data: &'a [HandleUuid128Pair; MAX_FORMAT128_PAIR_COUNT],
+    count: usize,
+    next_index: usize,
+}
+
+impl<'a> Iterator for HandleUuid128PairIterator<'a> {
+    type Item = HandleUuid128Pair;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next_index >= self.count {
+            return None;
+        }
+
+        let index = self.next_index;
+        self.next_index += 1;
+        Some(self.data[index])
     }
 }
 
