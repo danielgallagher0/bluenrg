@@ -269,6 +269,14 @@ macro_rules! require_len_at_least {
     };
 }
 
+fn first_16(buffer: &[u8]) -> &[u8] {
+    if buffer.len() < 16 {
+        &buffer
+    } else {
+        &buffer[..16]
+    }
+}
+
 impl hci::event::VendorEvent for BlueNRGEvent {
     type Error = Error;
 
@@ -1044,7 +1052,7 @@ pub struct NameBuffer(pub [u8; MAX_NAME_LEN]);
 
 impl Debug for NameBuffer {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        self.0[..16].fmt(f)
+        first_16(&self.0).fmt(f)
     }
 }
 
@@ -1203,7 +1211,6 @@ const MAX_ATTRIBUTE_LEN: usize = 248;
 impl Debug for GattAttributeModified {
     #[cfg(feature = "ms")]
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        let data = self.data();
         write!(
             f,
             "{{conn_handle: {:?}, attr_handle: {:?}, offset: {}, continued: {}, data: {:?}}}",
@@ -1211,19 +1218,18 @@ impl Debug for GattAttributeModified {
             self.attr_handle,
             self.offset,
             self.continued,
-            if data.len() <= 16 { &data } else { &data[..16] }
+            first_16(self.data()),
         )
     }
 
     #[cfg(not(feature = "ms"))]
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        let data = self.data();
         write!(
             f,
             "{{conn_handle: {:?}, attr_handle: {:?}, data: {:?}}}",
             self.conn_handle,
             self.attr_handle,
-            if data.len() <= 16 { &data } else { &data[..16] }
+            first_16(self.data()),
         )
     }
 }
@@ -1638,22 +1644,17 @@ pub struct GattReadByTypeResponse {
 
 // The maximum amount of data in the buffer is the max HCI packet size (255) less the other data in
 // the packet.
-const MAX_HANDLE_VALUE_PAIR_BUF_LEN: usize = 251;
+const MAX_HANDLE_VALUE_PAIR_BUF_LEN: usize = 249;
 
 impl Debug for GattReadByTypeResponse {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(f, "{{.conn_handle = {:?}, ", self.conn_handle)?;
         for handle_value_pair in self.handle_value_pair_iter() {
-            let value = handle_value_pair.value;
             write!(
                 f,
                 "{{handle: {:?}, value: {:?}}}",
                 handle_value_pair.handle,
-                if value.len() <= 16 {
-                    &value
-                } else {
-                    &value[..16]
-                }
+                first_16(handle_value_pair.value)
             )?;
         }
         write!(f, "}}")
