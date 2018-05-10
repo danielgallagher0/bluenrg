@@ -1441,16 +1441,27 @@ pub struct GattFindByTypeValueResponse {
     pub conn_handle: ConnectionHandle,
 
     /// The number of valid pairs that follow.
-    pub handle_pair_count: usize,
+    handle_pair_count: usize,
 
     /// Handles Information List as defined in Bluetooth Core v4.1 spec.
-    pub handles: [HandleInfoPair; MAX_HANDLE_INFO_PAIR_COUNT],
+    handles: [HandleInfoPair; MAX_HANDLE_INFO_PAIR_COUNT],
+}
+
+impl GattFindByTypeValueResponse {
+    /// Returns an iterator over the Handles Information List as defined in Bluetooth Core v4.1
+    /// spec.
+    pub fn handle_pairs_iter<'a>(&'a self) -> HandleInfoPairIterator<'a> {
+        HandleInfoPairIterator {
+            event: &self,
+            next_index: 0,
+        }
+    }
 }
 
 impl Debug for GattFindByTypeValueResponse {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(f, "{{.conn_handle = {:?}, ", self.conn_handle)?;
-        for handle_pair in &self.handles[..self.handle_pair_count] {
+        for handle_pair in self.handle_pairs_iter() {
             write!(f, "{:?}", handle_pair)?;
         }
         write!(f, "}}")
@@ -1477,6 +1488,27 @@ pub struct HandleInfoPair {
 /// Newtype for Group End handles
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct GroupEndHandle(pub u16);
+
+/// Iterator into valid HandleInfoPair structs returned in the GATT Find By Type Value Response
+/// event.
+pub struct HandleInfoPairIterator<'a> {
+    event: &'a GattFindByTypeValueResponse,
+    next_index: usize,
+}
+
+impl<'a> Iterator for HandleInfoPairIterator<'a> {
+    type Item = HandleInfoPair;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next_index >= self.event.handle_pair_count {
+            return None;
+        }
+
+        let index = self.next_index;
+        self.next_index += 1;
+        Some(self.event.handles[index])
+    }
+}
 
 fn to_gatt_find_by_value_type_response(
     buffer: &[u8],

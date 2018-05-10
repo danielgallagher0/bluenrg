@@ -1036,11 +1036,21 @@ fn gatt_find_by_type_value_response() {
     match BlueNRGEvent::new(&buffer) {
         Ok(BlueNRGEvent::GattFindByTypeValueResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
-            assert_eq!(event.handle_pair_count, 2);
-            assert_eq!(event.handles[0].attribute, AttributeHandle(0x0201));
-            assert_eq!(event.handles[0].group_end, GroupEndHandle(0x0403));
-            assert_eq!(event.handles[1].attribute, AttributeHandle(0x0605));
-            assert_eq!(event.handles[1].group_end, GroupEndHandle(0x0807));
+
+            assert_eq!(event.handle_pairs_iter().count(), 2);
+            for (actual, expected) in event.handle_pairs_iter().zip(&[
+                HandleInfoPair {
+                    attribute: AttributeHandle(0x0201),
+                    group_end: GroupEndHandle(0x0403),
+                },
+                HandleInfoPair {
+                    attribute: AttributeHandle(0x0605),
+                    group_end: GroupEndHandle(0x0807),
+                },
+            ]) {
+                assert_eq!(actual.attribute, expected.attribute);
+                assert_eq!(actual.group_end, expected.group_end);
+            }
         }
         other => panic!("Did not get find-by-type-value response: {:?}", other),
     }
