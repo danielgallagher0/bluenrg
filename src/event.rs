@@ -243,6 +243,9 @@ pub enum BlueNRGEvent {
     /// This event is generated in response to a Read by Type Request.
     GattReadByTypeResponse(GattReadByTypeResponse),
 
+    /// This event is generated in response to a Read Request.
+    GattReadResponse(GattReadResponse),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -360,6 +363,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0C06 => Ok(BlueNRGEvent::GattReadByTypeResponse(
                 to_gatt_read_by_type_response(buffer)?,
             )),
+            0x0C07 => Ok(BlueNRGEvent::GattReadResponse(to_gatt_read_response(
+                buffer,
+            )?)),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
@@ -1732,5 +1738,56 @@ fn to_gatt_read_by_type_response(
         data_len: handle_value_pair_buf.len(),
         value_len: handle_value_pair_len - 2,
         handle_value_pair_buf: full_handle_value_pair_buf,
+    })
+}
+
+/// This event is generated in response to a Read Request.
+#[derive(Copy, Clone)]
+pub struct GattReadResponse {
+    /// The connection handle related to the response.
+    pub conn_handle: ConnectionHandle,
+
+    /// The number of valid bytes in the value buffer.
+    value_len: usize,
+
+    /// Buffer containing the value data.
+    value_buf: [u8; MAX_READ_RESPONSE_LEN],
+}
+
+// The maximum amount of data in the buffer is the max HCI packet size (255) less the other data in
+// the packet.
+const MAX_READ_RESPONSE_LEN: usize = 250;
+
+impl Debug for GattReadResponse {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(
+            f,
+            "{{.conn_handle = {:?}, value = {:?}}}",
+            self.conn_handle,
+            first_16(self.value())
+        )
+    }
+}
+
+impl GattReadResponse {
+    /// Returns the valid part of the value data.
+    pub fn value(&self) -> &[u8] {
+        &self.value_buf[..self.value_len]
+    }
+}
+
+fn to_gatt_read_response(buffer: &[u8]) -> Result<GattReadResponse, hci::event::Error<Error>> {
+    require_len_at_least!(buffer, 5);
+
+    let data_len = buffer[4] as usize;
+    require_len!(buffer, 5 + data_len);
+
+    let mut value_buf = [0; MAX_READ_RESPONSE_LEN];
+    value_buf[..data_len].copy_from_slice(&buffer[5..]);
+
+    Ok(GattReadResponse {
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
+        value_len: data_len,
+        value_buf: value_buf,
     })
 }
