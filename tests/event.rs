@@ -1085,3 +1085,43 @@ fn gatt_find_by_type_value_response_failed_partial_pair() {
         ),
     }
 }
+
+#[test]
+fn gatt_read_by_type_response() {
+    let buffer = [
+        0x06, 0x0C, 0x01, 0x02, 13, 6, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x11, 0x12, 0x13, 0x14,
+        0x15, 0x16,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattReadByTypeResponse(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+
+            let mut iter = event.handle_value_pair_iter();
+            let actual = iter.next().unwrap();
+            assert_eq!(actual.handle, AttributeHandle(0x0201));
+            assert_eq!(actual.value, [0x03, 0x04, 0x05, 0x06]);
+
+            let actual = iter.next().unwrap();
+            assert_eq!(actual.handle, AttributeHandle(0x1211));
+            assert_eq!(actual.value, [0x13, 0x14, 0x15, 0x16]);
+
+            match iter.next() {
+                Some(_) => panic!("Found extra HandleValuePair"),
+                None => (),
+            }
+        }
+        other => panic!("Did not get read-by-type response: {:?}", other),
+    }
+}
+
+#[test]
+fn gatt_read_by_type_response_failed_partial_pair() {
+    let buffer = [
+        0x06, 0x0C, 0x01, 0x02, 12, 6, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x11, 0x12, 0x13, 0x14,
+        0x15,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::GattReadByTypeResponsePartial)) => (),
+        other => panic!("Did not get partial read-by-type response: {:?}", other),
+    }
+}

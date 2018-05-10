@@ -123,6 +123,10 @@ pub enum Error {
     /// For the GATT Find by Type Value Response event: The packet ends with a partial attribute
     /// pair.
     GattFindByTypeValuePartial,
+
+    /// For the GATT Read by Type Response event: The packet ends with a partial attribute
+    /// handle-value pair.
+    GattReadByTypeResponsePartial,
 }
 
 /// Vendor-specific events for the BlueNRG-MS controllers.
@@ -236,6 +240,9 @@ pub enum BlueNRGEvent {
     /// This event is generated in response to a Find By Type Value Request.
     GattFindByTypeValueResponse(GattFindByTypeValueResponse),
 
+    /// This event is generated in response to a Read by Type Request.
+    GattReadByTypeResponse(GattReadByTypeResponse),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -341,6 +348,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             )),
             0x0C05 => Ok(BlueNRGEvent::GattFindByTypeValueResponse(
                 to_gatt_find_by_value_type_response(buffer)?,
+            )),
+            0x0C06 => Ok(BlueNRGEvent::GattReadByTypeResponse(
+                to_gatt_read_by_type_response(buffer)?,
             )),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
@@ -1608,5 +1618,118 @@ fn to_gatt_find_by_value_type_response(
         conn_handle: to_conn_handle(buffer)?,
         handle_pair_count: count,
         handles: pairs,
+    })
+}
+
+/// This event is generated in response to a Read By Type Request.
+#[derive(Copy, Clone)]
+pub struct GattReadByTypeResponse {
+    /// The connection handle related to the response.
+    pub conn_handle: ConnectionHandle,
+
+    /// Number of valid bytes in handle_value_pair_buf
+    data_len: usize,
+    /// Length of each value in handle_value_pair_buf
+    value_len: usize,
+    /// Raw data of the response. Contains 2 octets for the attribute handle followed by |value_len|
+    /// octets of value data. These pairs repeat for |data_len| bytes.
+    handle_value_pair_buf: [u8; MAX_HANDLE_VALUE_PAIR_BUF_LEN],
+}
+
+// The maximum amount of data in the buffer is the max HCI packet size (255) less the other data in
+// the packet.
+const MAX_HANDLE_VALUE_PAIR_BUF_LEN: usize = 251;
+
+impl Debug for GattReadByTypeResponse {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "{{.conn_handle = {:?}, ", self.conn_handle)?;
+        for handle_value_pair in self.handle_value_pair_iter() {
+            let value = handle_value_pair.value;
+            write!(
+                f,
+                "{{handle: {:?}, value: {:?}}}",
+                handle_value_pair.handle,
+                if value.len() <= 16 {
+                    &value
+                } else {
+                    &value[..16]
+                }
+            )?;
+        }
+        write!(f, "}}")
+    }
+}
+
+impl GattReadByTypeResponse {
+    /// Return an iterator over all valid handle-value pairs returned with the GATT Read by Type
+    /// response.
+    pub fn handle_value_pair_iter<'a>(&'a self) -> HandleValuePairIterator<'a> {
+        HandleValuePairIterator {
+            event: &self,
+            index: 0,
+        }
+    }
+}
+
+/// Iterator over the valid handle-value pairs returned with the GATT Read by Type response.
+pub struct HandleValuePairIterator<'a> {
+    event: &'a GattReadByTypeResponse,
+    index: usize,
+}
+
+impl<'a> Iterator for HandleValuePairIterator<'a> {
+    type Item = HandleValuePair<'a>;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= self.event.data_len {
+            return None;
+        }
+
+        let handle_index = self.index;
+        let value_index = self.index + 2;
+        self.index += 2 + self.event.value_len;
+        let next_index = self.index;
+        Some(HandleValuePair {
+            handle: AttributeHandle(LittleEndian::read_u16(
+                &self.event.handle_value_pair_buf[handle_index..],
+            )),
+            value: &self.event.handle_value_pair_buf[value_index..next_index],
+        })
+    }
+}
+
+/// A single handle-value pair returned by the GATT Read by Type response.
+pub struct HandleValuePair<'a> {
+    /// Attribute handle
+    pub handle: AttributeHandle,
+    /// Attribute value. The caller must interpret the value correctly, depending on the expected
+    /// type of the attribute.
+    pub value: &'a [u8],
+}
+
+fn to_gatt_read_by_type_response(
+    buffer: &[u8],
+) -> Result<GattReadByTypeResponse, hci::event::Error<Error>> {
+    require_len_at_least!(buffer, 6);
+
+    let data_len = buffer[4] as usize;
+    require_len!(buffer, 5 + data_len);
+
+    let handle_value_pair_len = buffer[5] as usize;
+    let handle_value_pair_buf = &buffer[6..];
+    if handle_value_pair_buf.len() % handle_value_pair_len != 0 {
+        return Err(hci::event::Error::Vendor(
+            Error::GattReadByTypeResponsePartial,
+        ));
+    }
+
+    let mut full_handle_value_pair_buf = [0; MAX_HANDLE_VALUE_PAIR_BUF_LEN];
+    full_handle_value_pair_buf[..handle_value_pair_buf.len()]
+        .copy_from_slice(&handle_value_pair_buf);
+
+    Ok(GattReadByTypeResponse {
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
+        data_len: handle_value_pair_buf.len(),
+        value_len: handle_value_pair_len - 2,
+        handle_value_pair_buf: full_handle_value_pair_buf,
     })
 }
