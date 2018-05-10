@@ -1308,9 +1308,9 @@ const MAX_FORMAT128_PAIR_COUNT: usize = 13;
 #[derive(Copy, Clone, Debug)]
 pub struct HandleUuid16Pair {
     /// Attribute handle
-    pub handle: u16,
+    pub handle: AttributeHandle,
     /// Attribute UUID
-    pub uuid: u16,
+    pub uuid: Uuid16,
 }
 
 /// One format of the handle-UUID pairs in the GattFindInformationResponse event. The UUIDs are
@@ -1318,10 +1318,14 @@ pub struct HandleUuid16Pair {
 #[derive(Copy, Clone, Debug)]
 pub struct HandleUuid128Pair {
     /// Attribute handle
-    pub handle: u16,
+    pub handle: AttributeHandle,
     /// Attribute UUID
     pub uuid: Uuid128,
 }
+
+/// Newtype for the 16-bit UUID buffer.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Uuid16(pub u16);
 
 /// Newtype for the 128-bit UUID buffer.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -1345,7 +1349,7 @@ impl Debug for HandleUuidPairs {
                 for handle_uuid_pair in &pairs[..count] {
                     write!(
                         f,
-                        "{{{:x}, {:x}}}",
+                        "{{{:?}, {:?}}}",
                         handle_uuid_pair.handle, handle_uuid_pair.uuid
                     )?
                 }
@@ -1354,7 +1358,7 @@ impl Debug for HandleUuidPairs {
                 for handle_uuid_pair in &pairs[..count] {
                     write!(
                         f,
-                        "{{{:x}, {:?}}}",
+                        "{{{:?}, {:?}}}",
                         handle_uuid_pair.handle, handle_uuid_pair.uuid
                     )?
                 }
@@ -1393,11 +1397,14 @@ fn to_handle_uuid16_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, Error> {
     }
 
     let count = buffer.len() / PAIR_LEN;
-    let mut pairs = [HandleUuid16Pair { handle: 0, uuid: 0 }; MAX_FORMAT16_PAIR_COUNT];
+    let mut pairs = [HandleUuid16Pair {
+        handle: AttributeHandle(0),
+        uuid: Uuid16(0),
+    }; MAX_FORMAT16_PAIR_COUNT];
     for i in 0..count {
         let index = i * PAIR_LEN;
-        pairs[i].handle = LittleEndian::read_u16(&buffer[index..]);
-        pairs[i].uuid = LittleEndian::read_u16(&buffer[2 + index..]);
+        pairs[i].handle = AttributeHandle(LittleEndian::read_u16(&buffer[index..]));
+        pairs[i].uuid = Uuid16(LittleEndian::read_u16(&buffer[2 + index..]));
     }
 
     Ok(HandleUuidPairs::Format16(count, pairs))
@@ -1411,13 +1418,13 @@ fn to_handle_uuid128_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, Error> {
 
     let count = buffer.len() / PAIR_LEN;
     let mut pairs = [HandleUuid128Pair {
-        handle: 0,
+        handle: AttributeHandle(0),
         uuid: Uuid128([0; 16]),
     }; MAX_FORMAT128_PAIR_COUNT];
     for i in 0..count {
         let index = i * PAIR_LEN;
         let next_index = (i + 1) * PAIR_LEN;
-        pairs[i].handle = LittleEndian::read_u16(&buffer[index..]);
+        pairs[i].handle = AttributeHandle(LittleEndian::read_u16(&buffer[index..]));
         pairs[i]
             .uuid
             .0
@@ -1462,10 +1469,14 @@ const MAX_HANDLE_INFO_PAIR_COUNT: usize = 62;
 #[derive(Copy, Clone, Debug)]
 pub struct HandleInfoPair {
     /// Attribute handle
-    pub attribute: u16,
+    pub attribute: AttributeHandle,
     /// Group End handle
-    pub group_end: u16,
+    pub group_end: GroupEndHandle,
 }
+
+/// Newtype for Group End handles
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct GroupEndHandle(pub u16);
 
 fn to_gatt_find_by_value_type_response(
     buffer: &[u8],
@@ -1483,13 +1494,13 @@ fn to_gatt_find_by_value_type_response(
 
     let count = pair_buffer.len() / PAIR_LEN;
     let mut pairs = [HandleInfoPair {
-        attribute: 0,
-        group_end: 0,
+        attribute: AttributeHandle(0),
+        group_end: GroupEndHandle(0),
     }; MAX_HANDLE_INFO_PAIR_COUNT];
     for i in 0..count {
         let index = i * PAIR_LEN;
-        pairs[i].attribute = LittleEndian::read_u16(&pair_buffer[index..]);
-        pairs[i].group_end = LittleEndian::read_u16(&pair_buffer[2 + index..]);
+        pairs[i].attribute = AttributeHandle(LittleEndian::read_u16(&pair_buffer[index..]));
+        pairs[i].group_end = GroupEndHandle(LittleEndian::read_u16(&pair_buffer[2 + index..]));
     }
     Ok(GattFindByTypeValueResponse {
         conn_handle: to_conn_handle(buffer)?,

@@ -952,12 +952,12 @@ fn gatt_find_information_response_16bit_uuids() {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
             if let HandleUuidPairs::Format16(count, pairs) = event.handle_uuid_pairs {
                 assert_eq!(count, 3);
-                assert_eq!(pairs[0].handle, 0x0403);
-                assert_eq!(pairs[0].uuid, 0x0605);
-                assert_eq!(pairs[1].handle, 0x0807);
-                assert_eq!(pairs[1].uuid, 0x0a09);
-                assert_eq!(pairs[2].handle, 0x0c0b);
-                assert_eq!(pairs[2].uuid, 0x0e0d);
+                assert_eq!(pairs[0].handle, AttributeHandle(0x0403));
+                assert_eq!(pairs[0].uuid, Uuid16(0x0605));
+                assert_eq!(pairs[1].handle, AttributeHandle(0x0807));
+                assert_eq!(pairs[1].uuid, Uuid16(0x0a09));
+                assert_eq!(pairs[2].handle, AttributeHandle(0x0c0b));
+                assert_eq!(pairs[2].uuid, Uuid16(0x0e0d));
             } else {
                 panic!("Did not get HandleUuidPair::Format16")
             }
@@ -978,7 +978,7 @@ fn gatt_find_information_response_128bit_uuids() {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
             if let HandleUuidPairs::Format128(count, pairs) = event.handle_uuid_pairs {
                 assert_eq!(count, 2);
-                assert_eq!(pairs[0].handle, 0x0403);
+                assert_eq!(pairs[0].handle, AttributeHandle(0x0403));
                 assert_eq!(
                     pairs[0].uuid,
                     Uuid128([
@@ -986,7 +986,7 @@ fn gatt_find_information_response_128bit_uuids() {
                         0x11, 0x12, 0x13, 0x14,
                     ])
                 );
-                assert_eq!(pairs[1].handle, 0x1615);
+                assert_eq!(pairs[1].handle, AttributeHandle(0x1615));
                 assert_eq!(
                     pairs[1].uuid,
                     Uuid128([
@@ -1037,10 +1037,10 @@ fn gatt_find_by_type_value_response() {
         Ok(BlueNRGEvent::GattFindByTypeValueResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
             assert_eq!(event.handle_pair_count, 2);
-            assert_eq!(event.handles[0].attribute, 0x0201);
-            assert_eq!(event.handles[0].group_end, 0x0403);
-            assert_eq!(event.handles[1].attribute, 0x0605);
-            assert_eq!(event.handles[1].group_end, 0x0807);
+            assert_eq!(event.handles[0].attribute, AttributeHandle(0x0201));
+            assert_eq!(event.handles[0].group_end, GroupEndHandle(0x0403));
+            assert_eq!(event.handles[1].attribute, AttributeHandle(0x0605));
+            assert_eq!(event.handles[1].group_end, GroupEndHandle(0x0807));
         }
         other => panic!("Did not get find-by-type-value response: {:?}", other),
     }
