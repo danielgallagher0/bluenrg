@@ -1233,3 +1233,48 @@ fn gatt_read_multiple_response_failed() {
         other => panic!("Did not get bad length: {:?}", other),
     }
 }
+
+#[test]
+fn gatt_read_by_group_type_response() {
+    let buffer = [
+        0x0A, 0x0C, 0x01, 0x02, 17, 8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x11, 0x12,
+        0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattReadByGroupTypeResponse(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+
+            let mut iter = event.attribute_data_iter();
+            let actual = iter.next().unwrap();
+            assert_eq!(actual.attribute_handle, AttributeHandle(0x0201));
+            assert_eq!(actual.group_end_handle, GroupEndHandle(0x0403));
+            assert_eq!(actual.value, [0x05, 0x06, 0x07, 0x08]);
+
+            let actual = iter.next().unwrap();
+            assert_eq!(actual.attribute_handle, AttributeHandle(0x1211));
+            assert_eq!(actual.group_end_handle, GroupEndHandle(0x1413));
+            assert_eq!(actual.value, [0x15, 0x16, 0x17, 0x18]);
+
+            match iter.next() {
+                Some(_) => panic!("Found extra HandleValuePair"),
+                None => (),
+            }
+        }
+        other => panic!("Did not get Read by Group Type Response: {:?}", other),
+    }
+}
+
+#[test]
+fn gatt_read_by_group_type_response_failed() {
+    let buffer = [
+        0x0A, 0x0C, 0x01, 0x02, 16, 8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x11, 0x12,
+        0x13, 0x14, 0x15, 0x16, 0x17,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::GattReadByGroupTypeResponsePartial)) => (),
+        other => panic!(
+            "Did not get partial Read by Group Type Response: {:?}",
+            other
+        ),
+    }
+}

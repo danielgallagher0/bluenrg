@@ -127,6 +127,10 @@ pub enum Error {
     /// For the GATT Read by Type Response event: The packet ends with a partial attribute
     /// handle-value pair.
     GattReadByTypeResponsePartial,
+
+    /// For the GATT Read by Group Type Response event: The packet ends with a partial attribute
+    /// data group.
+    GattReadByGroupTypeResponsePartial,
 }
 
 /// Vendor-specific events for the BlueNRG-MS controllers.
@@ -247,14 +251,18 @@ pub enum BlueNRGEvent {
     GattReadResponse(GattReadResponse),
 
     /// This event is generated in response to a Read Blob Request. The value in the response is the
-    /// partial value starting from the offset in the request. See the Bluetooth Core v4.1 spec,
-    /// section 3.4.4.5 and 3.4.4.6.
+    /// partial value starting from the offset in the request. See the Bluetooth Core v4.1 spec, Vol
+    /// 3, section 3.4.4.5 and 3.4.4.6.
     GattReadBlobResponse(GattReadResponse),
 
     /// This event is generated in response to a Read Multiple Request. The value in the response is
-    /// the set of values requested from the request. See the Bluetooth Core v4.1 spec,
+    /// the set of values requested from the request. See the Bluetooth Core v4.1 spec, Vol 3,
     /// section 3.4.4.7 and 3.4.4.8.
     GattReadMultipleResponse(GattReadResponse),
+
+    /// This event is generated in response to a Read By Group Type Request. See the Bluetooth Core
+    /// v4.1 spec, Vol 3, section 3.4.4.9 and 3.4.4.10.
+    GattReadByGroupTypeResponse(GattReadByGroupTypeResponse),
 
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
@@ -381,6 +389,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             )?)),
             0x0C09 => Ok(BlueNRGEvent::GattReadMultipleResponse(
                 to_gatt_read_response(buffer)?,
+            )),
+            0x0C0A => Ok(BlueNRGEvent::GattReadByGroupTypeResponse(
+                to_gatt_read_by_group_type_response(buffer)?,
             )),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
@@ -1805,5 +1816,121 @@ fn to_gatt_read_response(buffer: &[u8]) -> Result<GattReadResponse, hci::event::
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         value_len: data_len,
         value_buf: value_buf,
+    })
+}
+
+/// This event is generated in response to a Read By Group Type Request. See the Bluetooth Core v4.1
+/// spec, Vol 3, section 3.4.4.9 and 3.4.4.10.
+#[derive(Copy, Clone)]
+pub struct GattReadByGroupTypeResponse {
+    ///  The connection handle related to the response.
+    pub conn_handle: ConnectionHandle,
+
+    /// Number of valid bytes in attribute_data_buf
+    data_len: usize,
+
+    /// Length of the attribute data group in attribute_data_buf, including the attribute and group
+    /// end handles.
+    attribute_group_len: usize,
+
+    /// List of attribute data which is a repetition of:
+    /// 1. 2 octets for attribute handle
+    /// 2. 2 octets for end group handle
+    /// 3. (attribute_group_len - 4) octets for attribute value
+    attribute_data_buf: [u8; MAX_ATTRIBUTE_DATA_BUF_LEN],
+}
+
+// The maximum amount of data in the buffer is the max HCI packet size (255) less the other data in
+// the packet.
+const MAX_ATTRIBUTE_DATA_BUF_LEN: usize = 249;
+
+impl GattReadByGroupTypeResponse {
+    /// Create and return an iterator for the attribute data returned with the response.
+    pub fn attribute_data_iter<'a>(&'a self) -> AttributeDataIterator<'a> {
+        AttributeDataIterator {
+            event: self,
+            next_index: 0,
+        }
+    }
+}
+
+impl Debug for GattReadByGroupTypeResponse {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "{{.conn_handle = {:?}, ", self.conn_handle)?;
+        for attribute_data in self.attribute_data_iter() {
+            write!(
+                f,
+                "{{.attribute_handle = {:?}, .group_end_handle = {:?}, .value = {:?}}}",
+                attribute_data.attribute_handle,
+                attribute_data.group_end_handle,
+                first_16(attribute_data.value)
+            )?;
+        }
+        write!(f, "}}")
+    }
+}
+
+/// Iterator over the attribute data returned in the GattReadByGroupTypeResponse.
+pub struct AttributeDataIterator<'a> {
+    event: &'a GattReadByGroupTypeResponse,
+    next_index: usize,
+}
+
+impl<'a> Iterator for AttributeDataIterator<'a> {
+    type Item = AttributeData<'a>;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next_index >= self.event.data_len {
+            return None;
+        }
+
+        let attr_handle_index = self.next_index;
+        let group_end_index = 2 + attr_handle_index;
+        let value_index = 2 + group_end_index;
+        self.next_index += self.event.attribute_group_len;
+        Some(AttributeData {
+            attribute_handle: AttributeHandle(LittleEndian::read_u16(
+                &self.event.attribute_data_buf[attr_handle_index..],
+            )),
+            group_end_handle: GroupEndHandle(LittleEndian::read_u16(
+                &self.event.attribute_data_buf[group_end_index..],
+            )),
+            value: &self.event.attribute_data_buf[value_index..self.next_index],
+        })
+    }
+}
+
+/// Attribute data returned in the GattReadByGroupTypeResponse event.
+pub struct AttributeData<'a> {
+    /// Attribute handle
+    pub attribute_handle: AttributeHandle,
+    /// Group end handle
+    pub group_end_handle: GroupEndHandle,
+    /// Attribute value
+    pub value: &'a [u8],
+}
+
+fn to_gatt_read_by_group_type_response(
+    buffer: &[u8],
+) -> Result<GattReadByGroupTypeResponse, hci::event::Error<Error>> {
+    require_len_at_least!(buffer, 6);
+
+    let data_len = buffer[4] as usize;
+    require_len!(buffer, 5 + data_len);
+
+    let attribute_group_len = buffer[5] as usize;
+
+    if &buffer[6..].len() % attribute_group_len != 0 {
+        return Err(hci::event::Error::Vendor(
+            Error::GattReadByGroupTypeResponsePartial,
+        ));
+    }
+
+    let mut attribute_data_buf = [0; MAX_ATTRIBUTE_DATA_BUF_LEN];
+    attribute_data_buf[..data_len - 1].copy_from_slice(&buffer[6..]);
+    Ok(GattReadByGroupTypeResponse {
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
+        data_len: data_len - 1, // lose 1 byte to attribute_group_len
+        attribute_group_len: attribute_group_len,
+        attribute_data_buf: attribute_data_buf,
     })
 }
