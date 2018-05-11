@@ -246,8 +246,15 @@ pub enum BlueNRGEvent {
     /// This event is generated in response to a Read Request.
     GattReadResponse(GattReadResponse),
 
-    /// This event is generated in response to a Read Blob Request.
+    /// This event is generated in response to a Read Blob Request. The value in the response is the
+    /// partial value starting from the offset in the request. See the Bluetooth Core v4.1 spec,
+    /// section 3.4.4.5 and 3.4.4.6.
     GattReadBlobResponse(GattReadResponse),
+
+    /// This event is generated in response to a Read Multiple Request. The value in the response is
+    /// the set of values requested from the request. See the Bluetooth Core v4.1 spec,
+    /// section 3.4.4.7 and 3.4.4.8.
+    GattReadMultipleResponse(GattReadResponse),
 
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
@@ -372,6 +379,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0C08 => Ok(BlueNRGEvent::GattReadBlobResponse(to_gatt_read_response(
                 buffer,
             )?)),
+            0x0C09 => Ok(BlueNRGEvent::GattReadMultipleResponse(
+                to_gatt_read_response(buffer)?,
+            )),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
