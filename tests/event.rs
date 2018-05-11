@@ -1161,3 +1161,39 @@ fn gatt_read_response_failed() {
         other => panic!("Did not get bad length: {:?}", other),
     }
 }
+
+#[test]
+fn gatt_read_blob_response() {
+    let buffer = [0x08, 0x0C, 0x01, 0x02, 4, 0x01, 0x02, 0x03, 0x04];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattReadBlobResponse(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(event.value(), [0x01, 0x02, 0x03, 0x04]);
+        }
+        other => panic!("Did not get GATT Read Blob Response: {:?}", other),
+    }
+}
+
+#[test]
+fn gatt_read_blob_response_empty() {
+    let buffer = [0x08, 0x0C, 0x01, 0x02, 0];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattReadBlobResponse(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(event.value(), []);
+        }
+        other => panic!("Did not get GATT Read Blob Response: {:?}", other),
+    }
+}
+
+#[test]
+fn gatt_read_blob_response_failed() {
+    let buffer = [0x08, 0x0C, 0x01, 0x02, 2, 0x01];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::BadLength(actual, expected)) => {
+            assert_eq!(actual, buffer.len());
+            assert_eq!(expected, buffer.len() + 1);
+        }
+        other => panic!("Did not get bad length: {:?}", other),
+    }
+}

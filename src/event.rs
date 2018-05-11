@@ -246,6 +246,9 @@ pub enum BlueNRGEvent {
     /// This event is generated in response to a Read Request.
     GattReadResponse(GattReadResponse),
 
+    /// This event is generated in response to a Read Blob Request.
+    GattReadBlobResponse(GattReadResponse),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -364,6 +367,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
                 to_gatt_read_by_type_response(buffer)?,
             )),
             0x0C07 => Ok(BlueNRGEvent::GattReadResponse(to_gatt_read_response(
+                buffer,
+            )?)),
+            0x0C08 => Ok(BlueNRGEvent::GattReadBlobResponse(to_gatt_read_response(
                 buffer,
             )?)),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
