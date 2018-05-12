@@ -306,6 +306,19 @@ pub enum BlueNRGEvent {
     /// UUID), and section 4.8.2 (read using characteristic using UUID).
     GattDiscoverOrReadCharacteristicByUuidResponse(AttributeValue),
 
+    /// This event is given to the application when a write request, write command or signed write
+    /// command is received by the server from the client. This event will be given to the
+    /// application only if the event bit for this event generation is set when the characteristic
+    /// was added. When this event is received, the application has to check whether the value being
+    /// requested for write is allowed to be written and respond with a GATT Write Response. If the
+    /// write is rejected by the application, then the value of the attribute will not be
+    /// modified. In case of a write request, an error response will be sent to the client, with the
+    /// error code as specified by the application. In case of write/signed write commands, no
+    /// response is sent to the client but the attribute is not modified.
+    ///
+    /// See the Bluetooth Core v4.1 spec, Vol 3, Part F, section 3.4.5.
+    AttWritePermitRequest(AttributeValue),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -452,6 +465,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
                     buffer,
                 )?),
             ),
+            0x0C13 => Ok(BlueNRGEvent::AttWritePermitRequest(
+                to_write_permit_request(buffer)?,
+            )),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
@@ -2103,6 +2119,23 @@ fn to_attribute_value(buffer: &[u8]) -> Result<AttributeValue, hci::event::Error
     Ok(AttributeValue {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[5..])),
+        value_len: value_len,
+        value_buf: value_buf,
+    })
+}
+
+fn to_write_permit_request(buffer: &[u8]) -> Result<AttributeValue, hci::event::Error<Error>> {
+    require_len_at_least!(buffer, 7);
+
+    let data_len = buffer[6] as usize;
+    require_len!(buffer, 7 + data_len);
+
+    let value_len = data_len;
+    let mut value_buf = [0; MAX_ATTRIBUTE_VALUE_LEN];
+    value_buf[..value_len].copy_from_slice(&buffer[7..]);
+    Ok(AttributeValue {
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
+        attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[4..])),
         value_len: value_len,
         value_buf: value_buf,
     })
