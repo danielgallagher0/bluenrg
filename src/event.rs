@@ -272,6 +272,9 @@ pub enum BlueNRGEvent {
     /// spec, Vol 3, Part F, section 3.4.6.3 and 3.4.6.4
     AttExecuteWriteResponse(ConnectionHandle),
 
+    /// This event is generated when an indication is received from the server.
+    GattIndication(AttributeValue),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -405,6 +408,7 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0C0D => Ok(BlueNRGEvent::AttExecuteWriteResponse(to_conn_handle(
                 buffer,
             )?)),
+            0x0C0E => Ok(BlueNRGEvent::GattIndication(to_attribute_value(buffer)?)),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
@@ -2002,6 +2006,60 @@ fn to_att_prepare_write_response(
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[5..])),
         offset: LittleEndian::read_u16(&buffer[7..]) as usize,
+        value_len: value_len,
+        value_buf: value_buf,
+    })
+}
+
+/// Defines the attribute value returned by a GATT Indication or GATT Notification event.
+#[derive(Copy, Clone)]
+pub struct AttributeValue {
+    /// The connection handle related to the event
+    pub conn_handle: ConnectionHandle,
+    /// The handle of the attribute
+    pub attribute_handle: AttributeHandle,
+
+    /// Number of valid bytes in value_buf
+    value_len: usize,
+    /// Current value of the attribute. Only the first value_len bytes are valid.
+    value_buf: [u8; MAX_ATTRIBUTE_VALUE_LEN],
+}
+
+// The maximum amount of data in the buffer is the max HCI packet size (255) less the other data in
+// the packet.
+const MAX_ATTRIBUTE_VALUE_LEN: usize = 248;
+
+impl Debug for AttributeValue {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(
+            f,
+            "{{.conn_handle = {:?}, .attribute_handle = {:?}, .value = {:?}}}",
+            self.conn_handle,
+            self.attribute_handle,
+            first_16(self.value())
+        )
+    }
+}
+
+impl AttributeValue {
+    /// Returns the current value of the attribute.
+    pub fn value(&self) -> &[u8] {
+        &self.value_buf[..self.value_len]
+    }
+}
+
+fn to_attribute_value(buffer: &[u8]) -> Result<AttributeValue, hci::event::Error<Error>> {
+    require_len_at_least!(buffer, 7);
+
+    let data_len = buffer[4] as usize;
+    require_len!(buffer, 5 + data_len);
+
+    let value_len = data_len - 2;
+    let mut value_buf = [0; MAX_ATTRIBUTE_VALUE_LEN];
+    value_buf[..value_len].copy_from_slice(&buffer[7..]);
+    Ok(AttributeValue {
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
+        attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[5..])),
         value_len: value_len,
         value_buf: value_buf,
     })

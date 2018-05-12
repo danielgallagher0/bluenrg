@@ -1316,3 +1316,31 @@ fn att_execute_write_response() {
         other => panic!("Did not get ATT Execute Write Response: {:?}", other),
     }
 }
+
+#[test]
+fn gatt_indication() {
+    let buffer = [
+        0x0E, 0x0C, 0x01, 0x02, 6, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattIndication(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(event.attribute_handle, AttributeHandle(0x0403));
+            assert_eq!(event.value(), [0x05, 0x06, 0x07, 0x08]);
+        }
+        other => panic!("Did not get GATT Indication: {:?}", other),
+    }
+}
+
+#[test]
+fn gatt_indication_empty() {
+    let buffer = [0x0E, 0x0C, 0x01, 0x02, 2, 0x03, 0x04];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattIndication(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(event.attribute_handle, AttributeHandle(0x0403));
+            assert_eq!(event.value(), []);
+        }
+        other => panic!("Did not get GATT Indication: {:?}", other),
+    }
+}
