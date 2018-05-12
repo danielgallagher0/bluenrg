@@ -108,29 +108,29 @@ pub enum Error {
     /// Inclues the provided value.
     BadL2CapConnectionUpdateRequestTimeoutMult(u16),
 
-    /// For the GATT Find Information Response event: The format code is invalid. Includes the
+    /// For the ATT Find Information Response event: The format code is invalid. Includes the
     /// unrecognized byte.
-    BadGattFindInformationResponseFormat(u8),
+    BadAttFindInformationResponseFormat(u8),
 
-    /// For the GATT Find Information Response event: The format code indicated 16-bit UUIDs, but
+    /// For the ATT Find Information Response event: The format code indicated 16-bit UUIDs, but
     /// the packet ends with a partial pair.
-    GattFindInformationResponsePartialPair16,
+    AttFindInformationResponsePartialPair16,
 
-    /// For the GATT Find Information Response event: The format code indicated 128-bit UUIDs, but
+    /// For the ATT Find Information Response event: The format code indicated 128-bit UUIDs, but
     /// the packet ends with a partial pair.
-    GattFindInformationResponsePartialPair128,
+    AttFindInformationResponsePartialPair128,
 
-    /// For the GATT Find by Type Value Response event: The packet ends with a partial attribute
+    /// For the ATT Find by Type Value Response event: The packet ends with a partial attribute
     /// pair.
-    GattFindByTypeValuePartial,
+    AttFindByTypeValuePartial,
 
-    /// For the GATT Read by Type Response event: The packet ends with a partial attribute
+    /// For the ATT Read by Type Response event: The packet ends with a partial attribute
     /// handle-value pair.
-    GattReadByTypeResponsePartial,
+    AttReadByTypeResponsePartial,
 
-    /// For the GATT Read by Group Type Response event: The packet ends with a partial attribute
+    /// For the ATT Read by Group Type Response event: The packet ends with a partial attribute
     /// data group.
-    GattReadByGroupTypeResponsePartial,
+    AttReadByGroupTypeResponsePartial,
 }
 
 /// Vendor-specific events for the BlueNRG-MS controllers.
@@ -221,8 +221,8 @@ pub enum BlueNRGEvent {
     /// aci_l2cap_connection_parameter_update_response().
     L2CapConnectionUpdateRequest(L2CapConnectionUpdateRequest),
 
-    /// This event is generated to the application by the GATT server when a client modifies any
-    /// attribute on the server, as consequence of one of the following GATT procedures:
+    /// This event is generated to the application by the ATT server when a client modifies any
+    /// attribute on the server, as consequence of one of the following ATT procedures:
     /// - write without response
     /// - signed write without response
     /// - write characteristic value
@@ -230,47 +230,47 @@ pub enum BlueNRGEvent {
     /// - reliable write
     GattAttributeModified(GattAttributeModified),
 
-    /// This event is generated when a GATT client procedure completes either with error or
+    /// This event is generated when a ATT client procedure completes either with error or
     /// successfully.
     GattProcedureTimeout(ConnectionHandle),
 
     /// This event is generated in response to an Exchange MTU request.
-    GattExchangeMtuResponse(GattExchangeMtuResponse),
+    AttExchangeMtuResponse(AttExchangeMtuResponse),
 
     /// This event is generated in response to a Find Information Request. See Find Information
     /// Response in Bluetooth Core v4.0 spec.
-    GattFindInformationResponse(GattFindInformationResponse),
+    AttFindInformationResponse(AttFindInformationResponse),
 
     /// This event is generated in response to a Find By Type Value Request.
-    GattFindByTypeValueResponse(GattFindByTypeValueResponse),
+    AttFindByTypeValueResponse(AttFindByTypeValueResponse),
 
     /// This event is generated in response to a Read by Type Request.
-    GattReadByTypeResponse(GattReadByTypeResponse),
+    AttReadByTypeResponse(AttReadByTypeResponse),
 
     /// This event is generated in response to a Read Request.
-    GattReadResponse(GattReadResponse),
+    AttReadResponse(AttReadResponse),
 
     /// This event is generated in response to a Read Blob Request. The value in the response is the
     /// partial value starting from the offset in the request. See the Bluetooth Core v4.1 spec, Vol
     /// 3, section 3.4.4.5 and 3.4.4.6.
-    GattReadBlobResponse(GattReadResponse),
+    AttReadBlobResponse(AttReadResponse),
 
     /// This event is generated in response to a Read Multiple Request. The value in the response is
     /// the set of values requested from the request. See the Bluetooth Core v4.1 spec, Vol 3,
     /// section 3.4.4.7 and 3.4.4.8.
-    GattReadMultipleResponse(GattReadResponse),
+    AttReadMultipleResponse(AttReadResponse),
 
     /// This event is generated in response to a Read By Group Type Request. See the Bluetooth Core
     /// v4.1 spec, Vol 3, section 3.4.4.9 and 3.4.4.10.
-    GattReadByGroupTypeResponse(GattReadByGroupTypeResponse),
+    AttReadByGroupTypeResponse(AttReadByGroupTypeResponse),
 
     /// This event is generated in response to a Prepare Write Request. See the Bluetooth Core v4.1
     /// spec, Vol 3, Part F, section 3.4.6.1 and 3.4.6.2
-    GattPrepareWriteResponse(GattPrepareWriteResponse),
+    AttPrepareWriteResponse(AttPrepareWriteResponse),
 
     /// This event is generated in response to an Execute Write Request. See the Bluetooth Core v4.1
     /// spec, Vol 3, Part F, section 3.4.6.3 and 3.4.6.4
-    GattExecuteWriteResponse(ConnectionHandle),
+    AttExecuteWriteResponse(ConnectionHandle),
 
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
@@ -377,34 +377,32 @@ impl hci::event::VendorEvent for BlueNRGEvent {
                 to_gatt_attribute_modified(buffer)?,
             )),
             0x0C02 => Ok(BlueNRGEvent::GattProcedureTimeout(to_conn_handle(buffer)?)),
-            0x0C03 => Ok(BlueNRGEvent::GattExchangeMtuResponse(
-                to_gatt_exchange_mtu_resp(buffer)?,
+            0x0C03 => Ok(BlueNRGEvent::AttExchangeMtuResponse(
+                to_att_exchange_mtu_resp(buffer)?,
             )),
-            0x0C04 => Ok(BlueNRGEvent::GattFindInformationResponse(
-                to_gatt_find_information_response(buffer)?,
+            0x0C04 => Ok(BlueNRGEvent::AttFindInformationResponse(
+                to_att_find_information_response(buffer)?,
             )),
-            0x0C05 => Ok(BlueNRGEvent::GattFindByTypeValueResponse(
-                to_gatt_find_by_value_type_response(buffer)?,
+            0x0C05 => Ok(BlueNRGEvent::AttFindByTypeValueResponse(
+                to_att_find_by_value_type_response(buffer)?,
             )),
-            0x0C06 => Ok(BlueNRGEvent::GattReadByTypeResponse(
-                to_gatt_read_by_type_response(buffer)?,
+            0x0C06 => Ok(BlueNRGEvent::AttReadByTypeResponse(
+                to_att_read_by_type_response(buffer)?,
             )),
-            0x0C07 => Ok(BlueNRGEvent::GattReadResponse(to_gatt_read_response(
+            0x0C07 => Ok(BlueNRGEvent::AttReadResponse(to_att_read_response(buffer)?)),
+            0x0C08 => Ok(BlueNRGEvent::AttReadBlobResponse(to_att_read_response(
                 buffer,
             )?)),
-            0x0C08 => Ok(BlueNRGEvent::GattReadBlobResponse(to_gatt_read_response(
+            0x0C09 => Ok(BlueNRGEvent::AttReadMultipleResponse(to_att_read_response(
                 buffer,
             )?)),
-            0x0C09 => Ok(BlueNRGEvent::GattReadMultipleResponse(
-                to_gatt_read_response(buffer)?,
+            0x0C0A => Ok(BlueNRGEvent::AttReadByGroupTypeResponse(
+                to_att_read_by_group_type_response(buffer)?,
             )),
-            0x0C0A => Ok(BlueNRGEvent::GattReadByGroupTypeResponse(
-                to_gatt_read_by_group_type_response(buffer)?,
+            0x0C0C => Ok(BlueNRGEvent::AttPrepareWriteResponse(
+                to_att_prepare_write_response(buffer)?,
             )),
-            0x0C0C => Ok(BlueNRGEvent::GattPrepareWriteResponse(
-                to_gatt_prepare_write_response(buffer)?,
-            )),
-            0x0C0D => Ok(BlueNRGEvent::GattExecuteWriteResponse(to_conn_handle(
+            0x0C0D => Ok(BlueNRGEvent::AttExecuteWriteResponse(to_conn_handle(
                 buffer,
             )?)),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
@@ -515,9 +513,9 @@ bitflags! {
         const L2CAP_PROCEDURE_TIMEOUT = 1 << 18;
         /// BlueNRG Event: L2Cap Connection Update Request
         const L2CAP_CONNECTION_UPDATE_REQUEST = 1 << 19;
-        /// BlueNRG Event: GATT Attribute modified
+        /// BlueNRG Event: ATT Attribute modified
         const GATT_ATTRIBUTE_MODIFIED = 1 << 20;
-        /// BlueNRG Event: GATT timeout
+        /// BlueNRG Event: ATT timeout
         const GATT_PROCEDURE_TIMEOUT = 1 << 21;
         /// BlueNRG Event: Exchange MTU Response
         const ATT_EXCHANGE_MTU_RESPONSE = 1 << 22;
@@ -535,7 +533,7 @@ bitflags! {
         const ATT_READ_MULTIPLE_RESPONSE = 1 << 28;
         /// BlueNRG Event: Read by group type response
         const ATT_READ_BY_GROUP_TYPE_RESPONSE = 1 << 29;
-        /// BlueNRG Event: GATT Write Response
+        /// BlueNRG Event: ATT Write Response
         const ATT_WRITE_RESPONSE = 1 << 30;
         /// BlueNRG Event: Prepare Write Response
         const ATT_PREPARE_WRITE_RESPONSE = 1 << 31;
@@ -545,7 +543,7 @@ bitflags! {
         const GATT_INDICATION = 1 << 33;
         /// BlueNRG Event: Notification received from server
         const GATT_NOTIFICATION = 1 << 34;
-        /// BlueNRG Event: GATT Procedure complete
+        /// BlueNRG Event: ATT Procedure complete
         const GATT_PROCEDURE_COMPLETE = 1 << 35;
         /// BlueNRG Event: Error response received from server
         const GATT_ERROR_RESPONSE = 1 << 36;
@@ -1207,8 +1205,8 @@ fn to_gap_reconnection_address(buffer: &[u8]) -> Result<BdAddrBuffer, hci::event
     Ok(addr)
 }
 
-/// This event is generated to the application by the GATT server when a client modifies any
-/// attribute on the server, as consequence of one of the following GATT procedures:
+/// This event is generated to the application by the ATT server when a client modifies any
+/// attribute on the server, as consequence of one of the following ATT procedures:
 /// - write without response
 /// - signed write without response
 /// - write characteristic value
@@ -1239,7 +1237,7 @@ pub struct GattAttributeModified {
 }
 
 impl GattAttributeModified {
-    /// Returns the valid attribute data returned by the GATT attribute modified event as a slice of
+    /// Returns the valid attribute data returned by the ATT attribute modified event as a slice of
     /// bytes.
     pub fn data(&self) -> &[u8] {
         &self.data_buf[..self.data_len]
@@ -1251,7 +1249,7 @@ impl GattAttributeModified {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct AttributeHandle(pub u16);
 
-// Defines the maximum length of a GATT attribute value field. This is determined by the max packet
+// Defines the maximum length of a ATT attribute value field. This is determined by the max packet
 // size (255) less the minimum number of bytes used by other fields in any packet.
 const MAX_ATTRIBUTE_LEN: usize = 248;
 
@@ -1326,7 +1324,7 @@ fn to_gatt_attribute_modified(
 
 /// This event is generated in response to an Exchange MTU request.
 #[derive(Copy, Clone, Debug)]
-pub struct GattExchangeMtuResponse {
+pub struct AttExchangeMtuResponse {
     ///  The connection handle related to the response.
     pub conn_handle: ConnectionHandle,
 
@@ -1334,11 +1332,11 @@ pub struct GattExchangeMtuResponse {
     pub server_rx_mtu: usize,
 }
 
-fn to_gatt_exchange_mtu_resp(
+fn to_att_exchange_mtu_resp(
     buffer: &[u8],
-) -> Result<GattExchangeMtuResponse, hci::event::Error<Error>> {
+) -> Result<AttExchangeMtuResponse, hci::event::Error<Error>> {
     require_len!(buffer, 7);
-    Ok(GattExchangeMtuResponse {
+    Ok(AttExchangeMtuResponse {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         server_rx_mtu: LittleEndian::read_u16(&buffer[5..]) as usize,
     })
@@ -1347,7 +1345,7 @@ fn to_gatt_exchange_mtu_resp(
 /// This event is generated in response to a Find Information Request. See Find Information Response
 /// in Bluetooth Core v4.0 spec.
 #[derive(Copy, Clone, Debug)]
-pub struct GattFindInformationResponse {
+pub struct AttFindInformationResponse {
     /// The connection handle related to the response
     pub conn_handle: ConnectionHandle,
     /// The Find Information Response shall have complete handle-UUID pairs. Such pairs shall not be
@@ -1357,7 +1355,7 @@ pub struct GattFindInformationResponse {
     handle_uuid_pairs: HandleUuidPairs,
 }
 
-impl GattFindInformationResponse {
+impl AttFindInformationResponse {
     /// The Find Information Response shall have complete handle-UUID pairs. Such pairs shall not be
     /// split across response packets; this also implies that a handleUUID pair shall fit into a
     /// single response packet. The handle-UUID pairs shall be returned in ascending order of
@@ -1391,7 +1389,7 @@ impl GattFindInformationResponse {
 const MAX_FORMAT16_PAIR_COUNT: usize = 62;
 const MAX_FORMAT128_PAIR_COUNT: usize = 13;
 
-/// One format of the handle-UUID pairs in the GattFindInformationResponse event. The UUIDs are
+/// One format of the handle-UUID pairs in the AttFindInformationResponse event. The UUIDs are
 /// 16 bits.
 #[derive(Copy, Clone, Debug)]
 pub struct HandleUuid16Pair {
@@ -1401,7 +1399,7 @@ pub struct HandleUuid16Pair {
     pub uuid: Uuid16,
 }
 
-/// One format of the handle-UUID pairs in the GattFindInformationResponse event. The UUIDs are
+/// One format of the handle-UUID pairs in the AttFindInformationResponse event. The UUIDs are
 /// 128 bits.
 #[derive(Copy, Clone, Debug)]
 pub struct HandleUuid128Pair {
@@ -1452,7 +1450,7 @@ impl Debug for HandleUuidPairs {
     }
 }
 
-/// Possible iterators over handle-UUID pairs that can be returnedby the GATT find information
+/// Possible iterators over handle-UUID pairs that can be returnedby the ATT find information
 /// response. All pairs from the same event have the same format.
 pub enum HandleUuidPairIterator<'a> {
     /// The event contains 16-bit UUIDs.
@@ -1501,22 +1499,22 @@ impl<'a> Iterator for HandleUuid128PairIterator<'a> {
     }
 }
 
-fn to_gatt_find_information_response(
+fn to_att_find_information_response(
     buffer: &[u8],
-) -> Result<GattFindInformationResponse, hci::event::Error<Error>> {
+) -> Result<AttFindInformationResponse, hci::event::Error<Error>> {
     require_len_at_least!(buffer, 6);
 
     let data_len = buffer[4] as usize;
     require_len!(buffer, 5 + data_len);
 
-    Ok(GattFindInformationResponse {
+    Ok(AttFindInformationResponse {
         conn_handle: to_conn_handle(buffer)?,
         handle_uuid_pairs: match buffer[5] {
             1 => to_handle_uuid16_pairs(&buffer[6..]).map_err(hci::event::Error::Vendor)?,
             2 => to_handle_uuid128_pairs(&buffer[6..]).map_err(hci::event::Error::Vendor)?,
             _ => {
                 return Err(hci::event::Error::Vendor(
-                    Error::BadGattFindInformationResponseFormat(buffer[5]),
+                    Error::BadAttFindInformationResponseFormat(buffer[5]),
                 ));
             }
         },
@@ -1526,7 +1524,7 @@ fn to_gatt_find_information_response(
 fn to_handle_uuid16_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, Error> {
     const PAIR_LEN: usize = 4;
     if buffer.len() % PAIR_LEN != 0 {
-        return Err(Error::GattFindInformationResponsePartialPair16);
+        return Err(Error::AttFindInformationResponsePartialPair16);
     }
 
     let count = buffer.len() / PAIR_LEN;
@@ -1546,7 +1544,7 @@ fn to_handle_uuid16_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, Error> {
 fn to_handle_uuid128_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, Error> {
     const PAIR_LEN: usize = 18;
     if buffer.len() % PAIR_LEN != 0 {
-        return Err(Error::GattFindInformationResponsePartialPair128);
+        return Err(Error::AttFindInformationResponsePartialPair128);
     }
 
     let count = buffer.len() / PAIR_LEN;
@@ -1569,7 +1567,7 @@ fn to_handle_uuid128_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, Error> {
 
 /// This event is generated in response to a Find By Type Value Request.
 #[derive(Copy, Clone)]
-pub struct GattFindByTypeValueResponse {
+pub struct AttFindByTypeValueResponse {
     /// The connection handle related to the response.
     pub conn_handle: ConnectionHandle,
 
@@ -1580,7 +1578,7 @@ pub struct GattFindByTypeValueResponse {
     handles: [HandleInfoPair; MAX_HANDLE_INFO_PAIR_COUNT],
 }
 
-impl GattFindByTypeValueResponse {
+impl AttFindByTypeValueResponse {
     /// Returns an iterator over the Handles Information List as defined in Bluetooth Core v4.1
     /// spec.
     pub fn handle_pairs_iter<'a>(&'a self) -> HandleInfoPairIterator<'a> {
@@ -1591,7 +1589,7 @@ impl GattFindByTypeValueResponse {
     }
 }
 
-impl Debug for GattFindByTypeValueResponse {
+impl Debug for AttFindByTypeValueResponse {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(f, "{{.conn_handle = {:?}, ", self.conn_handle)?;
         for handle_pair in self.handle_pairs_iter() {
@@ -1609,7 +1607,7 @@ impl Debug for GattFindByTypeValueResponse {
 // max = floor((255 - 5) / 4)
 const MAX_HANDLE_INFO_PAIR_COUNT: usize = 62;
 
-/// Simple container for the handle information returned in GattFindByTypeValueResponse.
+/// Simple container for the handle information returned in AttFindByTypeValueResponse.
 #[derive(Copy, Clone, Debug)]
 pub struct HandleInfoPair {
     /// Attribute handle
@@ -1622,10 +1620,10 @@ pub struct HandleInfoPair {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct GroupEndHandle(pub u16);
 
-/// Iterator into valid HandleInfoPair structs returned in the GATT Find By Type Value Response
+/// Iterator into valid HandleInfoPair structs returned in the ATT Find By Type Value Response
 /// event.
 pub struct HandleInfoPairIterator<'a> {
-    event: &'a GattFindByTypeValueResponse,
+    event: &'a AttFindByTypeValueResponse,
     next_index: usize,
 }
 
@@ -1643,9 +1641,9 @@ impl<'a> Iterator for HandleInfoPairIterator<'a> {
     }
 }
 
-fn to_gatt_find_by_value_type_response(
+fn to_att_find_by_value_type_response(
     buffer: &[u8],
-) -> Result<GattFindByTypeValueResponse, hci::event::Error<Error>> {
+) -> Result<AttFindByTypeValueResponse, hci::event::Error<Error>> {
     require_len_at_least!(buffer, 5);
 
     let data_len = buffer[4] as usize;
@@ -1654,7 +1652,7 @@ fn to_gatt_find_by_value_type_response(
     const PAIR_LEN: usize = 4;
     let pair_buffer = &buffer[5..];
     if pair_buffer.len() % PAIR_LEN != 0 {
-        return Err(hci::event::Error::Vendor(Error::GattFindByTypeValuePartial));
+        return Err(hci::event::Error::Vendor(Error::AttFindByTypeValuePartial));
     }
 
     let count = pair_buffer.len() / PAIR_LEN;
@@ -1667,7 +1665,7 @@ fn to_gatt_find_by_value_type_response(
         pairs[i].attribute = AttributeHandle(LittleEndian::read_u16(&pair_buffer[index..]));
         pairs[i].group_end = GroupEndHandle(LittleEndian::read_u16(&pair_buffer[2 + index..]));
     }
-    Ok(GattFindByTypeValueResponse {
+    Ok(AttFindByTypeValueResponse {
         conn_handle: to_conn_handle(buffer)?,
         handle_pair_count: count,
         handles: pairs,
@@ -1676,7 +1674,7 @@ fn to_gatt_find_by_value_type_response(
 
 /// This event is generated in response to a Read By Type Request.
 #[derive(Copy, Clone)]
-pub struct GattReadByTypeResponse {
+pub struct AttReadByTypeResponse {
     /// The connection handle related to the response.
     pub conn_handle: ConnectionHandle,
 
@@ -1693,7 +1691,7 @@ pub struct GattReadByTypeResponse {
 // the packet.
 const MAX_HANDLE_VALUE_PAIR_BUF_LEN: usize = 249;
 
-impl Debug for GattReadByTypeResponse {
+impl Debug for AttReadByTypeResponse {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(f, "{{.conn_handle = {:?}, ", self.conn_handle)?;
         for handle_value_pair in self.handle_value_pair_iter() {
@@ -1708,8 +1706,8 @@ impl Debug for GattReadByTypeResponse {
     }
 }
 
-impl GattReadByTypeResponse {
-    /// Return an iterator over all valid handle-value pairs returned with the GATT Read by Type
+impl AttReadByTypeResponse {
+    /// Return an iterator over all valid handle-value pairs returned with the ATT Read by Type
     /// response.
     pub fn handle_value_pair_iter<'a>(&'a self) -> HandleValuePairIterator<'a> {
         HandleValuePairIterator {
@@ -1719,9 +1717,9 @@ impl GattReadByTypeResponse {
     }
 }
 
-/// Iterator over the valid handle-value pairs returned with the GATT Read by Type response.
+/// Iterator over the valid handle-value pairs returned with the ATT Read by Type response.
 pub struct HandleValuePairIterator<'a> {
-    event: &'a GattReadByTypeResponse,
+    event: &'a AttReadByTypeResponse,
     index: usize,
 }
 
@@ -1745,7 +1743,7 @@ impl<'a> Iterator for HandleValuePairIterator<'a> {
     }
 }
 
-/// A single handle-value pair returned by the GATT Read by Type response.
+/// A single handle-value pair returned by the ATT Read by Type response.
 pub struct HandleValuePair<'a> {
     /// Attribute handle
     pub handle: AttributeHandle,
@@ -1754,9 +1752,9 @@ pub struct HandleValuePair<'a> {
     pub value: &'a [u8],
 }
 
-fn to_gatt_read_by_type_response(
+fn to_att_read_by_type_response(
     buffer: &[u8],
-) -> Result<GattReadByTypeResponse, hci::event::Error<Error>> {
+) -> Result<AttReadByTypeResponse, hci::event::Error<Error>> {
     require_len_at_least!(buffer, 6);
 
     let data_len = buffer[4] as usize;
@@ -1766,7 +1764,7 @@ fn to_gatt_read_by_type_response(
     let handle_value_pair_buf = &buffer[6..];
     if handle_value_pair_buf.len() % handle_value_pair_len != 0 {
         return Err(hci::event::Error::Vendor(
-            Error::GattReadByTypeResponsePartial,
+            Error::AttReadByTypeResponsePartial,
         ));
     }
 
@@ -1774,7 +1772,7 @@ fn to_gatt_read_by_type_response(
     full_handle_value_pair_buf[..handle_value_pair_buf.len()]
         .copy_from_slice(&handle_value_pair_buf);
 
-    Ok(GattReadByTypeResponse {
+    Ok(AttReadByTypeResponse {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         data_len: handle_value_pair_buf.len(),
         value_len: handle_value_pair_len - 2,
@@ -1784,7 +1782,7 @@ fn to_gatt_read_by_type_response(
 
 /// This event is generated in response to a Read Request.
 #[derive(Copy, Clone)]
-pub struct GattReadResponse {
+pub struct AttReadResponse {
     /// The connection handle related to the response.
     pub conn_handle: ConnectionHandle,
 
@@ -1799,7 +1797,7 @@ pub struct GattReadResponse {
 // the packet.
 const MAX_READ_RESPONSE_LEN: usize = 250;
 
-impl Debug for GattReadResponse {
+impl Debug for AttReadResponse {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(
             f,
@@ -1810,14 +1808,14 @@ impl Debug for GattReadResponse {
     }
 }
 
-impl GattReadResponse {
+impl AttReadResponse {
     /// Returns the valid part of the value data.
     pub fn value(&self) -> &[u8] {
         &self.value_buf[..self.value_len]
     }
 }
 
-fn to_gatt_read_response(buffer: &[u8]) -> Result<GattReadResponse, hci::event::Error<Error>> {
+fn to_att_read_response(buffer: &[u8]) -> Result<AttReadResponse, hci::event::Error<Error>> {
     require_len_at_least!(buffer, 5);
 
     let data_len = buffer[4] as usize;
@@ -1826,7 +1824,7 @@ fn to_gatt_read_response(buffer: &[u8]) -> Result<GattReadResponse, hci::event::
     let mut value_buf = [0; MAX_READ_RESPONSE_LEN];
     value_buf[..data_len].copy_from_slice(&buffer[5..]);
 
-    Ok(GattReadResponse {
+    Ok(AttReadResponse {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         value_len: data_len,
         value_buf: value_buf,
@@ -1836,7 +1834,7 @@ fn to_gatt_read_response(buffer: &[u8]) -> Result<GattReadResponse, hci::event::
 /// This event is generated in response to a Read By Group Type Request. See the Bluetooth Core v4.1
 /// spec, Vol 3, section 3.4.4.9 and 3.4.4.10.
 #[derive(Copy, Clone)]
-pub struct GattReadByGroupTypeResponse {
+pub struct AttReadByGroupTypeResponse {
     ///  The connection handle related to the response.
     pub conn_handle: ConnectionHandle,
 
@@ -1858,7 +1856,7 @@ pub struct GattReadByGroupTypeResponse {
 // the packet.
 const MAX_ATTRIBUTE_DATA_BUF_LEN: usize = 249;
 
-impl GattReadByGroupTypeResponse {
+impl AttReadByGroupTypeResponse {
     /// Create and return an iterator for the attribute data returned with the response.
     pub fn attribute_data_iter<'a>(&'a self) -> AttributeDataIterator<'a> {
         AttributeDataIterator {
@@ -1868,7 +1866,7 @@ impl GattReadByGroupTypeResponse {
     }
 }
 
-impl Debug for GattReadByGroupTypeResponse {
+impl Debug for AttReadByGroupTypeResponse {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(f, "{{.conn_handle = {:?}, ", self.conn_handle)?;
         for attribute_data in self.attribute_data_iter() {
@@ -1884,9 +1882,9 @@ impl Debug for GattReadByGroupTypeResponse {
     }
 }
 
-/// Iterator over the attribute data returned in the GattReadByGroupTypeResponse.
+/// Iterator over the attribute data returned in the AttReadByGroupTypeResponse.
 pub struct AttributeDataIterator<'a> {
-    event: &'a GattReadByGroupTypeResponse,
+    event: &'a AttReadByGroupTypeResponse,
     next_index: usize,
 }
 
@@ -1913,7 +1911,7 @@ impl<'a> Iterator for AttributeDataIterator<'a> {
     }
 }
 
-/// Attribute data returned in the GattReadByGroupTypeResponse event.
+/// Attribute data returned in the AttReadByGroupTypeResponse event.
 pub struct AttributeData<'a> {
     /// Attribute handle
     pub attribute_handle: AttributeHandle,
@@ -1923,9 +1921,9 @@ pub struct AttributeData<'a> {
     pub value: &'a [u8],
 }
 
-fn to_gatt_read_by_group_type_response(
+fn to_att_read_by_group_type_response(
     buffer: &[u8],
-) -> Result<GattReadByGroupTypeResponse, hci::event::Error<Error>> {
+) -> Result<AttReadByGroupTypeResponse, hci::event::Error<Error>> {
     require_len_at_least!(buffer, 6);
 
     let data_len = buffer[4] as usize;
@@ -1935,13 +1933,13 @@ fn to_gatt_read_by_group_type_response(
 
     if &buffer[6..].len() % attribute_group_len != 0 {
         return Err(hci::event::Error::Vendor(
-            Error::GattReadByGroupTypeResponsePartial,
+            Error::AttReadByGroupTypeResponsePartial,
         ));
     }
 
     let mut attribute_data_buf = [0; MAX_ATTRIBUTE_DATA_BUF_LEN];
     attribute_data_buf[..data_len - 1].copy_from_slice(&buffer[6..]);
-    Ok(GattReadByGroupTypeResponse {
+    Ok(AttReadByGroupTypeResponse {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         data_len: data_len - 1, // lose 1 byte to attribute_group_len
         attribute_group_len: attribute_group_len,
@@ -1952,7 +1950,7 @@ fn to_gatt_read_by_group_type_response(
 /// This event is generated in response to a Prepare Write Request. See the Bluetooth Core v4.1
 /// spec, Vol 3, Part F, section 3.4.6.1 and 3.4.6.2
 #[derive(Copy, Clone)]
-pub struct GattPrepareWriteResponse {
+pub struct AttPrepareWriteResponse {
     /// The connection handle related to the response.
     pub conn_handle: ConnectionHandle,
     /// The handle of the attribute to be written.
@@ -1969,7 +1967,7 @@ pub struct GattPrepareWriteResponse {
 // the packet.
 const MAX_WRITE_RESPONSE_VALUE_LEN: usize = 246;
 
-impl Debug for GattPrepareWriteResponse {
+impl Debug for AttPrepareWriteResponse {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(
             f,
@@ -1982,16 +1980,16 @@ impl Debug for GattPrepareWriteResponse {
     }
 }
 
-impl GattPrepareWriteResponse {
+impl AttPrepareWriteResponse {
     /// Returns the partial value of the attribute to be written.
     pub fn value(&self) -> &[u8] {
         &self.value_buf[..self.value_len]
     }
 }
 
-fn to_gatt_prepare_write_response(
+fn to_att_prepare_write_response(
     buffer: &[u8],
-) -> Result<GattPrepareWriteResponse, hci::event::Error<Error>> {
+) -> Result<AttPrepareWriteResponse, hci::event::Error<Error>> {
     require_len_at_least!(buffer, 9);
 
     let data_len = buffer[4] as usize;
@@ -2000,7 +1998,7 @@ fn to_gatt_prepare_write_response(
     let value_len = data_len - 4;
     let mut value_buf = [0; MAX_WRITE_RESPONSE_VALUE_LEN];
     value_buf[..value_len].copy_from_slice(&buffer[9..]);
-    Ok(GattPrepareWriteResponse {
+    Ok(AttPrepareWriteResponse {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[5..])),
         offset: LittleEndian::read_u16(&buffer[7..]) as usize,

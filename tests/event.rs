@@ -930,25 +930,25 @@ fn gatt_procedure_timeout() {
 }
 
 #[test]
-fn gatt_exchange_mtu_response() {
+fn att_exchange_mtu_response() {
     let buffer = [0x03, 0x0C, 0x01, 0x02, 0x01, 0x03, 0x04];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GattExchangeMtuResponse(event)) => {
+        Ok(BlueNRGEvent::AttExchangeMtuResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
             assert_eq!(event.server_rx_mtu, 0x0403);
         }
-        other => panic!("Did not get GATT Exchange MTU Response: {:?}", other),
+        other => panic!("Did not get ATT Exchange MTU Response: {:?}", other),
     }
 }
 
 #[test]
-fn gatt_find_information_response_16bit_uuids() {
+fn att_find_information_response_16bit_uuids() {
     let buffer = [
         0x04, 0x0C, 0x01, 0x02, 13, 1, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,
         0x0d, 0x0e,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GattFindInformationResponse(event)) => {
+        Ok(BlueNRGEvent::AttFindInformationResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
             if let HandleUuidPairIterator::Format16(mut iter) = event.handle_uuid_pair_iter() {
                 let actual = iter.next().unwrap();
@@ -971,19 +971,19 @@ fn gatt_find_information_response_16bit_uuids() {
                 panic!("Did not get HandleUuidPair::Format16")
             }
         }
-        other => panic!("Did not get GATT find info response: {:?}", other),
+        other => panic!("Did not get ATT find info response: {:?}", other),
     }
 }
 
 #[test]
-fn gatt_find_information_response_128bit_uuids() {
+fn att_find_information_response_128bit_uuids() {
     let buffer = [
         0x04, 0x0C, 0x01, 0x02, 37, 2, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,
         0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b,
         0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GattFindInformationResponse(event)) => {
+        Ok(BlueNRGEvent::AttFindInformationResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
             if let HandleUuidPairIterator::Format128(mut iter) = event.handle_uuid_pair_iter() {
                 let actual = iter.next().unwrap();
@@ -1014,43 +1014,40 @@ fn gatt_find_information_response_128bit_uuids() {
                 panic!("Did not get HandleUuidPair::Format128")
             }
         }
-        other => panic!("Did not get GATT find info response: {:?}", other),
+        other => panic!("Did not get ATT find info response: {:?}", other),
     }
 }
 
 #[test]
-fn gatt_find_information_response_failed_format() {
+fn att_find_information_response_failed_format() {
     let buffer = [0x04, 0x0C, 0x01, 0x02, 1, 3];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadGattFindInformationResponseFormat(3))) => (),
-        other => panic!(
-            "Did not get bad GATT Find info response format: {:?}",
-            other
-        ),
+        Err(HciError::Vendor(BNRGError::BadAttFindInformationResponseFormat(3))) => (),
+        other => panic!("Did not get bad ATT Find info response format: {:?}", other),
     }
 }
 
 #[test]
-fn gatt_find_information_response_failed_partial_uuid() {
+fn att_find_information_response_failed_partial_uuid() {
     let buffer = [
         0x04, 0x0C, 0x01, 0x02, 11, 1, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::GattFindInformationResponsePartialPair16)) => (),
+        Err(HciError::Vendor(BNRGError::AttFindInformationResponsePartialPair16)) => (),
         other => panic!(
-            "Did not get bad GATT Find info response partial pair: {:?}",
+            "Did not get bad ATT Find info response partial pair: {:?}",
             other
         ),
     }
 }
 
 #[test]
-fn gatt_find_by_type_value_response() {
+fn att_find_by_type_value_response() {
     let buffer = [
         0x05, 0x0C, 0x01, 0x02, 8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GattFindByTypeValueResponse(event)) => {
+        Ok(BlueNRGEvent::AttFindByTypeValueResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
 
             assert_eq!(event.handle_pairs_iter().count(), 2);
@@ -1073,12 +1070,12 @@ fn gatt_find_by_type_value_response() {
 }
 
 #[test]
-fn gatt_find_by_type_value_response_failed_partial_pair() {
+fn att_find_by_type_value_response_failed_partial_pair() {
     let buffer = [
         0x05, 0x0C, 0x01, 0x02, 7, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::GattFindByTypeValuePartial)) => (),
+        Err(HciError::Vendor(BNRGError::AttFindByTypeValuePartial)) => (),
         other => panic!(
             "Did not get find-by-type-value response failure: {:?}",
             other
@@ -1087,13 +1084,13 @@ fn gatt_find_by_type_value_response_failed_partial_pair() {
 }
 
 #[test]
-fn gatt_read_by_type_response() {
+fn att_read_by_type_response() {
     let buffer = [
         0x06, 0x0C, 0x01, 0x02, 13, 6, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x11, 0x12, 0x13, 0x14,
         0x15, 0x16,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GattReadByTypeResponse(event)) => {
+        Ok(BlueNRGEvent::AttReadByTypeResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
 
             let mut iter = event.handle_value_pair_iter();
@@ -1115,43 +1112,43 @@ fn gatt_read_by_type_response() {
 }
 
 #[test]
-fn gatt_read_by_type_response_failed_partial_pair() {
+fn att_read_by_type_response_failed_partial_pair() {
     let buffer = [
         0x06, 0x0C, 0x01, 0x02, 12, 6, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x11, 0x12, 0x13, 0x14,
         0x15,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::GattReadByTypeResponsePartial)) => (),
+        Err(HciError::Vendor(BNRGError::AttReadByTypeResponsePartial)) => (),
         other => panic!("Did not get partial read-by-type response: {:?}", other),
     }
 }
 
 #[test]
-fn gatt_read_response() {
+fn att_read_response() {
     let buffer = [0x07, 0x0C, 0x01, 0x02, 4, 0x01, 0x02, 0x03, 0x04];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GattReadResponse(event)) => {
+        Ok(BlueNRGEvent::AttReadResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
             assert_eq!(event.value(), [0x01, 0x02, 0x03, 0x04]);
         }
-        other => panic!("Did not get GATT read response: {:?}", other),
+        other => panic!("Did not get ATT read response: {:?}", other),
     }
 }
 
 #[test]
-fn gatt_read_response_empty() {
+fn att_read_response_empty() {
     let buffer = [0x07, 0x0C, 0x01, 0x02, 0];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GattReadResponse(event)) => {
+        Ok(BlueNRGEvent::AttReadResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
             assert_eq!(event.value(), []);
         }
-        other => panic!("Did not get GATT read response: {:?}", other),
+        other => panic!("Did not get ATT read response: {:?}", other),
     }
 }
 
 #[test]
-fn gatt_read_response_failed() {
+fn att_read_response_failed() {
     let buffer = [0x07, 0x0C, 0x01, 0x02, 3, 0x01, 0x02, 0x03, 0x04];
     match BlueNRGEvent::new(&buffer) {
         Err(HciError::BadLength(actual, expected)) => {
@@ -1163,31 +1160,31 @@ fn gatt_read_response_failed() {
 }
 
 #[test]
-fn gatt_read_blob_response() {
+fn att_read_blob_response() {
     let buffer = [0x08, 0x0C, 0x01, 0x02, 4, 0x01, 0x02, 0x03, 0x04];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GattReadBlobResponse(event)) => {
+        Ok(BlueNRGEvent::AttReadBlobResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
             assert_eq!(event.value(), [0x01, 0x02, 0x03, 0x04]);
         }
-        other => panic!("Did not get GATT Read Blob Response: {:?}", other),
+        other => panic!("Did not get ATT Read Blob Response: {:?}", other),
     }
 }
 
 #[test]
-fn gatt_read_blob_response_empty() {
+fn att_read_blob_response_empty() {
     let buffer = [0x08, 0x0C, 0x01, 0x02, 0];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GattReadBlobResponse(event)) => {
+        Ok(BlueNRGEvent::AttReadBlobResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
             assert_eq!(event.value(), []);
         }
-        other => panic!("Did not get GATT Read Blob Response: {:?}", other),
+        other => panic!("Did not get ATT Read Blob Response: {:?}", other),
     }
 }
 
 #[test]
-fn gatt_read_blob_response_failed() {
+fn att_read_blob_response_failed() {
     let buffer = [0x08, 0x0C, 0x01, 0x02, 2, 0x01];
     match BlueNRGEvent::new(&buffer) {
         Err(HciError::BadLength(actual, expected)) => {
@@ -1199,31 +1196,31 @@ fn gatt_read_blob_response_failed() {
 }
 
 #[test]
-fn gatt_read_multiple_response() {
+fn att_read_multiple_response() {
     let buffer = [0x09, 0x0C, 0x01, 0x02, 4, 0x01, 0x02, 0x03, 0x04];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GattReadMultipleResponse(event)) => {
+        Ok(BlueNRGEvent::AttReadMultipleResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
             assert_eq!(event.value(), [0x01, 0x02, 0x03, 0x04]);
         }
-        other => panic!("Did not get GATT Read Multiple Response: {:?}", other),
+        other => panic!("Did not get ATT Read Multiple Response: {:?}", other),
     }
 }
 
 #[test]
-fn gatt_read_multiple_response_empty() {
+fn att_read_multiple_response_empty() {
     let buffer = [0x09, 0x0C, 0x01, 0x02, 0];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GattReadMultipleResponse(event)) => {
+        Ok(BlueNRGEvent::AttReadMultipleResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
             assert_eq!(event.value(), []);
         }
-        other => panic!("Did not get GATT Read Multiple Response: {:?}", other),
+        other => panic!("Did not get ATT Read Multiple Response: {:?}", other),
     }
 }
 
 #[test]
-fn gatt_read_multiple_response_failed() {
+fn att_read_multiple_response_failed() {
     let buffer = [0x09, 0x0C, 0x01, 0x02, 2, 0x01];
     match BlueNRGEvent::new(&buffer) {
         Err(HciError::BadLength(actual, expected)) => {
@@ -1235,13 +1232,13 @@ fn gatt_read_multiple_response_failed() {
 }
 
 #[test]
-fn gatt_read_by_group_type_response() {
+fn att_read_by_group_type_response() {
     let buffer = [
         0x0A, 0x0C, 0x01, 0x02, 17, 8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x11, 0x12,
         0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GattReadByGroupTypeResponse(event)) => {
+        Ok(BlueNRGEvent::AttReadByGroupTypeResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
 
             let mut iter = event.attribute_data_iter();
@@ -1265,13 +1262,13 @@ fn gatt_read_by_group_type_response() {
 }
 
 #[test]
-fn gatt_read_by_group_type_response_failed() {
+fn att_read_by_group_type_response_failed() {
     let buffer = [
         0x0A, 0x0C, 0x01, 0x02, 16, 8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x11, 0x12,
         0x13, 0x14, 0x15, 0x16, 0x17,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::GattReadByGroupTypeResponsePartial)) => (),
+        Err(HciError::Vendor(BNRGError::AttReadByGroupTypeResponsePartial)) => (),
         other => panic!(
             "Did not get partial Read by Group Type Response: {:?}",
             other
@@ -1280,42 +1277,42 @@ fn gatt_read_by_group_type_response_failed() {
 }
 
 #[test]
-fn gatt_prepare_write_response() {
+fn att_prepare_write_response() {
     let buffer = [
         0x0C, 0x0C, 0x01, 0x02, 8, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GattPrepareWriteResponse(event)) => {
+        Ok(BlueNRGEvent::AttPrepareWriteResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
             assert_eq!(event.attribute_handle, AttributeHandle(0x0403));
             assert_eq!(event.offset, 0x0605);
             assert_eq!(event.value(), [0x07, 0x08, 0x09, 0x0a]);
         }
-        other => panic!("Did not get GATT prepare write response: {:?}", other),
+        other => panic!("Did not get ATT prepare write response: {:?}", other),
     }
 }
 
 #[test]
-fn gatt_prepare_write_response_empty() {
+fn att_prepare_write_response_empty() {
     let buffer = [0x0C, 0x0C, 0x01, 0x02, 4, 0x03, 0x04, 0x05, 0x06];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GattPrepareWriteResponse(event)) => {
+        Ok(BlueNRGEvent::AttPrepareWriteResponse(event)) => {
             assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
             assert_eq!(event.attribute_handle, AttributeHandle(0x0403));
             assert_eq!(event.offset, 0x0605);
             assert_eq!(event.value(), []);
         }
-        other => panic!("Did not get GATT prepare write response: {:?}", other),
+        other => panic!("Did not get ATT prepare write response: {:?}", other),
     }
 }
 
 #[test]
-fn gatt_execute_write_response() {
+fn att_execute_write_response() {
     let buffer = [0x0D, 0x0C, 0x01, 0x02, 0];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GattExecuteWriteResponse(conn_handle)) => {
+        Ok(BlueNRGEvent::AttExecuteWriteResponse(conn_handle)) => {
             assert_eq!(conn_handle, ConnectionHandle(0x0201));
         }
-        other => panic!("Did not get GATT Execute Write Response: {:?}", other),
+        other => panic!("Did not get ATT Execute Write Response: {:?}", other),
     }
 }
