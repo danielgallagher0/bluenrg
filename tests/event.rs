@@ -1551,3 +1551,25 @@ fn gatt_tx_pool_available_unknown() {
         other => panic!("Did not get unknown event: {:?}", other),
     }
 }
+
+#[cfg(feature = "ms")]
+#[test]
+fn gatt_server_confirmation() {
+    let buffer = [0x17, 0x0C, 0x01, 0x02];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattServerConfirmation(conn_handle)) => {
+            assert_eq!(conn_handle, ConnectionHandle(0x0201));
+        }
+        other => panic!("Did not get GATT Server Confirmation event: {:?}", other),
+    }
+}
+
+#[cfg(not(feature = "ms"))]
+#[test]
+fn gatt_server_confirmation_unknown() {
+    let buffer = [0x17, 0x0C, 0x01, 0x02];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::UnknownEvent(0x0C17))) => (),
+        other => panic!("Did not get unknown event: {:?}", other),
+    }
+}

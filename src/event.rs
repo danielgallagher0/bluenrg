@@ -350,6 +350,10 @@ pub enum BlueNRGEvent {
     #[cfg(feature = "ms")]
     GattTxPoolAvailable(GattTxPoolAvailable),
 
+    /// This event is raised on the server when the client confirms the reception of an indication.
+    #[cfg(feature = "ms")]
+    GattServerConfirmation(ConnectionHandle),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -511,6 +515,19 @@ impl hci::event::VendorEvent for BlueNRGEvent {
                     Ok(BlueNRGEvent::GattTxPoolAvailable(
                         to_gatt_tx_pool_available(buffer)?,
                     ))
+                }
+
+                #[cfg(not(feature = "ms"))]
+                {
+                    Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code)))
+                }
+            }
+            0x0C17 => {
+                #[cfg(feature = "ms")]
+                {
+                    Ok(BlueNRGEvent::GattServerConfirmation(to_conn_handle(
+                        buffer,
+                    )?))
                 }
 
                 #[cfg(not(feature = "ms"))]
