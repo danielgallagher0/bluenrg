@@ -275,6 +275,9 @@ pub enum BlueNRGEvent {
     /// This event is generated when an indication is received from the server.
     GattIndication(AttributeValue),
 
+    /// This event is generated when an notification is received from the server.
+    GattNotification(AttributeValue),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -409,6 +412,7 @@ impl hci::event::VendorEvent for BlueNRGEvent {
                 buffer,
             )?)),
             0x0C0E => Ok(BlueNRGEvent::GattIndication(to_attribute_value(buffer)?)),
+            0x0C0F => Ok(BlueNRGEvent::GattNotification(to_attribute_value(buffer)?)),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
