@@ -354,6 +354,18 @@ pub enum BlueNRGEvent {
     #[cfg(feature = "ms")]
     GattServerConfirmation(ConnectionHandle),
 
+    /// This event is given to the application when a prepare write request is received by the
+    /// server from the client. This event will be given to the application only if the event bit
+    /// for this event generation is set when the characteristic was added.  When this event is
+    /// received, the application has to check whether the value being requested for write is
+    /// allowed to be written and respond with the command aci_gatt_write_response().  Based on the
+    /// response from the application, the attribute value will be modified by the stack.  If the
+    /// write is rejected by the application, then the value of the attribute will not be modified
+    /// and an error response will be sent to the client, with the error code as specified by the
+    /// application.
+    #[cfg(feature = "ms")]
+    AttPrepareWritePermitRequest(AttPrepareWritePermitRequest),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -528,6 +540,19 @@ impl hci::event::VendorEvent for BlueNRGEvent {
                     Ok(BlueNRGEvent::GattServerConfirmation(to_conn_handle(
                         buffer,
                     )?))
+                }
+
+                #[cfg(not(feature = "ms"))]
+                {
+                    Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code)))
+                }
+            }
+            0x0C18 => {
+                #[cfg(feature = "ms")]
+                {
+                    Ok(BlueNRGEvent::AttPrepareWritePermitRequest(
+                        to_att_prepare_write_permit_request(buffer)?,
+                    ))
                 }
 
                 #[cfg(not(feature = "ms"))]
@@ -3026,5 +3051,76 @@ fn to_gatt_tx_pool_available(
     Ok(GattTxPoolAvailable {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         available_buffers: LittleEndian::read_u16(&buffer[4..]) as usize,
+    })
+}
+
+/// This event is given to the application when a prepare write request is received by the server
+/// from the client. This event will be given to the application only if the event bit for this
+/// event generation is set when the characteristic was added.  When this event is received, the
+/// application has to check whether the value being requested for write is allowed to be written
+/// and respond with the command aci_gatt_write_response().  Based on the response from the
+/// application, the attribute value will be modified by the stack.  If the write is rejected by the
+/// application, then the value of the attribute will not be modified and an error response will be
+/// sent to the client, with the error code as specified by the application.
+#[cfg(feature = "ms")]
+#[derive(Copy, Clone)]
+pub struct AttPrepareWritePermitRequest {
+    /// Connection handle on which the GATT procedure is running.
+    pub conn_handle: ConnectionHandle,
+    /// The handle of the attribute to be written.
+    pub attribute_handle: AttributeHandle,
+    /// The offset of the first octet to be written.
+    pub offset: usize,
+
+    /// Number of valid bytes in `value_buf`
+    value_len: usize,
+    /// The data to be written. Only the first `value_len` bytes are valid.
+    value_buf: [u8; MAX_PREPARE_WRITE_PERMIT_REQ_VALUE_LEN],
+}
+
+// The maximum number of bytes in the buffer is the max HCI packet size (255) less the other data in
+// the packet.
+#[cfg(feature = "ms")]
+const MAX_PREPARE_WRITE_PERMIT_REQ_VALUE_LEN: usize = 246;
+
+#[cfg(feature = "ms")]
+impl Debug for AttPrepareWritePermitRequest {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(
+            f,
+            "{{.conn_handle = {:?}, .attribute_handle = {:?}, .offset = {:?}, .value = {:?}",
+            self.conn_handle,
+            self.attribute_handle,
+            self.offset,
+            first_16(self.value())
+        )
+    }
+}
+
+#[cfg(feature = "ms")]
+impl AttPrepareWritePermitRequest {
+    /// Returns the data to be written.
+    pub fn value(&self) -> &[u8] {
+        &self.value_buf[..self.value_len]
+    }
+}
+
+#[cfg(feature = "ms")]
+fn to_att_prepare_write_permit_request(
+    buffer: &[u8],
+) -> Result<AttPrepareWritePermitRequest, hci::event::Error<Error>> {
+    require_len_at_least!(buffer, 9);
+
+    let data_len = buffer[8] as usize;
+    require_len!(buffer, 9 + data_len);
+
+    let mut value_buf = [0; MAX_PREPARE_WRITE_PERMIT_REQ_VALUE_LEN];
+    value_buf[..data_len].copy_from_slice(&buffer[9..]);
+    Ok(AttPrepareWritePermitRequest {
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
+        attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[4..])),
+        offset: LittleEndian::read_u16(&buffer[6..]) as usize,
+        value_len: data_len,
+        value_buf: value_buf,
     })
 }

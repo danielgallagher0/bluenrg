@@ -1573,3 +1573,47 @@ fn gatt_server_confirmation_unknown() {
         other => panic!("Did not get unknown event: {:?}", other),
     }
 }
+
+#[cfg(feature = "ms")]
+#[test]
+fn att_prepare_write_permit_request() {
+    let buffer = [
+        0x18, 0x0C, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 4, 0x07, 0x08, 0x09, 0x0a,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::AttPrepareWritePermitRequest(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(event.attribute_handle, AttributeHandle(0x0403));
+            assert_eq!(event.offset, 0x0605);
+            assert_eq!(event.value(), [0x07, 0x08, 0x09, 0x0a]);
+        }
+        other => panic!("Did not get ATT Prepare Write Permit Request: {:?}", other),
+    }
+}
+
+#[cfg(feature = "ms")]
+#[test]
+fn att_prepare_write_permit_request_empty() {
+    let buffer = [0x18, 0x0C, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::AttPrepareWritePermitRequest(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(event.attribute_handle, AttributeHandle(0x0403));
+            assert_eq!(event.offset, 0x0605);
+            assert_eq!(event.value(), []);
+        }
+        other => panic!("Did not get ATT Prepare Write Permit Request: {:?}", other),
+    }
+}
+
+#[cfg(not(feature = "ms"))]
+#[test]
+fn att_prepare_write_permit_request_unknown() {
+    let buffer = [
+        0x18, 0x0C, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 4, 0x07, 0x08, 0x09, 0x0a,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::UnknownEvent(0x0C18))) => (),
+        other => panic!("Did not get unknown event: {:?}", other),
+    }
+}
