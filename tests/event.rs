@@ -1501,3 +1501,30 @@ fn att_read_permit_request() {
         other => panic!("Did not get ATT Read Permit Request: {:?}", other),
     }
 }
+
+#[test]
+fn att_read_multiple_permit_request() {
+    let buffer = [0x15, 0x0C, 0x01, 0x02, 4, 0x03, 0x04, 0x05, 0x06];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::AttReadMultiplePermitRequest(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(
+                event.handles(),
+                [AttributeHandle(0x0403), AttributeHandle(0x0605)]
+            );
+        }
+        other => panic!("Did not get ATT Read Multiple Permit Request: {:?}", other),
+    }
+}
+
+#[test]
+fn att_read_multiple_permit_request_failed() {
+    let buffer = [0x15, 0x0C, 0x01, 0x02, 3, 0x03, 0x04, 0x05];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::AttReadMultiplePermitRequestPartial)) => (),
+        other => panic!(
+            "Did not get partial ATT Read Multiple Permit Request: {:?}",
+            other
+        ),
+    }
+}

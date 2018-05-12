@@ -139,6 +139,10 @@ pub enum Error {
     /// For the ATT Error Response event: The request opcode was not recognized. Includes the
     /// unrecognized byte.
     BadAttRequestOpcode(u8),
+
+    /// For the ATT Read Multiple Permit Request event: The packet ends with a partial attribute
+    /// handle.
+    AttReadMultiplePermitRequestPartial,
 }
 
 /// Vendor-specific events for the BlueNRG-MS controllers.
@@ -329,6 +333,16 @@ pub enum BlueNRGEvent {
     /// See the Bluetooth Core v4.1 spec, Vol 3, Part F, section 3.4.4.
     AttReadPermitRequest(AttReadPermitRequest),
 
+    /// This event is given to the application when a read multiple request or read by type request
+    /// is received by the server from the client. This event will be given to the application only
+    /// if the event bit for this event generation is set when the characteristic was added.  On
+    /// receiving this event, the application can update the values of the handles if it desires and
+    /// when done it has to send the aci_gatt_allow_read command to indicate to the stack that it
+    /// can send the response to the client.
+    ///
+    /// See the Bluetooth Core v4.1 spec, Vol 3, Part F, section 3.4.4.
+    AttReadMultiplePermitRequest(AttReadMultiplePermitRequest),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -355,7 +369,7 @@ macro_rules! require_len_at_least {
     };
 }
 
-fn first_16(buffer: &[u8]) -> &[u8] {
+fn first_16<T>(buffer: &[T]) -> &[T] {
     if buffer.len() < 16 {
         &buffer
     } else {
@@ -480,6 +494,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             )),
             0x0C14 => Ok(BlueNRGEvent::AttReadPermitRequest(
                 to_att_read_permit_request(buffer)?,
+            )),
+            0x0C15 => Ok(BlueNRGEvent::AttReadMultiplePermitRequest(
+                to_att_read_multiple_permit_request(buffer)?,
             )),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
@@ -2881,5 +2898,73 @@ fn to_att_read_permit_request(
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[4..])),
         offset: LittleEndian::read_u16(&buffer[7..]) as usize,
+    })
+}
+
+/// This event is given to the application when a read multiple request or read by type request is
+/// received by the server from the client. This event will be given to the application only if the
+/// event bit for this event generation is set when the characteristic was added.  On receiving this
+/// event, the application can update the values of the handles if it desires and when done it has
+/// to send the aci_gatt_allow_read command to indicate to the stack that it can send the response
+/// to the client.
+///
+/// See the Bluetooth Core v4.1 spec, Vol 3, Part F, section 3.4.4.
+#[derive(Copy, Clone)]
+pub struct AttReadMultiplePermitRequest {
+    /// Handle of the connection which requested to read the attribute.
+    pub conn_handle: ConnectionHandle,
+
+    /// Number of valid handles in handles_buf
+    handles_len: usize,
+    /// Attribute handles returned by the ATT Read Multiple Permit Request. Only the first
+    /// `handles_len` handles are valid.
+    handles_buf: [AttributeHandle; MAX_ATTRIBUTE_HANDLE_BUFFER_LEN],
+}
+
+// The maximum number of handles in the buffer is the max HCI packet size (255) less the other data in
+// the packet divided by the length of an attribute handle (2).
+const MAX_ATTRIBUTE_HANDLE_BUFFER_LEN: usize = 125;
+
+impl Debug for AttReadMultiplePermitRequest {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(
+            f,
+            "{{.conn_handle = {:?}, .handles = {:?}",
+            self.conn_handle,
+            first_16(self.handles())
+        )
+    }
+}
+
+impl AttReadMultiplePermitRequest {
+    /// Returns the valid attribute handles returned by the ATT Read Multiple Permit Request event.
+    pub fn handles(&self) -> &[AttributeHandle] {
+        &self.handles_buf[..self.handles_len]
+    }
+}
+
+fn to_att_read_multiple_permit_request(
+    buffer: &[u8],
+) -> Result<AttReadMultiplePermitRequest, hci::event::Error<Error>> {
+    require_len_at_least!(buffer, 5);
+
+    let data_len = buffer[4] as usize;
+    if data_len % 2 != 0 {
+        return Err(hci::event::Error::Vendor(
+            Error::AttReadMultiplePermitRequestPartial,
+        ));
+    }
+
+    let handle_len = data_len / 2;
+    let mut handles = [AttributeHandle(0); MAX_ATTRIBUTE_HANDLE_BUFFER_LEN];
+    for i in 0..handle_len {
+        let index = 5 + 2 * i;
+        handles[i] = AttributeHandle(LittleEndian::read_u16(&buffer[index..]));
+    }
+
+    Ok(AttReadMultiplePermitRequest {
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
+        handles_len: handle_len,
+        handles_buf: handles,
     })
 }
