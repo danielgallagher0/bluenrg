@@ -296,6 +296,16 @@ pub enum BlueNRGEvent {
     /// procedure itself.
     AttErrorResponse(AttErrorResponse),
 
+    /// This event can be generated during a "Discover Characteristics by UUID" procedure or a "Read
+    /// using Characteristic UUID" procedure. The attribute value will be a service declaration as
+    /// defined in Bluetooth Core v4.0 spec, Vol 3, Part G, section 3.3.1), when a "Discover
+    /// Characteristics By UUID" has been started. It will be the value of the Characteristic if a
+    /// "Read using Characteristic UUID" has been performed.
+    ///
+    /// See the Bluetooth Core v4.1 spec, Vol 3, Part G, section 4.6.2 (discover characteristics by
+    /// UUID), and section 4.8.2 (read using characteristic using UUID).
+    GattDiscoverOrReadCharacteristicByUuidResponse(AttributeValue),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -437,6 +447,11 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0C11 => Ok(BlueNRGEvent::AttErrorResponse(to_att_error_response(
                 buffer,
             )?)),
+            0x0C12 => Ok(
+                BlueNRGEvent::GattDiscoverOrReadCharacteristicByUuidResponse(to_attribute_value(
+                    buffer,
+                )?),
+            ),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
