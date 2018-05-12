@@ -1407,3 +1407,28 @@ fn gatt_procedure_complete_error_unknown_code() {
         other => panic!("Did not get Bad GATT Procedure Status: {:?}", other),
     }
 }
+
+#[test]
+fn att_error_response() {
+    let buffer = [0x11, 0x0C, 0x01, 0x02, 4, 0x03, 0x04, 0x05, 0x07];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::AttErrorResponse(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(event.request, AttRequest::ExchangeMtuResponse);
+            assert_eq!(event.attribute_handle, AttributeHandle(0x0504));
+            assert_eq!(event.error, AttError::InvalidOffset);
+        }
+        other => panic!("Did not get ATT error response: {:?}", other),
+    }
+}
+
+#[test]
+fn att_error_response_failed_bad_request_opcode() {
+    let buffer = [0x11, 0x0C, 0x01, 0x02, 4, 0x48, 0x04, 0x05, 0x07];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadAttRequestOpcode(code))) => {
+            assert_eq!(code, 0x48);
+        }
+        other => panic!("Did not get bad ATT request opcode: {:?}", other),
+    }
+}

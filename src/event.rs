@@ -135,6 +135,10 @@ pub enum Error {
     /// For the GATT Procedure Complete event: The status code was not recognized. Includes the
     /// unrecognized byte.
     BadGattProcedureStatus(u8),
+
+    /// For the ATT Error Response event: The request opcode was not recognized. Includes the
+    /// unrecognized byte.
+    BadAttRequestOpcode(u8),
 }
 
 /// Vendor-specific events for the BlueNRG-MS controllers.
@@ -286,6 +290,12 @@ pub enum BlueNRGEvent {
     /// successfully.
     GattProcedureComplete(GattProcedureComplete),
 
+    /// This event is generated when an Error Response is received from the server. The error
+    /// response can be given by the server at the end of one of the GATT discovery procedures. This
+    /// does not mean that the procedure ended with an error, but this error event is part of the
+    /// procedure itself.
+    AttErrorResponse(AttErrorResponse),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -424,6 +434,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0C10 => Ok(BlueNRGEvent::GattProcedureComplete(
                 to_gatt_procedure_complete(buffer)?,
             )),
+            0x0C11 => Ok(BlueNRGEvent::AttErrorResponse(to_att_error_response(
+                buffer,
+            )?)),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
@@ -2121,5 +2134,660 @@ fn to_gatt_procedure_complete(
     Ok(GattProcedureComplete {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         status: buffer[5].try_into().map_err(hci::event::Error::Vendor)?,
+    })
+}
+
+/// The Error Response is used to state that a given request cannot be performed, and to provide the
+/// reason. See the Bluetooth Core Specification, v4.1, Vol 3, Part F, Section 3.4.1.1.
+#[derive(Copy, Clone, Debug)]
+pub struct AttErrorResponse {
+    /// The connection handle related to the event.
+    pub conn_handle: ConnectionHandle,
+    /// The request that generated this error response.
+    pub request: AttRequest,
+    ///The attribute handle that generated this error response.
+    pub attribute_handle: AttributeHandle,
+    /// The reason why the request has generated an error response.
+    pub error: AttError,
+}
+
+/// Potential error codes for the ATT Error Response. See Table 3.3 in the Bluetooth Core
+/// Specification, v4.1, Vol 3, PartF, Section 3.4.1.1 and The Bluetooth Core Specification
+/// Supplement, Table 1.1.
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum AttError {
+    /// The attribute handle given was not valid on this server.
+    InvalidHandle = 0x01,
+    /// The attribute cannot be read.
+    ReadNotPermitted = 0x02,
+    /// The attribute cannot be written.
+    WriteNotPermitted = 0x03,
+    /// The attribute PDU was invalid.
+    InvalidPdu = 0x04,
+    /// The attribute requires authentication before it can be read or written.
+    InsufficientAuthentication = 0x05,
+    /// Attribute server does not support the request received from the client.
+    RequestNotSupported = 0x06,
+    /// Offset specified was past the end of the attribute.
+    InvalidOffset = 0x07,
+    /// The attribute requires authorization before it can be read or written.
+    InsufficientAuthorization = 0x08,
+    /// Too many prepare writes have been queued.
+    PrepareQueueFull = 0x09,
+    /// No attribute found within the given attribute handle range.
+    AttributeNotFound = 0x0A,
+    /// The attribute cannot be read or written using the Read Blob Request.
+    AttributeNotLong = 0x0B,
+    /// The Encryption Key Size used for encrypting this link is insufficient.
+    InsufficientEncryptionKeySize = 0x0C,
+    /// The attribute value length is invalid for the operation.
+    InvalidAttributeValueLength = 0x0D,
+    /// The attribute request that was requested has encountered an error that was unlikely, and
+    /// therefore could not be completed as requested.
+    UnlikelyError = 0x0E,
+    /// The attribute requires encryption before it can be read or written.
+    InsufficientEncryption = 0x0F,
+    /// The attribute type is not a supported grouping attribute as defined by a higher layer
+    /// specification.
+    UnsupportedGroupType = 0x10,
+    /// Insufficient Resources to complete the request.
+    InsufficientResources = 0x11,
+    /// Reserved for future use
+    Reserved0x12 = 0x12,
+    /// Reserved for future use
+    Reserved0x13 = 0x13,
+    /// Reserved for future use
+    Reserved0x14 = 0x14,
+    /// Reserved for future use
+    Reserved0x15 = 0x15,
+    /// Reserved for future use
+    Reserved0x16 = 0x16,
+    /// Reserved for future use
+    Reserved0x17 = 0x17,
+    /// Reserved for future use
+    Reserved0x18 = 0x18,
+    /// Reserved for future use
+    Reserved0x19 = 0x19,
+    /// Reserved for future use
+    Reserved0x1A = 0x1A,
+    /// Reserved for future use
+    Reserved0x1B = 0x1B,
+    /// Reserved for future use
+    Reserved0x1C = 0x1C,
+    /// Reserved for future use
+    Reserved0x1D = 0x1D,
+    /// Reserved for future use
+    Reserved0x1E = 0x1E,
+    /// Reserved for future use
+    Reserved0x1F = 0x1F,
+    /// Reserved for future use
+    Reserved0x20 = 0x20,
+    /// Reserved for future use
+    Reserved0x21 = 0x21,
+    /// Reserved for future use
+    Reserved0x22 = 0x22,
+    /// Reserved for future use
+    Reserved0x23 = 0x23,
+    /// Reserved for future use
+    Reserved0x24 = 0x24,
+    /// Reserved for future use
+    Reserved0x25 = 0x25,
+    /// Reserved for future use
+    Reserved0x26 = 0x26,
+    /// Reserved for future use
+    Reserved0x27 = 0x27,
+    /// Reserved for future use
+    Reserved0x28 = 0x28,
+    /// Reserved for future use
+    Reserved0x29 = 0x29,
+    /// Reserved for future use
+    Reserved0x2A = 0x2A,
+    /// Reserved for future use
+    Reserved0x2B = 0x2B,
+    /// Reserved for future use
+    Reserved0x2C = 0x2C,
+    /// Reserved for future use
+    Reserved0x2D = 0x2D,
+    /// Reserved for future use
+    Reserved0x2E = 0x2E,
+    /// Reserved for future use
+    Reserved0x2F = 0x2F,
+    /// Reserved for future use
+    Reserved0x30 = 0x30,
+    /// Reserved for future use
+    Reserved0x31 = 0x31,
+    /// Reserved for future use
+    Reserved0x32 = 0x32,
+    /// Reserved for future use
+    Reserved0x33 = 0x33,
+    /// Reserved for future use
+    Reserved0x34 = 0x34,
+    /// Reserved for future use
+    Reserved0x35 = 0x35,
+    /// Reserved for future use
+    Reserved0x36 = 0x36,
+    /// Reserved for future use
+    Reserved0x37 = 0x37,
+    /// Reserved for future use
+    Reserved0x38 = 0x38,
+    /// Reserved for future use
+    Reserved0x39 = 0x39,
+    /// Reserved for future use
+    Reserved0x3A = 0x3A,
+    /// Reserved for future use
+    Reserved0x3B = 0x3B,
+    /// Reserved for future use
+    Reserved0x3C = 0x3C,
+    /// Reserved for future use
+    Reserved0x3D = 0x3D,
+    /// Reserved for future use
+    Reserved0x3E = 0x3E,
+    /// Reserved for future use
+    Reserved0x3F = 0x3F,
+    /// Reserved for future use
+    Reserved0x40 = 0x40,
+    /// Reserved for future use
+    Reserved0x41 = 0x41,
+    /// Reserved for future use
+    Reserved0x42 = 0x42,
+    /// Reserved for future use
+    Reserved0x43 = 0x43,
+    /// Reserved for future use
+    Reserved0x44 = 0x44,
+    /// Reserved for future use
+    Reserved0x45 = 0x45,
+    /// Reserved for future use
+    Reserved0x46 = 0x46,
+    /// Reserved for future use
+    Reserved0x47 = 0x47,
+    /// Reserved for future use
+    Reserved0x48 = 0x48,
+    /// Reserved for future use
+    Reserved0x49 = 0x49,
+    /// Reserved for future use
+    Reserved0x4A = 0x4A,
+    /// Reserved for future use
+    Reserved0x4B = 0x4B,
+    /// Reserved for future use
+    Reserved0x4C = 0x4C,
+    /// Reserved for future use
+    Reserved0x4D = 0x4D,
+    /// Reserved for future use
+    Reserved0x4E = 0x4E,
+    /// Reserved for future use
+    Reserved0x4F = 0x4F,
+    /// Reserved for future use
+    Reserved0x50 = 0x50,
+    /// Reserved for future use
+    Reserved0x51 = 0x51,
+    /// Reserved for future use
+    Reserved0x52 = 0x52,
+    /// Reserved for future use
+    Reserved0x53 = 0x53,
+    /// Reserved for future use
+    Reserved0x54 = 0x54,
+    /// Reserved for future use
+    Reserved0x55 = 0x55,
+    /// Reserved for future use
+    Reserved0x56 = 0x56,
+    /// Reserved for future use
+    Reserved0x57 = 0x57,
+    /// Reserved for future use
+    Reserved0x58 = 0x58,
+    /// Reserved for future use
+    Reserved0x59 = 0x59,
+    /// Reserved for future use
+    Reserved0x5A = 0x5A,
+    /// Reserved for future use
+    Reserved0x5B = 0x5B,
+    /// Reserved for future use
+    Reserved0x5C = 0x5C,
+    /// Reserved for future use
+    Reserved0x5D = 0x5D,
+    /// Reserved for future use
+    Reserved0x5E = 0x5E,
+    /// Reserved for future use
+    Reserved0x5F = 0x5F,
+    /// Reserved for future use
+    Reserved0x60 = 0x60,
+    /// Reserved for future use
+    Reserved0x61 = 0x61,
+    /// Reserved for future use
+    Reserved0x62 = 0x62,
+    /// Reserved for future use
+    Reserved0x63 = 0x63,
+    /// Reserved for future use
+    Reserved0x64 = 0x64,
+    /// Reserved for future use
+    Reserved0x65 = 0x65,
+    /// Reserved for future use
+    Reserved0x66 = 0x66,
+    /// Reserved for future use
+    Reserved0x67 = 0x67,
+    /// Reserved for future use
+    Reserved0x68 = 0x68,
+    /// Reserved for future use
+    Reserved0x69 = 0x69,
+    /// Reserved for future use
+    Reserved0x6A = 0x6A,
+    /// Reserved for future use
+    Reserved0x6B = 0x6B,
+    /// Reserved for future use
+    Reserved0x6C = 0x6C,
+    /// Reserved for future use
+    Reserved0x6D = 0x6D,
+    /// Reserved for future use
+    Reserved0x6E = 0x6E,
+    /// Reserved for future use
+    Reserved0x6F = 0x6F,
+    /// Reserved for future use
+    Reserved0x70 = 0x70,
+    /// Reserved for future use
+    Reserved0x71 = 0x71,
+    /// Reserved for future use
+    Reserved0x72 = 0x72,
+    /// Reserved for future use
+    Reserved0x73 = 0x73,
+    /// Reserved for future use
+    Reserved0x74 = 0x74,
+    /// Reserved for future use
+    Reserved0x75 = 0x75,
+    /// Reserved for future use
+    Reserved0x76 = 0x76,
+    /// Reserved for future use
+    Reserved0x77 = 0x77,
+    /// Reserved for future use
+    Reserved0x78 = 0x78,
+    /// Reserved for future use
+    Reserved0x79 = 0x79,
+    /// Reserved for future use
+    Reserved0x7A = 0x7A,
+    /// Reserved for future use
+    Reserved0x7B = 0x7B,
+    /// Reserved for future use
+    Reserved0x7C = 0x7C,
+    /// Reserved for future use
+    Reserved0x7D = 0x7D,
+    /// Reserved for future use
+    Reserved0x7E = 0x7E,
+    /// Reserved for future use
+    Reserved0x7F = 0x7F,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x80 = 0x80,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x81 = 0x81,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x82 = 0x82,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x83 = 0x83,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x84 = 0x84,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x85 = 0x85,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x86 = 0x86,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x87 = 0x87,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x88 = 0x88,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x89 = 0x89,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x8A = 0x8A,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x8B = 0x8B,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x8C = 0x8C,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x8D = 0x8D,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x8E = 0x8E,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x8F = 0x8F,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x90 = 0x90,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x91 = 0x91,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x92 = 0x92,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x93 = 0x93,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x94 = 0x94,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x95 = 0x95,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x96 = 0x96,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x97 = 0x97,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x98 = 0x98,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x99 = 0x99,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x9A = 0x9A,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x9B = 0x9B,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x9C = 0x9C,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x9D = 0x9D,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x9E = 0x9E,
+    /// Application error code defined by a higher layer specification.
+    ApplicationError0x9F = 0x9F,
+    /// Reserved0x80 future use
+    Reserveda0h = 0xA0,
+    /// Reserved for future use
+    Reserved0xA1 = 0xA1,
+    /// Reserved for future use
+    Reserved0xA2 = 0xA2,
+    /// Reserved for future use
+    Reserved0xA3 = 0xA3,
+    /// Reserved for future use
+    Reserved0xA4 = 0xA4,
+    /// Reserved for future use
+    Reserved0xA5 = 0xA5,
+    /// Reserved for future use
+    Reserved0xA6 = 0xA6,
+    /// Reserved for future use
+    Reserved0xA7 = 0xA7,
+    /// Reserved for future use
+    Reserved0xA8 = 0xA8,
+    /// Reserved for future use
+    Reserved0xA9 = 0xA9,
+    /// Reserved for future use
+    Reserved0xAA = 0xAA,
+    /// Reserved for future use
+    Reserved0xAB = 0xAB,
+    /// Reserved for future use
+    Reserved0xAC = 0xAC,
+    /// Reserved for future use
+    Reserved0xAD = 0xAD,
+    /// Reserved for future use
+    Reserved0xAE = 0xAE,
+    /// Reserved for future use
+    Reserved0xAF = 0xAF,
+    /// Reserved for future use
+    Reserved0xB0 = 0xB0,
+    /// Reserved for future use
+    Reserved0xB1 = 0xB1,
+    /// Reserved for future use
+    Reserved0xB2 = 0xB2,
+    /// Reserved for future use
+    Reserved0xB3 = 0xB3,
+    /// Reserved for future use
+    Reserved0xB4 = 0xB4,
+    /// Reserved for future use
+    Reserved0xB5 = 0xB5,
+    /// Reserved for future use
+    Reserved0xB6 = 0xB6,
+    /// Reserved for future use
+    Reserved0xB7 = 0xB7,
+    /// Reserved for future use
+    Reserved0xB8 = 0xB8,
+    /// Reserved for future use
+    Reserved0xB9 = 0xB9,
+    /// Reserved for future use
+    Reserved0xBA = 0xBA,
+    /// Reserved for future use
+    Reserved0xBB = 0xBB,
+    /// Reserved for future use
+    Reserved0xBC = 0xBC,
+    /// Reserved for future use
+    Reserved0xBD = 0xBD,
+    /// Reserved for future use
+    Reserved0xBE = 0xBE,
+    /// Reserved for future use
+    Reserved0xBF = 0xBF,
+    /// Reserved for future use
+    Reserved0xC0 = 0xC0,
+    /// Reserved for future use
+    Reserved0xC1 = 0xC1,
+    /// Reserved for future use
+    Reserved0xC2 = 0xC2,
+    /// Reserved for future use
+    Reserved0xC3 = 0xC3,
+    /// Reserved for future use
+    Reserved0xC4 = 0xC4,
+    /// Reserved for future use
+    Reserved0xC5 = 0xC5,
+    /// Reserved for future use
+    Reserved0xC6 = 0xC6,
+    /// Reserved for future use
+    Reserved0xC7 = 0xC7,
+    /// Reserved for future use
+    Reserved0xC8 = 0xC8,
+    /// Reserved for future use
+    Reserved0xC9 = 0xC9,
+    /// Reserved for future use
+    Reserved0xCA = 0xCA,
+    /// Reserved for future use
+    Reserved0xCB = 0xCB,
+    /// Reserved for future use
+    Reserved0xCC = 0xCC,
+    /// Reserved for future use
+    Reserved0xCD = 0xCD,
+    /// Reserved for future use
+    Reserved0xCE = 0xCE,
+    /// Reserved for future use
+    Reserved0xCF = 0xCF,
+    /// Reserved for future use
+    Reserved0xD0 = 0xD0,
+    /// Reserved for future use
+    Reserved0xD1 = 0xD1,
+    /// Reserved for future use
+    Reserved0xD2 = 0xD2,
+    /// Reserved for future use
+    Reserved0xD3 = 0xD3,
+    /// Reserved for future use
+    Reserved0xD4 = 0xD4,
+    /// Reserved for future use
+    Reserved0xD5 = 0xD5,
+    /// Reserved for future use
+    Reserved0xD6 = 0xD6,
+    /// Reserved for future use
+    Reserved0xD7 = 0xD7,
+    /// Reserved for future use
+    Reserved0xD8 = 0xD8,
+    /// Reserved for future use
+    Reserved0xD9 = 0xD9,
+    /// Reserved for future use
+    Reserved0xDA = 0xDA,
+    /// Reserved for future use
+    Reserved0xDB = 0xDB,
+    /// Reserved for future use
+    Reserved0xDC = 0xDC,
+    /// Reserved for future use
+    Reserved0xDD = 0xDD,
+    /// Reserved for future use
+    Reserved0xDE = 0xDE,
+    /// Reserved for future use
+    Reserved0xDF = 0xDF,
+    /// Reserved for future use
+    Reserved0xE0 = 0xE0,
+    /// Reserved for future use
+    Reserved0xE1 = 0xE1,
+    /// Reserved for future use
+    Reserved0xE2 = 0xE2,
+    /// Reserved for future use
+    Reserved0xE3 = 0xE3,
+    /// Reserved for future use
+    Reserved0xE4 = 0xE4,
+    /// Reserved for future use
+    Reserved0xE5 = 0xE5,
+    /// Reserved for future use
+    Reserved0xE6 = 0xE6,
+    /// Reserved for future use
+    Reserved0xE7 = 0xE7,
+    /// Reserved for future use
+    Reserved0xE8 = 0xE8,
+    /// Reserved for future use
+    Reserved0xE9 = 0xE9,
+    /// Reserved for future use
+    Reserved0xEA = 0xEA,
+    /// Reserved for future use
+    Reserved0xEB = 0xEB,
+    /// Reserved for future use
+    Reserved0xEC = 0xEC,
+    /// Reserved for future use
+    Reserved0xED = 0xED,
+    /// Reserved for future use
+    Reserved0xEE = 0xEE,
+    /// Reserved for future use
+    Reserved0xEF = 0xEF,
+    /// Reserved for future use
+    Reserved0xF0 = 0xF0,
+    /// Reserved for future use
+    Reserved0xF1 = 0xF1,
+    /// Reserved for future use
+    Reserved0xF2 = 0xF2,
+    /// Reserved for future use
+    Reserved0xF3 = 0xF3,
+    /// Reserved for future use
+    Reserved0xF4 = 0xF4,
+    /// Reserved for future use
+    Reserved0xF5 = 0xF5,
+    /// Reserved for future use
+    Reserved0xF6 = 0xF6,
+    /// Reserved for future use
+    Reserved0xF7 = 0xF7,
+    /// Reserved for future use
+    Reserved0xF8 = 0xF8,
+    /// Reserved for future use
+    Reserved0xF9 = 0xF9,
+    /// Reserved for future use
+    Reserved0xFA = 0xFA,
+    /// Reserved for future use
+    Reserved0xFB = 0xFB,
+    /// The requested write operation cannot be fulfilled for reasons other than permissions.
+    WriteRequestRejected = 0xFC,
+    /// A Client Characteristic Configuration descriptor is not configured according to the
+    /// requirements of the profile or service.
+    ClientCharacteristicConfigurationDescriptorImproperlyConfigured = 0xFD,
+    /// A profile or service request cannot be serviced because an operation that has been
+    /// previously triggered is still in progress.
+    ProcedureAlreadyInProgress = 0xFE,
+    /// An attribute value is out of range as defined by a profile or service specification.
+    OutOfRange = 0xFF,
+}
+
+impl From<u8> for AttError {
+    fn from(value: u8) -> AttError {
+        // All possible values of u8 are defined for AttError, so we can safely transmute from u8 to
+        // AttError
+        unsafe { mem::transmute(value) }
+    }
+}
+
+/// Possible ATT requests.  See Table 3.37 in the Bluetooth Core Spec v4.1, Vol 3, Part F, Section
+/// 3.4.8.
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum AttRequest {
+    /// Section 3.4.1.1
+    ErrorResponse = 0x01,
+    /// Section 3.4.2.1
+    ExchangeMtuRequest = 0x02,
+    /// Section 3.4.2.2
+    ExchangeMtuResponse = 0x03,
+    /// Section 3.4.3.1
+    FindInformationRequest = 0x04,
+    /// Section 3.4.3.2
+    FindInformationResponse = 0x05,
+    /// Section 3.4.3.3
+    FindByTypeValueRequest = 0x06,
+    /// Section 3.4.3.4
+    FindByTypeValueResponse = 0x07,
+    /// Section 3.4.4.1
+    ReadByTypeRequest = 0x08,
+    /// Section 3.4.4.2
+    ReadByTypeResponse = 0x09,
+    /// Section 3.4.4.3
+    ReadRequest = 0x0A,
+    /// Section 3.4.4.4
+    ReadResponse = 0x0B,
+    /// Section 3.4.4.5
+    ReadBlobRequest = 0x0C,
+    /// Section 3.4.4.6
+    ReadBlobResponse = 0x0D,
+    /// Section 3.4.4.7
+    ReadMultipleRequest = 0x0E,
+    /// Section 3.4.4.8
+    ReadMultipleResponse = 0x0F,
+    /// Section 3.4.4.9
+    ReadByGroupTypeRequest = 0x10,
+    /// Section 3.4.4.10
+    ReadByGroupTypeResponse = 0x11,
+    /// Section 3.4.5.1
+    WriteRequest = 0x12,
+    /// Section 3.4.5.2
+    WriteResponse = 0x13,
+    /// Section 3.4.5.3
+    WriteCommand = 0x52,
+    /// Section 3.4.5.4
+    SignedWriteCommand = 0xD2,
+    /// Section 3.4.6.1
+    PrepareWriteRequest = 0x16,
+    /// Section 3.4.6.2
+    PrepareWriteResponse = 0x17,
+    /// Section 3.4.6.3
+    ExecuteWriteRequest = 0x18,
+    /// Section 3.4.6.4
+    ExecuteWriteResponse = 0x19,
+    /// Section 3.4.7.1
+    HandleValueNotification = 0x1B,
+    /// Section 3.4.7.2
+    HandleValueIndication = 0x1D,
+    /// Section 3.4.7.3
+    HandleValueConfirmation = 0x1E,
+}
+
+impl TryFrom<u8> for AttRequest {
+    type Error = Error;
+
+    fn try_from(value: u8) -> Result<AttRequest, Self::Error> {
+        match value {
+            0x01 => Ok(AttRequest::ErrorResponse),
+            0x02 => Ok(AttRequest::ExchangeMtuRequest),
+            0x03 => Ok(AttRequest::ExchangeMtuResponse),
+            0x04 => Ok(AttRequest::FindInformationRequest),
+            0x05 => Ok(AttRequest::FindInformationResponse),
+            0x06 => Ok(AttRequest::FindByTypeValueRequest),
+            0x07 => Ok(AttRequest::FindByTypeValueResponse),
+            0x08 => Ok(AttRequest::ReadByTypeRequest),
+            0x09 => Ok(AttRequest::ReadByTypeResponse),
+            0x0A => Ok(AttRequest::ReadRequest),
+            0x0B => Ok(AttRequest::ReadResponse),
+            0x0C => Ok(AttRequest::ReadBlobRequest),
+            0x0D => Ok(AttRequest::ReadBlobResponse),
+            0x0E => Ok(AttRequest::ReadMultipleRequest),
+            0x0F => Ok(AttRequest::ReadMultipleResponse),
+            0x10 => Ok(AttRequest::ReadByGroupTypeRequest),
+            0x11 => Ok(AttRequest::ReadByGroupTypeResponse),
+            0x12 => Ok(AttRequest::WriteRequest),
+            0x13 => Ok(AttRequest::WriteResponse),
+            0x52 => Ok(AttRequest::WriteCommand),
+            0xD2 => Ok(AttRequest::SignedWriteCommand),
+            0x16 => Ok(AttRequest::PrepareWriteRequest),
+            0x17 => Ok(AttRequest::PrepareWriteResponse),
+            0x18 => Ok(AttRequest::ExecuteWriteRequest),
+            0x19 => Ok(AttRequest::ExecuteWriteResponse),
+            0x1B => Ok(AttRequest::HandleValueNotification),
+            0x1D => Ok(AttRequest::HandleValueIndication),
+            0x1E => Ok(AttRequest::HandleValueConfirmation),
+            _ => Err(Error::BadAttRequestOpcode(value)),
+        }
+    }
+}
+
+fn to_att_error_response(buffer: &[u8]) -> Result<AttErrorResponse, hci::event::Error<Error>> {
+    require_len!(buffer, 9);
+    Ok(AttErrorResponse {
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
+        request: buffer[5].try_into().map_err(hci::event::Error::Vendor)?,
+        attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[6..])),
+        error: buffer[8].into(),
     })
 }
