@@ -1308,3 +1308,14 @@ fn gatt_prepare_write_response_empty() {
         other => panic!("Did not get GATT prepare write response: {:?}", other),
     }
 }
+
+#[test]
+fn gatt_execute_write_response() {
+    let buffer = [0x0D, 0x0C, 0x01, 0x02, 0];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattExecuteWriteResponse(conn_handle)) => {
+            assert_eq!(conn_handle, ConnectionHandle(0x0201));
+        }
+        other => panic!("Did not get GATT Execute Write Response: {:?}", other),
+    }
+}

@@ -268,6 +268,10 @@ pub enum BlueNRGEvent {
     /// spec, Vol 3, Part F, section 3.4.6.1 and 3.4.6.2
     GattPrepareWriteResponse(GattPrepareWriteResponse),
 
+    /// This event is generated in response to an Execute Write Request. See the Bluetooth Core v4.1
+    /// spec, Vol 3, Part F, section 3.4.6.3 and 3.4.6.4
+    GattExecuteWriteResponse(ConnectionHandle),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -400,6 +404,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0C0C => Ok(BlueNRGEvent::GattPrepareWriteResponse(
                 to_gatt_prepare_write_response(buffer)?,
             )),
+            0x0C0D => Ok(BlueNRGEvent::GattExecuteWriteResponse(to_conn_handle(
+                buffer,
+            )?)),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
