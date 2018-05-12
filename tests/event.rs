@@ -1488,3 +1488,16 @@ fn att_write_permit_request_empty() {
         other => panic!("Did not get ATT Write Permit Request: {:?}", other),
     }
 }
+
+#[test]
+fn att_read_permit_request() {
+    let buffer = [0x14, 0x0C, 0x01, 0x02, 0x03, 0x04, 2, 0x05, 0x06];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::AttReadPermitRequest(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(event.attribute_handle, AttributeHandle(0x0403));
+            assert_eq!(event.offset, 0x0605);
+        }
+        other => panic!("Did not get ATT Read Permit Request: {:?}", other),
+    }
+}

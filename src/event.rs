@@ -319,6 +319,16 @@ pub enum BlueNRGEvent {
     /// See the Bluetooth Core v4.1 spec, Vol 3, Part F, section 3.4.5.
     AttWritePermitRequest(AttributeValue),
 
+    /// This event is given to the application when a read request or read blob request is received
+    /// by the server from the client. This event will be given to the application only if the event
+    /// bit for this event generation is set when the characteristic was added. On receiving this
+    /// event, the application can update the value of the handle if it desires and when done it has
+    /// to use the aci_gatt_allow_read() command to indicate to the stack that it can send the
+    /// response to the client.
+    ///
+    /// See the Bluetooth Core v4.1 spec, Vol 3, Part F, section 3.4.4.
+    AttReadPermitRequest(AttReadPermitRequest),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -467,6 +477,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             ),
             0x0C13 => Ok(BlueNRGEvent::AttWritePermitRequest(
                 to_write_permit_request(buffer)?,
+            )),
+            0x0C14 => Ok(BlueNRGEvent::AttReadPermitRequest(
+                to_att_read_permit_request(buffer)?,
             )),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
@@ -2837,5 +2850,36 @@ fn to_att_error_response(buffer: &[u8]) -> Result<AttErrorResponse, hci::event::
         request: buffer[5].try_into().map_err(hci::event::Error::Vendor)?,
         attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[6..])),
         error: buffer[8].into(),
+    })
+}
+
+/// This event is given to the application when a read request or read blob request is received by
+/// the server from the client. This event will be given to the application only if the event bit
+/// for this event generation is set when the characteristic was added. On receiving this event, the
+/// application can update the value of the handle if it desires and when done it has to use the
+/// aci_gatt_allow_read() command to indicate to the stack that it can send the response to the
+/// client.
+///
+/// See the Bluetooth Core v4.1 spec, Vol 3, Part F, section 3.4.4.
+#[derive(Copy, Clone, Debug)]
+pub struct AttReadPermitRequest {
+    /// Handle of the connection on which there was the request to read the attribute
+    pub conn_handle: ConnectionHandle,
+
+    /// The handle of the attribute that has been requested by the client to be read.
+    pub attribute_handle: AttributeHandle,
+
+    /// Contains the offset from which the read has been requested.
+    pub offset: usize,
+}
+
+fn to_att_read_permit_request(
+    buffer: &[u8],
+) -> Result<AttReadPermitRequest, hci::event::Error<Error>> {
+    require_len!(buffer, 9);
+    Ok(AttReadPermitRequest {
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
+        attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[4..])),
+        offset: LittleEndian::read_u16(&buffer[7..]) as usize,
     })
 }
