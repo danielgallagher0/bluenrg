@@ -1278,3 +1278,33 @@ fn gatt_read_by_group_type_response_failed() {
         ),
     }
 }
+
+#[test]
+fn gatt_prepare_write_response() {
+    let buffer = [
+        0x0C, 0x0C, 0x01, 0x02, 8, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
+    ];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattPrepareWriteResponse(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(event.attribute_handle, AttributeHandle(0x0403));
+            assert_eq!(event.offset, 0x0605);
+            assert_eq!(event.value(), [0x07, 0x08, 0x09, 0x0a]);
+        }
+        other => panic!("Did not get GATT prepare write response: {:?}", other),
+    }
+}
+
+#[test]
+fn gatt_prepare_write_response_empty() {
+    let buffer = [0x0C, 0x0C, 0x01, 0x02, 4, 0x03, 0x04, 0x05, 0x06];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattPrepareWriteResponse(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(event.attribute_handle, AttributeHandle(0x0403));
+            assert_eq!(event.offset, 0x0605);
+            assert_eq!(event.value(), []);
+        }
+        other => panic!("Did not get GATT prepare write response: {:?}", other),
+    }
+}

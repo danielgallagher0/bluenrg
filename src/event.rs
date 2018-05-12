@@ -264,6 +264,10 @@ pub enum BlueNRGEvent {
     /// v4.1 spec, Vol 3, section 3.4.4.9 and 3.4.4.10.
     GattReadByGroupTypeResponse(GattReadByGroupTypeResponse),
 
+    /// This event is generated in response to a Prepare Write Request. See the Bluetooth Core v4.1
+    /// spec, Vol 3, Part F, section 3.4.6.1 and 3.4.6.2
+    GattPrepareWriteResponse(GattPrepareWriteResponse),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -392,6 +396,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             )),
             0x0C0A => Ok(BlueNRGEvent::GattReadByGroupTypeResponse(
                 to_gatt_read_by_group_type_response(buffer)?,
+            )),
+            0x0C0C => Ok(BlueNRGEvent::GattPrepareWriteResponse(
+                to_gatt_prepare_write_response(buffer)?,
             )),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
@@ -1932,5 +1939,65 @@ fn to_gatt_read_by_group_type_response(
         data_len: data_len - 1, // lose 1 byte to attribute_group_len
         attribute_group_len: attribute_group_len,
         attribute_data_buf: attribute_data_buf,
+    })
+}
+
+/// This event is generated in response to a Prepare Write Request. See the Bluetooth Core v4.1
+/// spec, Vol 3, Part F, section 3.4.6.1 and 3.4.6.2
+#[derive(Copy, Clone)]
+pub struct GattPrepareWriteResponse {
+    /// The connection handle related to the response.
+    pub conn_handle: ConnectionHandle,
+    /// The handle of the attribute to be written.
+    pub attribute_handle: AttributeHandle,
+    /// The offset of the first octet to be written.
+    pub offset: usize,
+
+    /// Number of valid bytes in |value_buf|
+    value_len: usize,
+    value_buf: [u8; MAX_WRITE_RESPONSE_VALUE_LEN],
+}
+
+// The maximum amount of data in the buffer is the max HCI packet size (255) less the other data in
+// the packet.
+const MAX_WRITE_RESPONSE_VALUE_LEN: usize = 246;
+
+impl Debug for GattPrepareWriteResponse {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(
+            f,
+            "{{.conn_handle = {:?}, .attribute_handle = {:?}, .offset = {}, .value = {:?}}}",
+            self.conn_handle,
+            self.attribute_handle,
+            self.offset,
+            first_16(self.value())
+        )
+    }
+}
+
+impl GattPrepareWriteResponse {
+    /// Returns the partial value of the attribute to be written.
+    pub fn value(&self) -> &[u8] {
+        &self.value_buf[..self.value_len]
+    }
+}
+
+fn to_gatt_prepare_write_response(
+    buffer: &[u8],
+) -> Result<GattPrepareWriteResponse, hci::event::Error<Error>> {
+    require_len_at_least!(buffer, 9);
+
+    let data_len = buffer[4] as usize;
+    require_len!(buffer, 5 + data_len);
+
+    let value_len = data_len - 4;
+    let mut value_buf = [0; MAX_WRITE_RESPONSE_VALUE_LEN];
+    value_buf[..value_len].copy_from_slice(&buffer[9..]);
+    Ok(GattPrepareWriteResponse {
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
+        attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[5..])),
+        offset: LittleEndian::read_u16(&buffer[7..]) as usize,
+        value_len: value_len,
+        value_buf: value_buf,
     })
 }
