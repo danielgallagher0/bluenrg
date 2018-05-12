@@ -343,6 +343,13 @@ pub enum BlueNRGEvent {
     /// See the Bluetooth Core v4.1 spec, Vol 3, Part F, section 3.4.4.
     AttReadMultiplePermitRequest(AttReadMultiplePermitRequest),
 
+    /// This event is raised when the number of available TX buffers is above a threshold TH (TH =
+    /// 2).  The event will be given only if a previous ACI command returned with
+    /// AttError::InsufficientResources.  On receiving this event, the application can continue to
+    /// send notifications by calling aci_gatt_update_char_value().
+    #[cfg(feature = "ms")]
+    GattTxPoolAvailable(GattTxPoolAvailable),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -498,6 +505,19 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0C15 => Ok(BlueNRGEvent::AttReadMultiplePermitRequest(
                 to_att_read_multiple_permit_request(buffer)?,
             )),
+            0x0C16 => {
+                #[cfg(feature = "ms")]
+                {
+                    Ok(BlueNRGEvent::GattTxPoolAvailable(
+                        to_gatt_tx_pool_available(buffer)?,
+                    ))
+                }
+
+                #[cfg(not(feature = "ms"))]
+                {
+                    Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code)))
+                }
+            }
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
@@ -2966,5 +2986,28 @@ fn to_att_read_multiple_permit_request(
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         handles_len: handle_len,
         handles_buf: handles,
+    })
+}
+
+/// This event is raised when the number of available TX buffers is above a threshold TH (TH = 2).
+/// The event will be given only if a previous ACI command returned with
+/// AttError::InsufficientResources.
+#[cfg(feature = "ms")]
+#[derive(Copy, Clone, Debug)]
+pub struct GattTxPoolAvailable {
+    /// Connection handle on which the gatt procedure is running.
+    pub conn_handle: ConnectionHandle,
+    /// Indicates the number of elements available in the attrTxPool List.
+    pub available_buffers: usize,
+}
+
+#[cfg(feature = "ms")]
+fn to_gatt_tx_pool_available(
+    buffer: &[u8],
+) -> Result<GattTxPoolAvailable, hci::event::Error<Error>> {
+    require_len!(buffer, 6);
+    Ok(GattTxPoolAvailable {
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
+        available_buffers: LittleEndian::read_u16(&buffer[4..]) as usize,
     })
 }

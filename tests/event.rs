@@ -1528,3 +1528,26 @@ fn att_read_multiple_permit_request_failed() {
         ),
     }
 }
+
+#[cfg(feature = "ms")]
+#[test]
+fn gatt_tx_pool_available() {
+    let buffer = [0x16, 0x0C, 0x01, 0x02, 0x03, 0x04];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattTxPoolAvailable(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(event.available_buffers, 0x0403);
+        }
+        other => panic!("Did not get GATT TX Pool Available event: {:?}", other),
+    }
+}
+
+#[cfg(not(feature = "ms"))]
+#[test]
+fn gatt_tx_pool_available_unknown() {
+    let buffer = [0x16, 0x0C, 0x01, 0x02, 0x03, 0x04];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::UnknownEvent(0x0C16))) => (),
+        other => panic!("Did not get unknown event: {:?}", other),
+    }
+}
