@@ -766,8 +766,8 @@ fn gap_procedure_complete() {
     let buffer = [0x07, 0x04, 0x01, 0x00];
     match BlueNRGEvent::new(&buffer) {
         Ok(BlueNRGEvent::GapProcedureComplete(evt)) => {
-            assert_eq!(evt.procedure, Procedure::LimitedDiscovery);
-            assert_eq!(evt.status, ProcedureStatus::Success);
+            assert_eq!(evt.procedure, GapProcedure::LimitedDiscovery);
+            assert_eq!(evt.status, GapProcedureStatus::Success);
         }
         other => panic!("Did not get GAP Procedure Complete: {:?}", other),
     }
@@ -783,8 +783,8 @@ fn gap_procedure_complete_name_discovery() {
             name.0[1] = 0x42;
             name.0[2] = 0x43;
             let name = name;
-            assert_eq!(evt.procedure, Procedure::NameDiscovery(3, name));
-            assert_eq!(evt.status, ProcedureStatus::Success);
+            assert_eq!(evt.procedure, GapProcedure::NameDiscovery(3, name));
+            assert_eq!(evt.status, GapProcedureStatus::Success);
         }
         other => panic!("Did not get GAP Procedure Complete: {:?}", other),
     }
@@ -797,9 +797,9 @@ fn gap_procedure_complete_general_connection_establishment() {
         Ok(BlueNRGEvent::GapProcedureComplete(evt)) => {
             assert_eq!(
                 evt.procedure,
-                Procedure::GeneralConnectionEstablishment(BdAddrBuffer([1, 2, 3, 4, 5, 6]))
+                GapProcedure::GeneralConnectionEstablishment(BdAddrBuffer([1, 2, 3, 4, 5, 6]))
             );
-            assert_eq!(evt.status, ProcedureStatus::Success);
+            assert_eq!(evt.status, GapProcedureStatus::Success);
         }
         other => panic!("Did not get GAP Procedure Complete: {:?}", other),
     }
@@ -1370,5 +1370,40 @@ fn gatt_notification_empty() {
             assert_eq!(event.value(), []);
         }
         other => panic!("Did not get GATT Notification: {:?}", other),
+    }
+}
+
+#[test]
+fn gatt_procedure_complete_success() {
+    let buffer = [0x10, 0x0C, 0x01, 0x02, 1, 0];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattProcedureComplete(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(event.status, GattProcedureStatus::Success);
+        }
+        other => panic!("Did not get GATT Procedure Complete: {:?}", other),
+    }
+}
+
+#[test]
+fn gatt_procedure_complete_failed() {
+    let buffer = [0x10, 0x0C, 0x01, 0x02, 1, 0x41];
+    match BlueNRGEvent::new(&buffer) {
+        Ok(BlueNRGEvent::GattProcedureComplete(event)) => {
+            assert_eq!(event.conn_handle, ConnectionHandle(0x0201));
+            assert_eq!(event.status, GattProcedureStatus::Failed);
+        }
+        other => panic!("Did not get GATT Procedure Complete: {:?}", other),
+    }
+}
+
+#[test]
+fn gatt_procedure_complete_error_unknown_code() {
+    let buffer = [0x10, 0x0C, 0x01, 0x02, 1, 0x40];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BNRGError::BadGattProcedureStatus(code))) => {
+            assert_eq!(code, 0x40);
+        }
+        other => panic!("Did not get Bad GATT Procedure Status: {:?}", other),
     }
 }

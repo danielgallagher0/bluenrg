@@ -131,6 +131,10 @@ pub enum Error {
     /// For the ATT Read by Group Type Response event: The packet ends with a partial attribute
     /// data group.
     AttReadByGroupTypeResponsePartial,
+
+    /// For the GATT Procedure Complete event: The status code was not recognized. Includes the
+    /// unrecognized byte.
+    BadGattProcedureStatus(u8),
 }
 
 /// Vendor-specific events for the BlueNRG-MS controllers.
@@ -278,6 +282,10 @@ pub enum BlueNRGEvent {
     /// This event is generated when an notification is received from the server.
     GattNotification(AttributeValue),
 
+    /// This event is generated when a GATT client procedure completes either with error or
+    /// successfully.
+    GattProcedureComplete(GattProcedureComplete),
+
     /// An unknown event was sent. Includes the event code but no other information about the
     /// event. The remaining data from the event is lost.
     UnknownEvent(u16),
@@ -413,6 +421,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             )?)),
             0x0C0E => Ok(BlueNRGEvent::GattIndication(to_attribute_value(buffer)?)),
             0x0C0F => Ok(BlueNRGEvent::GattNotification(to_attribute_value(buffer)?)),
+            0x0C10 => Ok(BlueNRGEvent::GattProcedureComplete(
+                to_gatt_procedure_complete(buffer)?,
+            )),
             _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
         }
     }
@@ -1091,9 +1102,9 @@ fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Erro
 #[derive(Copy, Clone, Debug)]
 pub struct GapProcedureComplete {
     /// Type of procedure that completed
-    pub procedure: Procedure,
+    pub procedure: GapProcedure,
     /// Status of the procedure
-    pub status: ProcedureStatus,
+    pub status: GapProcedureStatus,
 }
 
 /// Maximum length of the name returned in the NameDiscovery procedure.
@@ -1127,7 +1138,7 @@ impl PartialEq<NameBuffer> for NameBuffer {
 
 /// Procedures whose completion may be reported by GapProcedureComplete.
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub enum Procedure {
+pub enum GapProcedure {
     /// See section 9.2.5, Vol 3, Part C
     LimitedDiscovery,
     /// See section 9.2.6, Vol 3, Part C
@@ -1147,7 +1158,7 @@ pub enum Procedure {
 
 /// Possible results of a procedure
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub enum ProcedureStatus {
+pub enum GapProcedureStatus {
     /// BLE Status Success
     Success,
     /// BLE Status Failed
@@ -1156,14 +1167,14 @@ pub enum ProcedureStatus {
     AuthFailure,
 }
 
-impl TryFrom<u8> for ProcedureStatus {
+impl TryFrom<u8> for GapProcedureStatus {
     type Error = Error;
 
-    fn try_from(value: u8) -> Result<ProcedureStatus, Self::Error> {
+    fn try_from(value: u8) -> Result<GapProcedureStatus, Self::Error> {
         match value {
-            0x00 => Ok(ProcedureStatus::Success),
-            0x41 => Ok(ProcedureStatus::Failed),
-            0x05 => Ok(ProcedureStatus::AuthFailure),
+            0x00 => Ok(GapProcedureStatus::Success),
+            0x41 => Ok(GapProcedureStatus::Failed),
+            0x05 => Ok(GapProcedureStatus::AuthFailure),
             _ => Err(Error::BadGapProcedureStatus(value)),
         }
     }
@@ -1175,25 +1186,25 @@ fn to_gap_procedure_complete(
     require_len_at_least!(buffer, 4);
 
     let procedure = match buffer[2] {
-        0x01 => Procedure::LimitedDiscovery,
-        0x02 => Procedure::GeneralDiscovery,
+        0x01 => GapProcedure::LimitedDiscovery,
+        0x02 => GapProcedure::GeneralDiscovery,
         0x04 => {
             require_len_at_least!(buffer, 5);
             let name_len = buffer.len() - 4;
             let mut name = NameBuffer([0; MAX_NAME_LEN]);
             name.0[..name_len].copy_from_slice(&buffer[4..]);
 
-            Procedure::NameDiscovery(name_len, name)
+            GapProcedure::NameDiscovery(name_len, name)
         }
-        0x08 => Procedure::AutoConnectionEstablishment,
+        0x08 => GapProcedure::AutoConnectionEstablishment,
         0x10 => {
             require_len!(buffer, 10);
             let mut addr = BdAddrBuffer([0; 6]);
             addr.0.copy_from_slice(&buffer[4..10]);
-            Procedure::GeneralConnectionEstablishment(addr)
+            GapProcedure::GeneralConnectionEstablishment(addr)
         }
-        0x20 => Procedure::SelectiveConnectionEstablishment,
-        0x40 => Procedure::DirectConnectionEstablishment,
+        0x20 => GapProcedure::SelectiveConnectionEstablishment,
+        0x40 => GapProcedure::DirectConnectionEstablishment,
         _ => {
             return Err(hci::event::Error::Vendor(Error::BadGapProcedure(buffer[2])));
         }
@@ -2066,5 +2077,49 @@ fn to_attribute_value(buffer: &[u8]) -> Result<AttributeValue, hci::event::Error
         attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[5..])),
         value_len: value_len,
         value_buf: value_buf,
+    })
+}
+
+/// This event is generated when a GATT client procedure completes either with error or
+/// successfully.
+#[derive(Copy, Clone, Debug)]
+pub struct GattProcedureComplete {
+    /// The connection handle for which the gatt procedure has completed
+    pub conn_handle: ConnectionHandle,
+
+    /// Indicates whether the procedure completed with error (GattProcedureStatus::Failed) or was
+    /// successful (GattProcedureStatus::Success).
+    pub status: GattProcedureStatus,
+}
+
+/// Allowed status codes for the GATT Procedure Complete event.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum GattProcedureStatus {
+    /// BLE Status Success
+    Success,
+    /// BLE Status Failed
+    Failed,
+}
+
+impl TryFrom<u8> for GattProcedureStatus {
+    type Error = Error;
+
+    fn try_from(value: u8) -> Result<GattProcedureStatus, Self::Error> {
+        match value {
+            0x00 => Ok(GattProcedureStatus::Success),
+            0x41 => Ok(GattProcedureStatus::Failed),
+            _ => Err(Error::BadGattProcedureStatus(value)),
+        }
+    }
+}
+
+fn to_gatt_procedure_complete(
+    buffer: &[u8],
+) -> Result<GattProcedureComplete, hci::event::Error<Error>> {
+    require_len!(buffer, 6);
+
+    Ok(GattProcedureComplete {
+        conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
+        status: buffer[5].try_into().map_err(hci::event::Error::Vendor)?,
     })
 }
