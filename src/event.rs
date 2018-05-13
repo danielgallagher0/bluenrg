@@ -365,10 +365,6 @@ pub enum BlueNRGEvent {
     /// application.
     #[cfg(feature = "ms")]
     AttPrepareWritePermitRequest(AttPrepareWritePermitRequest),
-
-    /// An unknown event was sent. Includes the event code but no other information about the
-    /// event. The remaining data from the event is lost.
-    UnknownEvent(u16),
 }
 
 /// Newtype for a connection handle. For several events, the only data is a connection handle. Other
