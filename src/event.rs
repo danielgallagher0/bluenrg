@@ -11,6 +11,8 @@ use core::convert::{TryFrom, TryInto};
 use core::fmt::{Debug, Formatter, Result as FmtResult};
 use core::mem;
 
+pub use hci::{BdAddr, ConnectionHandle};
+
 /// Enumeration of potential errors when deserializing events.
 #[derive(Clone, Copy, Debug)]
 pub enum Error {
@@ -217,7 +219,7 @@ pub enum BlueNRGEvent {
     /// application needs to set its own address as well as the peer address to which it wants to
     /// connect to this reconnection address.
     #[cfg(not(feature = "ms"))]
-    GapReconnectionAddress(BdAddrBuffer),
+    GapReconnectionAddress(BdAddr),
 
     /// This event is generated when the master responds to the L2CAP connection update request
     /// packet. For more info see CONNECTION PARAMETER UPDATE RESPONSE and COMMAND REJECT in
@@ -366,11 +368,6 @@ pub enum BlueNRGEvent {
     #[cfg(feature = "ms")]
     AttPrepareWritePermitRequest(AttPrepareWritePermitRequest),
 }
-
-/// Newtype for a connection handle. For several events, the only data is a connection handle. Other
-/// events include a connection handle as one of the parameters.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct ConnectionHandle(pub u16);
 
 macro_rules! require_len {
     ($left:expr, $right:expr) => {
@@ -1139,7 +1136,7 @@ pub struct GapDeviceFound {
     pub event: GapDeviceFoundEvent,
 
     /// Address of the peer device found during scanning
-    pub bdaddr: BdAddr,
+    pub bdaddr: BdAddrType,
 
     /// Length of significant data
     pub data_len: usize,
@@ -1181,24 +1178,20 @@ impl TryFrom<u8> for GapDeviceFoundEvent {
     }
 }
 
-/// Newtype for BDADDR buffer.
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct BdAddrBuffer(pub [u8; 6]);
-
 /// Potential values for BDADDR
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub enum BdAddr {
+pub enum BdAddrType {
     /// Public address.
-    Public(BdAddrBuffer),
+    Public(BdAddr),
 
     /// Random address.
-    Random(BdAddrBuffer),
+    Random(BdAddr),
 }
 
-fn to_bdaddr(bd_addr_type: u8, addr: BdAddrBuffer) -> Result<BdAddr, Error> {
+fn to_bdaddr(bd_addr_type: u8, addr: BdAddr) -> Result<BdAddrType, Error> {
     match bd_addr_type {
-        0 => Ok(BdAddr::Public(addr)),
-        1 => Ok(BdAddr::Random(addr)),
+        0 => Ok(BdAddrType::Public(addr)),
+        1 => Ok(BdAddrType::Random(addr)),
         _ => Err(Error::BadGapBdAddrType(bd_addr_type)),
     }
 }
@@ -1215,7 +1208,7 @@ fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Erro
         return Err(hci::event::Error::Vendor(Error::GapRssiUnavailable));
     }
 
-    let mut addr = BdAddrBuffer([0; 6]);
+    let mut addr = BdAddr([0; 6]);
     addr.0.copy_from_slice(&buffer[4..10]);
     let mut event = GapDeviceFound {
         event: buffer[2].try_into().map_err(hci::event::Error::Vendor)?,
@@ -1281,7 +1274,7 @@ pub enum GapProcedure {
     /// See section 9.3.5, Vol 3, Part C
     AutoConnectionEstablishment,
     /// See section 9.3.6, Vol 3, Part C. Contains the reconnection address.
-    GeneralConnectionEstablishment(BdAddrBuffer),
+    GeneralConnectionEstablishment(BdAddr),
     /// See section 9.3.7, Vol 3, Part C
     SelectiveConnectionEstablishment,
     /// See section 9.3.8, Vol 3, Part C
@@ -1331,7 +1324,7 @@ fn to_gap_procedure_complete(
         0x08 => GapProcedure::AutoConnectionEstablishment,
         0x10 => {
             require_len!(buffer, 10);
-            let mut addr = BdAddrBuffer([0; 6]);
+            let mut addr = BdAddr([0; 6]);
             addr.0.copy_from_slice(&buffer[4..10]);
             GapProcedure::GeneralConnectionEstablishment(addr)
         }
@@ -1349,9 +1342,9 @@ fn to_gap_procedure_complete(
 }
 
 #[cfg(not(feature = "ms"))]
-fn to_gap_reconnection_address(buffer: &[u8]) -> Result<BdAddrBuffer, hci::event::Error<Error>> {
+fn to_gap_reconnection_address(buffer: &[u8]) -> Result<BdAddr, hci::event::Error<Error>> {
     require_len!(buffer, 8);
-    let mut addr = BdAddrBuffer([0; 6]);
+    let mut addr = BdAddr([0; 6]);
     addr.0.copy_from_slice(&buffer[2..]);
     Ok(addr)
 }

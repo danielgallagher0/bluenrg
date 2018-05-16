@@ -692,10 +692,7 @@ fn gap_device_found() {
     match BlueNRGEvent::new(&buffer) {
         Ok(BlueNRGEvent::GapDeviceFound(event)) => {
             assert_eq!(event.event, GapDeviceFoundEvent::Advertisement);
-            assert_eq!(
-                event.bdaddr,
-                BdAddr::Public(BdAddrBuffer([1, 2, 3, 4, 5, 6]))
-            );
+            assert_eq!(event.bdaddr, BdAddrType::Public(BdAddr([1, 2, 3, 4, 5, 6])));
             assert_eq!(event.rssi, 0x04);
 
             let mut data = [0; 31];
@@ -797,7 +794,7 @@ fn gap_procedure_complete_general_connection_establishment() {
         Ok(BlueNRGEvent::GapProcedureComplete(evt)) => {
             assert_eq!(
                 evt.procedure,
-                GapProcedure::GeneralConnectionEstablishment(BdAddrBuffer([1, 2, 3, 4, 5, 6]))
+                GapProcedure::GeneralConnectionEstablishment(BdAddr([1, 2, 3, 4, 5, 6]))
             );
             assert_eq!(evt.status, GapProcedureStatus::Success);
         }
@@ -852,7 +849,7 @@ fn gap_addr_not_resolved() {
     let buffer = [0x08, 0x04, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06];
     match BlueNRGEvent::new(&buffer) {
         Ok(BlueNRGEvent::GapReconnectionAddress(bdaddr)) => {
-            assert_eq!(bdaddr.0, [0x01, 0x02, 0x03, 0x04, 0x05, 0x06])
+            assert_eq!(bdaddr, BdAddr([0x01, 0x02, 0x03, 0x04, 0x05, 0x06]))
         }
         other => panic!("Did not get Address not Resolved event: {:?}", other),
     }
