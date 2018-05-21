@@ -50,6 +50,7 @@ extern crate nb;
 
 use byteorder::{ByteOrder, LittleEndian};
 use core::cmp::min;
+use core::convert::TryFrom;
 use core::marker::PhantomData;
 use hci::host::uart::Error as UartError;
 
@@ -376,6 +377,40 @@ impl LocalVersionInfoExt for hci::event::command::LocalVersionInfo {
             major: (self.hci_revision & 0xFF) as u8,
             minor: ((self.lmp_subversion >> 4) & 0xF) as u8,
             patch: (self.lmp_subversion & 0xF) as u8,
+        }
+    }
+}
+
+/// Hardware event codes returned by the HardwareError HCI event.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum HardwareError {
+    /// Error on the SPI bus has been detected, most likely caused by incorrect SPI configuration on
+    /// the external micro-controller.
+    SpiFramingError,
+
+    /// Caused by a slow crystal startup and they are an indication that the HS_STARTUP_TIME in the
+    /// device configuration needs to be tuned. After this event is recommended to hardware reset
+    /// the device.
+    RadioStateError,
+
+    /// Caused by a slow crystal startup and they are an indication that the HS_STARTUP_TIME in the
+    /// device configuration needs to be tuned. After this event is recommended to hardware reset
+    /// the device.
+    TimerOverrunError,
+}
+
+/// Error type for TryFrom<u8> to HardwareError. Includes the invalid byte.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct InvalidHardwareError(pub u8);
+
+impl TryFrom<u8> for HardwareError {
+    type Error = InvalidHardwareError;
+    fn try_from(value: u8) -> Result<HardwareError, Self::Error> {
+        match value {
+            0 => Ok(HardwareError::SpiFramingError),
+            1 => Ok(HardwareError::RadioStateError),
+            2 => Ok(HardwareError::TimerOverrunError),
+            _ => Err(InvalidHardwareError(value)),
         }
     }
 }
