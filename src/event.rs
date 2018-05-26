@@ -1149,35 +1149,7 @@ pub struct GapDeviceFound {
     pub rssi: i8,
 }
 
-/// Potential values for the GAP Device Found event type.
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum GapDeviceFoundEvent {
-    /// Connectable undirected advertising
-    Advertisement,
-    /// Connectable directed advertising
-    DirectAdvertisement,
-    /// Scannable undirected advertising
-    Scan,
-    /// Non connectable undirected advertising
-    NonConnectableAdvertisement,
-    /// Scan Response
-    ScanResponse,
-}
-
-impl TryFrom<u8> for GapDeviceFoundEvent {
-    type Error = Error;
-
-    fn try_from(value: u8) -> Result<GapDeviceFoundEvent, Self::Error> {
-        match value {
-            0 => Ok(GapDeviceFoundEvent::Advertisement),
-            1 => Ok(GapDeviceFoundEvent::DirectAdvertisement),
-            2 => Ok(GapDeviceFoundEvent::Scan),
-            3 => Ok(GapDeviceFoundEvent::NonConnectableAdvertisement),
-            4 => Ok(GapDeviceFoundEvent::ScanResponse),
-            _ => Err(Error::BadGapDeviceFoundEvent(value)),
-        }
-    }
-}
+pub use hci::event::AdvertisementEvent as GapDeviceFoundEvent;
 
 fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Error<Error>> {
     require_len_at_least!(buffer, 12);
@@ -1194,7 +1166,13 @@ fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Erro
     let mut addr = BdAddr([0; 6]);
     addr.0.copy_from_slice(&buffer[4..10]);
     let mut event = GapDeviceFound {
-        event: buffer[2].try_into().map_err(hci::event::Error::Vendor)?,
+        event: buffer[2].try_into().map_err(|e| {
+            if let hci::event::Error::BadLeAdvertisementType(code) = e {
+                hci::event::Error::Vendor(Error::BadGapDeviceFoundEvent(code))
+            } else {
+                unreachable!()
+            }
+        })?,
         bdaddr: hci::to_bdaddr_type(buffer[3], addr)
             .map_err(|e| hci::event::Error::Vendor(Error::BadGapBdAddrType(e.0)))?,
         data_len: data_len,
