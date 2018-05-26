@@ -1038,7 +1038,8 @@ fn to_l2cap_connection_update_request(
 
     let interval_min = LittleEndian::read_u16(&buffer[8..]);
     let interval_max = LittleEndian::read_u16(&buffer[10..]);
-    if outside_interval_range(interval_min) || outside_interval_range(interval_max)
+    if outside_interval_range(interval_min)
+        || outside_interval_range(interval_max)
         || interval_min > interval_max
     {
         return Err(hci::event::Error::Vendor(

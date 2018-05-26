@@ -35,18 +35,24 @@ fn hal_events_lost() {
     match BlueNRGEvent::new(&buffer) {
         Ok(BlueNRGEvent::EventsLost(flags)) => assert_eq!(
             flags,
-            EventFlags::ENCRYPTION_CHANGE | EventFlags::COMMAND_COMPLETE
-                | EventFlags::HARDWARE_ERROR | EventFlags::ENCRYPTION_KEY_REFRESH
-                | EventFlags::GAP_PAIRING_COMPLETE | EventFlags::GAP_PASS_KEY_REQUEST
-                | EventFlags::GAP_BOND_LOST | EventFlags::GAP_PROCEDURE_COMPLETE
+            EventFlags::ENCRYPTION_CHANGE
+                | EventFlags::COMMAND_COMPLETE
+                | EventFlags::HARDWARE_ERROR
+                | EventFlags::ENCRYPTION_KEY_REFRESH
+                | EventFlags::GAP_PAIRING_COMPLETE
+                | EventFlags::GAP_PASS_KEY_REQUEST
+                | EventFlags::GAP_BOND_LOST
+                | EventFlags::GAP_PROCEDURE_COMPLETE
                 | EventFlags::GATT_ATTRIBUTE_MODIFIED
                 | EventFlags::GATT_PROCEDURE_TIMEOUT
                 | EventFlags::ATT_EXCHANGE_MTU_RESPONSE
                 | EventFlags::ATT_FIND_INFORMATION_RESPONSE
                 | EventFlags::ATT_FIND_BY_TYPE_VALUE_RESPONSE
-                | EventFlags::ATT_READ_BY_TYPE_RESPONSE | EventFlags::ATT_READ_RESPONSE
+                | EventFlags::ATT_READ_BY_TYPE_RESPONSE
+                | EventFlags::ATT_READ_RESPONSE
                 | EventFlags::ATT_READ_BLOB_RESPONSE
-                | EventFlags::ATT_EXECUTE_WRITE_RESPONSE | EventFlags::GATT_INDICATION
+                | EventFlags::ATT_EXECUTE_WRITE_RESPONSE
+                | EventFlags::GATT_INDICATION
                 | EventFlags::GATT_ERROR_RESPONSE
                 | EventFlags::GATT_DISCOVER_OR_READ_CHARACTERISTIC_BY_UUID_RESPONSE
                 | EventFlags::GATT_READ_MULTIPLE_PERMIT_REQUEST
