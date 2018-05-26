@@ -11,7 +11,7 @@ use core::convert::{TryFrom, TryInto};
 use core::fmt::{Debug, Formatter, Result as FmtResult};
 use core::mem;
 
-pub use hci::{BdAddr, ConnectionHandle};
+pub use hci::{BdAddr, BdAddrType, ConnectionHandle};
 
 /// Enumeration of potential errors when deserializing events.
 #[derive(Clone, Copy, Debug)]
@@ -1179,24 +1179,6 @@ impl TryFrom<u8> for GapDeviceFoundEvent {
     }
 }
 
-/// Potential values for BDADDR
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum BdAddrType {
-    /// Public address.
-    Public(BdAddr),
-
-    /// Random address.
-    Random(BdAddr),
-}
-
-fn to_bdaddr(bd_addr_type: u8, addr: BdAddr) -> Result<BdAddrType, Error> {
-    match bd_addr_type {
-        0 => Ok(BdAddrType::Public(addr)),
-        1 => Ok(BdAddrType::Random(addr)),
-        _ => Err(Error::BadGapBdAddrType(bd_addr_type)),
-    }
-}
-
 fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Error<Error>> {
     require_len_at_least!(buffer, 12);
 
@@ -1213,7 +1195,8 @@ fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Erro
     addr.0.copy_from_slice(&buffer[4..10]);
     let mut event = GapDeviceFound {
         event: buffer[2].try_into().map_err(hci::event::Error::Vendor)?,
-        bdaddr: to_bdaddr(buffer[3], addr).map_err(hci::event::Error::Vendor)?,
+        bdaddr: hci::to_bdaddr_type(buffer[3], addr)
+            .map_err(|e| hci::event::Error::Vendor(Error::BadGapBdAddrType(e.0)))?,
         data_len: data_len,
         data: [0; 31],
         rssi: rssi,
