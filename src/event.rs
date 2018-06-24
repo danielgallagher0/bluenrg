@@ -1173,7 +1173,7 @@ fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Erro
                 unreachable!()
             }
         })?,
-        bdaddr: hci::to_bdaddr_type(buffer[3], addr)
+        bdaddr: hci::to_bd_addr_type(buffer[3], addr)
             .map_err(|e| hci::event::Error::Vendor(Error::BadGapBdAddrType(e.0)))?,
         data_len: data_len,
         data: [0; 31],

@@ -36,6 +36,7 @@
 //! [`specification`]: https://www.bluetooth.com/specifications/bluetooth-core-specification
 
 #![no_std]
+#![feature(const_fn)]
 #![feature(try_from)]
 #![deny(missing_docs)]
 
@@ -53,10 +54,15 @@ use core::cmp::min;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
 use hci::host::uart::Error as UartError;
+use hci::host::HciHeader;
+use hci::Controller;
 
 mod cb;
+mod command;
 pub mod event;
+mod opcode;
 
+pub use command::*;
 pub use event::BlueNRGEvent;
 pub use event::Error;
 
@@ -86,7 +92,7 @@ pub struct BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin> {
 /// An ActiveBlueNRG should not be created by the application, but is passed to closures given to
 /// [BlueNRG::with_spi].  ActiveBlueNRG implements [`bluetooth_hci::Controller`], so it is used to
 /// access the HCI functions for the controller.
-struct ActiveBlueNRG<
+pub struct ActiveBlueNRG<
     'spi,
     'dbuf: 'spi,
     SPI: 'spi,
@@ -217,6 +223,30 @@ where
 
         Ok(())
     }
+
+    fn write_command(
+        &mut self,
+        opcode: opcode::Opcode,
+        params: &[u8],
+    ) -> nb::Result<(), UartError<E, Error>> {
+        const HEADER_LEN: usize = 4;
+        let mut header = [0; HEADER_LEN];
+        hci::host::uart::CommandHeader::new(opcode, params.len()).into_bytes(&mut header);
+
+        self.write(&header, &params)
+    }
+
+    /// Send an L2CAP connection parameter update request from the peripheral to the central
+    /// device.
+    pub fn aci_l2cap_connection_parameter_update_request(
+        &mut self,
+        params: &L2CapConnectionParameterUpdateRequest,
+    ) -> nb::Result<(), UartError<E, Error>> {
+        let mut bytes = [0; 10];
+        params.into_bytes(&mut bytes);
+
+        self.write_command(opcode::L2CAP_CONN_PARAM_UPDATE_REQ, &bytes)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller
@@ -316,7 +346,7 @@ where
     /// Returns the result of the invoked body.
     pub fn with_spi<'spi, T, F, E>(&mut self, spi: &'spi mut SPI, body: F) -> T
     where
-        F: FnOnce(&mut hci::host::uart::Hci<UartError<E, Error>, BlueNRGEvent, Error>) -> T,
+        F: FnOnce(&mut ActiveBlueNRG<SPI, OutputPin1, OutputPin2, InputPin>) -> T,
         SPI: hal::blocking::spi::transfer::Default<u8, Error = E>
             + hal::blocking::spi::write::Default<u8, Error = E>,
     {
