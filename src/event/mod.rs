@@ -5,6 +5,8 @@
 //! deserialize buffers into them.
 extern crate bluetooth_hci as hci;
 
+pub mod command;
+
 use byteorder::{ByteOrder, LittleEndian};
 use core::cmp::{min, PartialEq};
 use core::convert::{TryFrom, TryInto};
@@ -395,6 +397,7 @@ fn first_16<T>(buffer: &[T]) -> &[T] {
 
 impl hci::event::VendorEvent for BlueNRGEvent {
     type Error = Error;
+    type ReturnParameters = command::ReturnParameters;
 
     fn new(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
         require_len_at_least!(buffer, 2);
