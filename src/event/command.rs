@@ -6,6 +6,9 @@
 
 extern crate bluetooth_hci as hci;
 
+use byteorder::{ByteOrder, LittleEndian};
+use core::convert::TryInto;
+
 /// Vendor-specific commands that may generate the [Command
 /// Complete](hci::event::Event::CommandComplete::Vendor) event. If the commands have defined return
 /// parameters, they are included in the enum.
@@ -13,7 +16,7 @@ extern crate bluetooth_hci as hci;
 pub enum ReturnParameters {}
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
-    type Error = super::Error;
+    type Error = super::BlueNRGError;
 
     fn new(_buffer: &[u8]) -> Result<Self, Self::Error> {
         Err(super::Error::UnknownEvent(0))

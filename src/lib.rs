@@ -63,8 +63,8 @@ pub mod event;
 mod opcode;
 
 pub use command::*;
+pub use event::BlueNRGError;
 pub use event::BlueNRGEvent;
-pub use event::Error;
 
 /// Handle for interfacing with the BlueNRG-MS.
 pub struct BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin> {
@@ -117,7 +117,9 @@ pub struct ActiveBlueNRG<
 ///
 /// - Returns nb::Error::WouldBlock if the first byte indicates that the controller is not yet
 ///   ready.
-fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<UartError<E, Error>>> {
+fn parse_spi_header<E>(
+    header: &[u8; 5],
+) -> Result<(u16, u16), nb::Error<UartError<E, BlueNRGError>>> {
     const BNRG_READY: u8 = 0x02;
     if header[0] != BNRG_READY {
         Err(nb::Error::WouldBlock)
@@ -152,7 +154,11 @@ where
     ///   reports that it does not have enough space to accept the combined header and payload.
     ///
     /// - Returns a communication error if there is an error communicating over the SPI bus.
-    fn try_write(&mut self, header: &[u8], payload: &[u8]) -> nb::Result<(), UartError<E, Error>> {
+    fn try_write(
+        &mut self,
+        header: &[u8],
+        payload: &[u8],
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
         let mut write_header = [0x0a, 0x00, 0x00, 0x00, 0x00];
         self.spi
             .transfer(&mut write_header)
@@ -192,7 +198,7 @@ where
     /// - Returns nb::Error::WouldBlock if the controller is not ready.
     ///
     /// - Returns a communication error if there is an error communicating over the SPI bus.
-    fn read_available_data(&mut self) -> nb::Result<(), UartError<E, Error>> {
+    fn read_available_data(&mut self) -> nb::Result<(), UartError<E, BlueNRGError>> {
         if !self.d.data_ready() {
             return Err(nb::Error::WouldBlock);
         }
@@ -228,7 +234,7 @@ where
         &mut self,
         opcode: opcode::Opcode,
         params: &[u8],
-    ) -> nb::Result<(), UartError<E, Error>> {
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
         const HEADER_LEN: usize = 4;
         let mut header = [0; HEADER_LEN];
         hci::host::uart::CommandHeader::new(opcode, params.len()).into_bytes(&mut header);
@@ -241,7 +247,7 @@ where
     pub fn aci_l2cap_connection_parameter_update_request(
         &mut self,
         params: &L2CapConnectionParameterUpdateRequest,
-    ) -> nb::Result<(), UartError<E, Error>> {
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
         let mut bytes = [0; 10];
         params.into_bytes(&mut bytes);
 
@@ -257,7 +263,7 @@ where
     OutputPin2: hal::digital::OutputPin,
     InputPin: hal::digital::InputPin,
 {
-    type Error = UartError<E, Error>;
+    type Error = UartError<E, BlueNRGError>;
 
     fn write(&mut self, header: &[u8], payload: &[u8]) -> nb::Result<(), Self::Error> {
         self.d.chip_select.set_low();

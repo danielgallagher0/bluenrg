@@ -2,7 +2,6 @@ extern crate bluenrg;
 extern crate bluetooth_hci as hci;
 extern crate byteorder;
 
-use bluenrg::event::Error as BNRGError;
 use bluenrg::event::*;
 use byteorder::{ByteOrder, LittleEndian};
 use hci::event::{Error as HciError, VendorEvent};
@@ -20,7 +19,7 @@ fn hal_initialized() {
 fn hal_initialized_failure() {
     let buffer = [0x01, 0x00, 0x00];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::UnknownResetReason(val))) => assert_eq!(val, 0),
+        Err(HciError::Vendor(BlueNRGError::UnknownResetReason(val))) => assert_eq!(val, 0),
         other => panic!("Did not get unknown reset reason: {:?}", other),
     }
 }
@@ -75,7 +74,7 @@ fn hal_events_lost_failure() {
         0b00000010, 0b00000000,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadEventFlags(_))) => (),
+        Err(HciError::Vendor(BlueNRGError::BadEventFlags(_))) => (),
         other => panic!("Did not get BadEventFlags: {:?}", other),
     }
 }
@@ -88,7 +87,7 @@ fn hal_events_lost_unknown() {
         0b00000000, 0b00000000,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::UnknownEvent(0x0002))) => (),
+        Err(HciError::Vendor(BlueNRGError::UnknownEvent(0x0002))) => (),
         other => panic!("Did not get unknown event: {:?}", other),
     }
 }
@@ -184,7 +183,7 @@ fn hal_crash_info_failed_bad_crash_reason() {
     buffer[2] = 0x03;
     let buffer = buffer;
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::UnknownCrashReason(byte))) => assert_eq!(byte, 0x03),
+        Err(HciError::Vendor(BlueNRGError::UnknownCrashReason(byte))) => assert_eq!(byte, 0x03),
         other => panic!("Did not get bad crash type: {:?}", other),
     }
 }
@@ -213,7 +212,7 @@ fn hal_crash_info_unknown() {
     buffer[0] = 0x03; // event code
     buffer[1] = 0x00;
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::UnknownEvent(0x0003))) => (),
+        Err(HciError::Vendor(BlueNRGError::UnknownEvent(0x0003))) => (),
         other => panic!("Did not get unknown event: {:?}", other),
     }
 }
@@ -307,7 +306,7 @@ fn l2cap_connection_update_response_failed_code() {
         0x0504,
     );
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadL2CapConnectionResponseCode(code))) => {
+        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionResponseCode(code))) => {
             assert_eq!(code, 0x02)
         }
         other => panic!("Did not get bad response code: {:?}", other),
@@ -323,7 +322,7 @@ fn l2cap_connection_update_response_failed_data_length() {
         0x0504,
     );
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadL2CapDataLength(len, 6))) => {
+        Err(HciError::Vendor(BlueNRGError::BadL2CapDataLength(len, 6))) => {
             assert_eq!(len, CONNECTION_UPDATE_RESP_EVENT_DATA_LEN - 1)
         }
         other => panic!("Did not get L2Cap data length code: {:?}", other),
@@ -339,7 +338,7 @@ fn l2cap_connection_update_response_failed_l2cap_length() {
         0x0504,
     );
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadL2CapLength(len, 2))) => {
+        Err(HciError::Vendor(BlueNRGError::BadL2CapLength(len, 2))) => {
             assert_eq!(len, CONNECTION_UPDATE_RESP_L2CAP_LEN + 1)
         }
         other => panic!("Did not get L2CAP length: {:?}", other),
@@ -355,7 +354,7 @@ fn l2cap_connection_update_response_failed_unknown_result() {
         0x0002,
     );
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadL2CapConnectionResponseResult(result))) => {
+        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionResponseResult(result))) => {
             assert_eq!(result, 0x0002)
         }
         other => panic!("Did not get bad result: {:?}", other),
@@ -371,7 +370,7 @@ fn l2cap_connection_update_response_failed_unknown_rejection_reason() {
         0x0003,
     );
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadL2CapRejectionReason(reason))) => {
+        Err(HciError::Vendor(BlueNRGError::BadL2CapRejectionReason(reason))) => {
             assert_eq!(reason, 0x0003)
         }
         other => panic!("Did not get bad rejection reason: {:?}", other),
@@ -393,7 +392,7 @@ fn l2cap_procedure_timeout() {
 fn l2cap_procedure_timeout_failed() {
     let buffer = [0x01, 0x08, 0x01, 0x02, 0x01];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadL2CapDataLength(len, 0))) => assert_eq!(len, 1),
+        Err(HciError::Vendor(BlueNRGError::BadL2CapDataLength(len, 0))) => assert_eq!(len, 1),
         other => panic!("Did not get L2Cap data length code: {:?}", other),
     }
 }
@@ -456,7 +455,7 @@ fn l2cap_connection_update_request_failed_event_data_len() {
         3200,
     );
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadL2CapDataLength(
+        Err(HciError::Vendor(BlueNRGError::BadL2CapDataLength(
             len,
             L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
         ))) => assert_eq!(len, L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN - 1),
@@ -475,9 +474,10 @@ fn l2cap_connection_update_request_failed_l2cap_len() {
         3200,
     );
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadL2CapLength(len, L2CAP_CONN_UPDATE_REQ_L2CAP_LEN))) => {
-            assert_eq!(len, L2CAP_CONN_UPDATE_REQ_L2CAP_LEN - 1)
-        }
+        Err(HciError::Vendor(BlueNRGError::BadL2CapLength(
+            len,
+            L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
+        ))) => assert_eq!(len, L2CAP_CONN_UPDATE_REQ_L2CAP_LEN - 1),
         other => panic!("Did not get L2CAP length: {:?}", other),
     }
 }
@@ -493,7 +493,7 @@ fn l2cap_connection_update_request_failed_bad_interval() {
         3200,
     );
     match BlueNRGEvent::new(&buffer_bad_min) {
-        Err(HciError::Vendor(BNRGError::BadL2CapConnectionUpdateRequestInterval(min, max))) => {
+        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionUpdateRequestInterval(min, max))) => {
             assert_eq!(min, 5);
             assert_eq!(max, 3200);
         }
@@ -512,7 +512,7 @@ fn l2cap_connection_update_request_failed_bad_interval() {
         3200,
     );
     match BlueNRGEvent::new(&buffer_bad_max) {
-        Err(HciError::Vendor(BNRGError::BadL2CapConnectionUpdateRequestInterval(min, max))) => {
+        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionUpdateRequestInterval(min, max))) => {
             assert_eq!(min, 6);
             assert_eq!(max, 3201);
         }
@@ -531,7 +531,7 @@ fn l2cap_connection_update_request_failed_bad_interval() {
         3200,
     );
     match BlueNRGEvent::new(&buffer_bad_range) {
-        Err(HciError::Vendor(BNRGError::BadL2CapConnectionUpdateRequestInterval(min, max))) => {
+        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionUpdateRequestInterval(min, max))) => {
             assert_eq!(min, 100);
             assert_eq!(max, 99);
         }
@@ -553,7 +553,10 @@ fn l2cap_connection_update_request_failed_bad_slave_latency() {
         3200,
     );
     match BlueNRGEvent::new(&buffer_absolute_max) {
-        Err(HciError::Vendor(BNRGError::BadL2CapConnectionUpdateRequestLatency(latency, 500))) => {
+        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionUpdateRequestLatency(
+            latency,
+            500,
+        ))) => {
             assert_eq!(latency, 500);
         }
         other => panic!(
@@ -571,7 +574,7 @@ fn l2cap_connection_update_request_failed_bad_slave_latency() {
         10,
     );
     match BlueNRGEvent::new(&buffer_relative_max) {
-        Err(HciError::Vendor(BNRGError::BadL2CapConnectionUpdateRequestLatency(latency, 3))) => {
+        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionUpdateRequestLatency(latency, 3))) => {
             assert_eq!(latency, 6);
         }
         other => panic!(
@@ -592,7 +595,7 @@ fn l2cap_connection_update_request_failed_bad_timeout_mult() {
         9,
     );
     match BlueNRGEvent::new(&buffer_low) {
-        Err(HciError::Vendor(BNRGError::BadL2CapConnectionUpdateRequestTimeoutMult(mult))) => {
+        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionUpdateRequestTimeoutMult(mult))) => {
             assert_eq!(mult, 9);
         }
         other => panic!(
@@ -610,7 +613,7 @@ fn l2cap_connection_update_request_failed_bad_timeout_mult() {
         3201,
     );
     match BlueNRGEvent::new(&buffer_high) {
-        Err(HciError::Vendor(BNRGError::BadL2CapConnectionUpdateRequestTimeoutMult(mult))) => {
+        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionUpdateRequestTimeoutMult(mult))) => {
             assert_eq!(mult, 3201);
         }
         other => panic!(
@@ -645,7 +648,7 @@ fn gap_pairing_complete() {
 fn gap_pairing_complete_failed() {
     let buffer = [0x01, 0x04, 0x01, 0x02, 0x03];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadGapPairingStatus(value))) => assert_eq!(value, 3),
+        Err(HciError::Vendor(BlueNRGError::BadGapPairingStatus(value))) => assert_eq!(value, 3),
         other => panic!("Did not get bad pairing status: {:?}", other),
     }
 }
@@ -719,7 +722,7 @@ fn gap_device_found_failure_bad_event() {
         0x06, 0x04, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 3, 0x01, 0x02, 0x03, 0x04,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadGapDeviceFoundEvent(code))) => {
+        Err(HciError::Vendor(BlueNRGError::BadGapDeviceFoundEvent(code))) => {
             assert_eq!(code, 0x05);
         }
         other => panic!("Did not get bad GAP device found event: {:?}", other),
@@ -732,7 +735,7 @@ fn gap_device_found_failure_bad_bdaddr_type() {
         0x06, 0x04, 0x04, 0x02, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 3, 0x01, 0x02, 0x03, 0x04,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadGapBdAddrType(bdaddr_type))) => {
+        Err(HciError::Vendor(BlueNRGError::BadGapBdAddrType(bdaddr_type))) => {
             assert_eq!(bdaddr_type, 0x02);
         }
         other => panic!("Did not get bad GAP device found event: {:?}", other),
@@ -759,7 +762,7 @@ fn gap_device_found_failure_bad_rssi() {
         0x06, 0x04, 0x04, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 3, 0x01, 0x02, 0x03, 0x7F,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::GapRssiUnavailable)) => (),
+        Err(HciError::Vendor(BlueNRGError::GapRssiUnavailable)) => (),
         other => panic!("Did not get bad GAP RSSI: {:?}", other),
     }
 }
@@ -812,7 +815,7 @@ fn gap_procedure_complete_general_connection_establishment() {
 fn gap_procedure_complete_failed_bad_procedure() {
     let buffer = [0x07, 0x04, 0x03, 0x00];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadGapProcedure(code))) => assert_eq!(code, 0x03),
+        Err(HciError::Vendor(BlueNRGError::BadGapProcedure(code))) => assert_eq!(code, 0x03),
         other => panic!("Did not get bad GAP Procedure code: {:?}", other),
     }
 }
@@ -821,7 +824,7 @@ fn gap_procedure_complete_failed_bad_procedure() {
 fn gap_procedure_complete_failed_bad_status() {
     let buffer = [0x07, 0x04, 0x02, 0x01];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadGapProcedureStatus(code))) => assert_eq!(code, 0x01),
+        Err(HciError::Vendor(BlueNRGError::BadGapProcedureStatus(code))) => assert_eq!(code, 0x01),
         other => panic!("Did not get bad GAP Procedure status: {:?}", other),
     }
 }
@@ -1025,7 +1028,7 @@ fn att_find_information_response_128bit_uuids() {
 fn att_find_information_response_failed_format() {
     let buffer = [0x04, 0x0C, 0x01, 0x02, 1, 3];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadAttFindInformationResponseFormat(3))) => (),
+        Err(HciError::Vendor(BlueNRGError::BadAttFindInformationResponseFormat(3))) => (),
         other => panic!("Did not get bad ATT Find info response format: {:?}", other),
     }
 }
@@ -1036,7 +1039,7 @@ fn att_find_information_response_failed_partial_uuid() {
         0x04, 0x0C, 0x01, 0x02, 11, 1, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::AttFindInformationResponsePartialPair16)) => (),
+        Err(HciError::Vendor(BlueNRGError::AttFindInformationResponsePartialPair16)) => (),
         other => panic!(
             "Did not get bad ATT Find info response partial pair: {:?}",
             other
@@ -1078,7 +1081,7 @@ fn att_find_by_type_value_response_failed_partial_pair() {
         0x05, 0x0C, 0x01, 0x02, 7, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::AttFindByTypeValuePartial)) => (),
+        Err(HciError::Vendor(BlueNRGError::AttFindByTypeValuePartial)) => (),
         other => panic!(
             "Did not get find-by-type-value response failure: {:?}",
             other
@@ -1121,7 +1124,7 @@ fn att_read_by_type_response_failed_partial_pair() {
         0x15,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::AttReadByTypeResponsePartial)) => (),
+        Err(HciError::Vendor(BlueNRGError::AttReadByTypeResponsePartial)) => (),
         other => panic!("Did not get partial read-by-type response: {:?}", other),
     }
 }
@@ -1271,7 +1274,7 @@ fn att_read_by_group_type_response_failed() {
         0x13, 0x14, 0x15, 0x16, 0x17,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::AttReadByGroupTypeResponsePartial)) => (),
+        Err(HciError::Vendor(BlueNRGError::AttReadByGroupTypeResponsePartial)) => (),
         other => panic!(
             "Did not get partial Read by Group Type Response: {:?}",
             other
@@ -1404,7 +1407,7 @@ fn gatt_procedure_complete_failed() {
 fn gatt_procedure_complete_error_unknown_code() {
     let buffer = [0x10, 0x0C, 0x01, 0x02, 1, 0x40];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadGattProcedureStatus(code))) => {
+        Err(HciError::Vendor(BlueNRGError::BadGattProcedureStatus(code))) => {
             assert_eq!(code, 0x40);
         }
         other => panic!("Did not get Bad GATT Procedure Status: {:?}", other),
@@ -1429,7 +1432,7 @@ fn att_error_response() {
 fn att_error_response_failed_bad_request_opcode() {
     let buffer = [0x11, 0x0C, 0x01, 0x02, 4, 0x48, 0x04, 0x05, 0x07];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::BadAttRequestOpcode(code))) => {
+        Err(HciError::Vendor(BlueNRGError::BadAttRequestOpcode(code))) => {
             assert_eq!(code, 0x48);
         }
         other => panic!("Did not get bad ATT request opcode: {:?}", other),
@@ -1524,7 +1527,7 @@ fn att_read_multiple_permit_request() {
 fn att_read_multiple_permit_request_failed() {
     let buffer = [0x15, 0x0C, 0x01, 0x02, 3, 0x03, 0x04, 0x05];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::AttReadMultiplePermitRequestPartial)) => (),
+        Err(HciError::Vendor(BlueNRGError::AttReadMultiplePermitRequestPartial)) => (),
         other => panic!(
             "Did not get partial ATT Read Multiple Permit Request: {:?}",
             other
@@ -1550,7 +1553,7 @@ fn gatt_tx_pool_available() {
 fn gatt_tx_pool_available_unknown() {
     let buffer = [0x16, 0x0C, 0x01, 0x02, 0x03, 0x04];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::UnknownEvent(0x0C16))) => (),
+        Err(HciError::Vendor(BlueNRGError::UnknownEvent(0x0C16))) => (),
         other => panic!("Did not get unknown event: {:?}", other),
     }
 }
@@ -1572,7 +1575,7 @@ fn gatt_server_confirmation() {
 fn gatt_server_confirmation_unknown() {
     let buffer = [0x17, 0x0C, 0x01, 0x02];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::UnknownEvent(0x0C17))) => (),
+        Err(HciError::Vendor(BlueNRGError::UnknownEvent(0x0C17))) => (),
         other => panic!("Did not get unknown event: {:?}", other),
     }
 }
@@ -1616,7 +1619,7 @@ fn att_prepare_write_permit_request_unknown() {
         0x18, 0x0C, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 4, 0x07, 0x08, 0x09, 0x0a,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BNRGError::UnknownEvent(0x0C18))) => (),
+        Err(HciError::Vendor(BlueNRGError::UnknownEvent(0x0C18))) => (),
         other => panic!("Did not get unknown event: {:?}", other),
     }
 }

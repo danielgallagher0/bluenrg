@@ -15,140 +15,6 @@ use core::mem;
 
 pub use hci::{BdAddr, BdAddrType, ConnectionHandle};
 
-/// Enumeration of potential errors when deserializing events.
-#[derive(Clone, Copy, Debug)]
-pub enum Error {
-    /// The event is not recoginized. Includes the unknown opcode.
-    UnknownEvent(u16),
-
-    /// For the HalInitialized event: the reset reason was not recognized. Includes the unrecognized
-    /// byte.
-    UnknownResetReason(u8),
-
-    /// For the EventsLost event: The event included unrecognized event flags. Includes the entire
-    /// bitfield.
-    BadEventFlags(u64),
-
-    /// For the CrashReport event: The crash reason was not recognized. Includes the unrecognized
-    /// byte.
-    UnknownCrashReason(u8),
-
-    /// For the GAP Pairing Complete event: The status was not recognized. Includes the unrecognized
-    /// byte.
-    BadGapPairingStatus(u8),
-
-    /// For the GAP Device Found event: the type of event was not recognized. Includes the
-    /// unrecognized byte.
-    BadGapDeviceFoundEvent(u8),
-
-    /// For the GAP Device Found event: the type of BDADDR was not recognized. Includes the
-    /// unrecognized byte.
-    BadGapBdAddrType(u8),
-
-    /// For the GAP Procedure Complete event: The procedure code was not recognized. Includes the
-    /// unrecognized byte.
-    BadGapProcedure(u8),
-
-    /// For the GAP Procedure Complete event: The procedure status was not recognized. Includes the
-    /// unrecognized byte.
-    BadGapProcedureStatus(u8),
-
-    /// For the GAP Device Found event: the RSSI code at the end of the packet indicated that the
-    /// RSSI is unavailable.
-    GapRssiUnavailable,
-
-    /// For any L2CAP event: The event data length did not match the expected length. The first
-    /// field is the required length, and the second is the actual length.
-    BadL2CapDataLength(u8, u8),
-
-    /// For any L2CAP event: The L2CAP length did not match the expected length. The first field is
-    /// the required length, and the second is the actual length.
-    BadL2CapLength(u16, u16),
-
-    /// For any L2CAP response event: The L2CAP command was rejected, but the rejection reason was
-    /// not recognized. Includes the unknown value.
-    BadL2CapRejectionReason(u16),
-
-    /// For the L2CapConnectionUpdateResponse event: The code byte did not indicate either Rejected
-    /// or Updated. Includes the invalid byte.
-    BadL2CapConnectionResponseCode(u8),
-
-    /// For the L2CapConnectionUpdateResponse event: The command was accepted, but the result was
-    /// not recognized. It did not indicate the parameters were either updated or rejected. Includes
-    /// the unknown value.
-    BadL2CapConnectionResponseResult(u16),
-
-    /// For the L2CapconnectionUpdateRequest event: The provided interval is invalid. Potential
-    /// errors:
-    ///
-    /// - Either the minimum or maximum is out of range. The minimum value for either is 6, and the
-    ///   maximum is 3200.
-    ///
-    /// - The min is greater than the max
-    ///
-    /// See the Bluetooth specification, Vol 3, Part A, Section 4.20. Versions 4.1, 4.2 and 5.0.
-    ///
-    /// Inclues the provided minimum and maximum, respectively.
-    BadL2CapConnectionUpdateRequestInterval(u16, u16),
-
-    /// For the L2CapconnectionUpdateRequest event: The provided slave latency is invalid. The
-    /// maximum value for slave latency is defined in terms of the timeout and maximum connection
-    /// interval.
-    ///
-    /// - connIntervalMax = Interval Max * 1.25 ms
-    /// - connSupervisionTimeout = Timeout Multiplier * 10 ms
-    /// - maxSlaveLatency = min(500, ((connSupervisionTimeout / (2 * connIntervalMax)) - 1))
-    ///
-    /// See the Bluetooth specification, Vol 3, Part A, Section 4.20. Versions 4.1, 4.2 and 5.0.
-    ///
-    /// Inclues the provided value and maximum allowed value, respectively.
-    BadL2CapConnectionUpdateRequestLatency(u16, u16),
-
-    /// For the L2CapconnectionUpdateRequest event: The provided timeout multiplier is invalid. The
-    /// timeout multiplier field shall have a value in the range of 10 to 3200 (inclusive).
-    ///
-    /// See the Bluetooth specification, Vol 3, Part A, Section 4.20. Versions 4.1, 4.2 and 5.0.
-    ///
-    /// Inclues the provided value.
-    BadL2CapConnectionUpdateRequestTimeoutMult(u16),
-
-    /// For the ATT Find Information Response event: The format code is invalid. Includes the
-    /// unrecognized byte.
-    BadAttFindInformationResponseFormat(u8),
-
-    /// For the ATT Find Information Response event: The format code indicated 16-bit UUIDs, but
-    /// the packet ends with a partial pair.
-    AttFindInformationResponsePartialPair16,
-
-    /// For the ATT Find Information Response event: The format code indicated 128-bit UUIDs, but
-    /// the packet ends with a partial pair.
-    AttFindInformationResponsePartialPair128,
-
-    /// For the ATT Find by Type Value Response event: The packet ends with a partial attribute
-    /// pair.
-    AttFindByTypeValuePartial,
-
-    /// For the ATT Read by Type Response event: The packet ends with a partial attribute
-    /// handle-value pair.
-    AttReadByTypeResponsePartial,
-
-    /// For the ATT Read by Group Type Response event: The packet ends with a partial attribute
-    /// data group.
-    AttReadByGroupTypeResponsePartial,
-
-    /// For the GATT Procedure Complete event: The status code was not recognized. Includes the
-    /// unrecognized byte.
-    BadGattProcedureStatus(u8),
-
-    /// For the ATT Error Response event: The request opcode was not recognized. Includes the
-    /// unrecognized byte.
-    BadAttRequestOpcode(u8),
-
-    /// For the ATT Read Multiple Permit Request event: The packet ends with a partial attribute
-    /// handle.
-    AttReadMultiplePermitRequestPartial,
-}
-
 /// Vendor-specific events for the BlueNRG-MS controllers.
 #[derive(Clone, Copy, Debug)]
 pub enum BlueNRGEvent {
@@ -371,6 +237,140 @@ pub enum BlueNRGEvent {
     AttPrepareWritePermitRequest(AttPrepareWritePermitRequest),
 }
 
+/// Enumeration of potential errors when deserializing events.
+#[derive(Clone, Copy, Debug)]
+pub enum BlueNRGError {
+    /// The event is not recoginized. Includes the unknown opcode.
+    UnknownEvent(u16),
+
+    /// For the HalInitialized event: the reset reason was not recognized. Includes the unrecognized
+    /// byte.
+    UnknownResetReason(u8),
+
+    /// For the EventsLost event: The event included unrecognized event flags. Includes the entire
+    /// bitfield.
+    BadEventFlags(u64),
+
+    /// For the CrashReport event: The crash reason was not recognized. Includes the unrecognized
+    /// byte.
+    UnknownCrashReason(u8),
+
+    /// For the GAP Pairing Complete event: The status was not recognized. Includes the unrecognized
+    /// byte.
+    BadGapPairingStatus(u8),
+
+    /// For the GAP Device Found event: the type of event was not recognized. Includes the
+    /// unrecognized byte.
+    BadGapDeviceFoundEvent(u8),
+
+    /// For the GAP Device Found event: the type of BDADDR was not recognized. Includes the
+    /// unrecognized byte.
+    BadGapBdAddrType(u8),
+
+    /// For the GAP Procedure Complete event: The procedure code was not recognized. Includes the
+    /// unrecognized byte.
+    BadGapProcedure(u8),
+
+    /// For the GAP Procedure Complete event: The procedure status was not recognized. Includes the
+    /// unrecognized byte.
+    BadGapProcedureStatus(u8),
+
+    /// For the GAP Device Found event: the RSSI code at the end of the packet indicated that the
+    /// RSSI is unavailable.
+    GapRssiUnavailable,
+
+    /// For any L2CAP event: The event data length did not match the expected length. The first
+    /// field is the required length, and the second is the actual length.
+    BadL2CapDataLength(u8, u8),
+
+    /// For any L2CAP event: The L2CAP length did not match the expected length. The first field is
+    /// the required length, and the second is the actual length.
+    BadL2CapLength(u16, u16),
+
+    /// For any L2CAP response event: The L2CAP command was rejected, but the rejection reason was
+    /// not recognized. Includes the unknown value.
+    BadL2CapRejectionReason(u16),
+
+    /// For the L2CapConnectionUpdateResponse event: The code byte did not indicate either Rejected
+    /// or Updated. Includes the invalid byte.
+    BadL2CapConnectionResponseCode(u8),
+
+    /// For the L2CapConnectionUpdateResponse event: The command was accepted, but the result was
+    /// not recognized. It did not indicate the parameters were either updated or rejected. Includes
+    /// the unknown value.
+    BadL2CapConnectionResponseResult(u16),
+
+    /// For the L2CapconnectionUpdateRequest event: The provided interval is invalid. Potential
+    /// errors:
+    ///
+    /// - Either the minimum or maximum is out of range. The minimum value for either is 6, and the
+    ///   maximum is 3200.
+    ///
+    /// - The min is greater than the max
+    ///
+    /// See the Bluetooth specification, Vol 3, Part A, Section 4.20. Versions 4.1, 4.2 and 5.0.
+    ///
+    /// Inclues the provided minimum and maximum, respectively.
+    BadL2CapConnectionUpdateRequestInterval(u16, u16),
+
+    /// For the L2CapconnectionUpdateRequest event: The provided slave latency is invalid. The
+    /// maximum value for slave latency is defined in terms of the timeout and maximum connection
+    /// interval.
+    ///
+    /// - connIntervalMax = Interval Max * 1.25 ms
+    /// - connSupervisionTimeout = Timeout Multiplier * 10 ms
+    /// - maxSlaveLatency = min(500, ((connSupervisionTimeout / (2 * connIntervalMax)) - 1))
+    ///
+    /// See the Bluetooth specification, Vol 3, Part A, Section 4.20. Versions 4.1, 4.2 and 5.0.
+    ///
+    /// Inclues the provided value and maximum allowed value, respectively.
+    BadL2CapConnectionUpdateRequestLatency(u16, u16),
+
+    /// For the L2CapconnectionUpdateRequest event: The provided timeout multiplier is invalid. The
+    /// timeout multiplier field shall have a value in the range of 10 to 3200 (inclusive).
+    ///
+    /// See the Bluetooth specification, Vol 3, Part A, Section 4.20. Versions 4.1, 4.2 and 5.0.
+    ///
+    /// Inclues the provided value.
+    BadL2CapConnectionUpdateRequestTimeoutMult(u16),
+
+    /// For the ATT Find Information Response event: The format code is invalid. Includes the
+    /// unrecognized byte.
+    BadAttFindInformationResponseFormat(u8),
+
+    /// For the ATT Find Information Response event: The format code indicated 16-bit UUIDs, but
+    /// the packet ends with a partial pair.
+    AttFindInformationResponsePartialPair16,
+
+    /// For the ATT Find Information Response event: The format code indicated 128-bit UUIDs, but
+    /// the packet ends with a partial pair.
+    AttFindInformationResponsePartialPair128,
+
+    /// For the ATT Find by Type Value Response event: The packet ends with a partial attribute
+    /// pair.
+    AttFindByTypeValuePartial,
+
+    /// For the ATT Read by Type Response event: The packet ends with a partial attribute
+    /// handle-value pair.
+    AttReadByTypeResponsePartial,
+
+    /// For the ATT Read by Group Type Response event: The packet ends with a partial attribute
+    /// data group.
+    AttReadByGroupTypeResponsePartial,
+
+    /// For the GATT Procedure Complete event: The status code was not recognized. Includes the
+    /// unrecognized byte.
+    BadGattProcedureStatus(u8),
+
+    /// For the ATT Error Response event: The request opcode was not recognized. Includes the
+    /// unrecognized byte.
+    BadAttRequestOpcode(u8),
+
+    /// For the ATT Read Multiple Permit Request event: The packet ends with a partial attribute
+    /// handle.
+    AttReadMultiplePermitRequestPartial,
+}
+
 macro_rules! require_len {
     ($left:expr, $right:expr) => {
         if $left.len() != $right {
@@ -396,10 +396,10 @@ fn first_16<T>(buffer: &[T]) -> &[T] {
 }
 
 impl hci::event::VendorEvent for BlueNRGEvent {
-    type Error = Error;
+    type Error = BlueNRGError;
     type ReturnParameters = command::ReturnParameters;
 
-    fn new(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<Error>> {
+    fn new(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<BlueNRGError>> {
         require_len_at_least!(buffer, 2);
 
         let event_code = LittleEndian::read_u16(&buffer[0..=1]);
@@ -413,7 +413,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
 
                 #[cfg(not(feature = "ms"))]
                 {
-                    Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code)))
+                    Err(hci::event::Error::Vendor(BlueNRGError::UnknownEvent(
+                        event_code,
+                    )))
                 }
             }
             0x0003 => {
@@ -424,7 +426,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
 
                 #[cfg(not(feature = "ms"))]
                 {
-                    Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code)))
+                    Err(hci::event::Error::Vendor(BlueNRGError::UnknownEvent(
+                        event_code,
+                    )))
                 }
             }
             0x0400 => Ok(BlueNRGEvent::GapLimitedDiscoverable),
@@ -527,7 +531,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
 
                 #[cfg(not(feature = "ms"))]
                 {
-                    Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code)))
+                    Err(hci::event::Error::Vendor(BlueNRGError::UnknownEvent(
+                        event_code,
+                    )))
                 }
             }
             0x0C17 => {
@@ -540,7 +546,9 @@ impl hci::event::VendorEvent for BlueNRGEvent {
 
                 #[cfg(not(feature = "ms"))]
                 {
-                    Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code)))
+                    Err(hci::event::Error::Vendor(BlueNRGError::UnknownEvent(
+                        event_code,
+                    )))
                 }
             }
             0x0C18 => {
@@ -553,10 +561,14 @@ impl hci::event::VendorEvent for BlueNRGEvent {
 
                 #[cfg(not(feature = "ms"))]
                 {
-                    Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code)))
+                    Err(hci::event::Error::Vendor(BlueNRGError::UnknownEvent(
+                        event_code,
+                    )))
                 }
             }
-            _ => Err(hci::event::Error::Vendor(Error::UnknownEvent(event_code))),
+            _ => Err(hci::event::Error::Vendor(BlueNRGError::UnknownEvent(
+                event_code,
+            ))),
         }
     }
 }
@@ -585,7 +597,7 @@ pub enum ResetReason {
 }
 
 impl TryFrom<u8> for ResetReason {
-    type Error = Error;
+    type Error = BlueNRGError;
 
     fn try_from(value: u8) -> Result<ResetReason, Self::Error> {
         match value {
@@ -598,7 +610,7 @@ impl TryFrom<u8> for ResetReason {
             7 => Ok(ResetReason::Brownout),
             8 => Ok(ResetReason::Crash),
             9 => Ok(ResetReason::EccError),
-            _ => Err(Error::UnknownResetReason(value)),
+            _ => Err(BlueNRGError::UnknownResetReason(value)),
         }
     }
 }
@@ -610,7 +622,7 @@ impl TryFrom<u8> for ResetReason {
 /// - Returns a BadLength HCI error if the buffer is not exactly 3 bytes long
 ///
 /// - Returns a UnknownResetReason BlueNRG error if the reset reason is not recognized.
-fn to_hal_initialized(buffer: &[u8]) -> Result<ResetReason, hci::event::Error<Error>> {
+fn to_hal_initialized(buffer: &[u8]) -> Result<ResetReason, hci::event::Error<BlueNRGError>> {
     require_len!(buffer, 3);
 
     Ok(buffer[2]
@@ -734,11 +746,11 @@ bitflags! {
 ///
 /// - Returns BadEventFlags if a bit is set that does not represent a lost event.
 #[cfg(feature = "ms")]
-fn to_lost_event(buffer: &[u8]) -> Result<EventFlags, hci::event::Error<Error>> {
+fn to_lost_event(buffer: &[u8]) -> Result<EventFlags, hci::event::Error<BlueNRGError>> {
     require_len!(buffer, 10);
 
     let bits = LittleEndian::read_u64(&buffer[2..]);
-    EventFlags::from_bits(bits).ok_or(hci::event::Error::Vendor(Error::BadEventFlags(bits)))
+    EventFlags::from_bits(bits).ok_or(hci::event::Error::Vendor(BlueNRGError::BadEventFlags(bits)))
 }
 
 /// The maximum length of [`debug_data`] in [`FaultData`]. The maximum length of an event is 255
@@ -762,7 +774,7 @@ pub enum CrashReason {
 
 #[cfg(feature = "ms")]
 impl TryFrom<u8> for CrashReason {
-    type Error = Error;
+    type Error = BlueNRGError;
 
     fn try_from(value: u8) -> Result<CrashReason, Self::Error> {
         match value {
@@ -775,7 +787,7 @@ impl TryFrom<u8> for CrashReason {
             // The documentation is conflicting for the numeric value of hard Fault. The
             // CubeExpansion source code says 2, but the user manual says 7.
             2 | 7 => Ok(CrashReason::HardFault),
-            _ => Err(Error::UnknownCrashReason(value)),
+            _ => Err(BlueNRGError::UnknownCrashReason(value)),
         }
     }
 }
@@ -834,7 +846,7 @@ impl Debug for FaultData {
 }
 
 #[cfg(feature = "ms")]
-fn to_crash_report(buffer: &[u8]) -> Result<FaultData, hci::event::Error<Error>> {
+fn to_crash_report(buffer: &[u8]) -> Result<FaultData, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 40);
 
     let debug_data_len = buffer[39] as usize;
@@ -863,7 +875,7 @@ macro_rules! require_l2cap_event_data_len {
     ($left:expr, $right:expr) => {
         let actual = $left[4];
         if actual != $right {
-            return Err(hci::event::Error::Vendor(Error::BadL2CapDataLength(
+            return Err(hci::event::Error::Vendor(BlueNRGError::BadL2CapDataLength(
                 actual, $right,
             )));
         }
@@ -873,7 +885,7 @@ macro_rules! require_l2cap_event_data_len {
 macro_rules! require_l2cap_len {
     ($actual:expr, $expected:expr) => {
         if $actual != $expected {
-            return Err(hci::event::Error::Vendor(Error::BadL2CapLength(
+            return Err(hci::event::Error::Vendor(BlueNRGError::BadL2CapLength(
                 $actual, $expected,
             )));
         }
@@ -906,14 +918,14 @@ pub enum L2CapRejectionReason {
 }
 
 impl TryFrom<u16> for L2CapRejectionReason {
-    type Error = Error;
+    type Error = BlueNRGError;
 
     fn try_from(value: u16) -> Result<L2CapRejectionReason, Self::Error> {
         match value {
             0 => Ok(L2CapRejectionReason::CommandNotUnderstood),
             1 => Ok(L2CapRejectionReason::SignalingMtuExceeded),
             2 => Ok(L2CapRejectionReason::InvalidCid),
-            _ => Err(Error::BadL2CapRejectionReason(value)),
+            _ => Err(BlueNRGError::BadL2CapRejectionReason(value)),
         }
     }
 }
@@ -935,31 +947,31 @@ pub enum L2CapConnectionUpdateResult {
 
 fn to_l2cap_connection_update_accepted_result(
     value: u16,
-) -> Result<L2CapConnectionUpdateResult, Error> {
+) -> Result<L2CapConnectionUpdateResult, BlueNRGError> {
     match value {
         0x0000 => Ok(L2CapConnectionUpdateResult::ParametersUpdated),
         0x0001 => Ok(L2CapConnectionUpdateResult::ParametersRejected),
         _ => {
-            return Err(Error::BadL2CapConnectionResponseResult(value));
+            return Err(BlueNRGError::BadL2CapConnectionResponseResult(value));
         }
     }
 }
 
 fn extract_l2cap_connection_update_response_result(
     buffer: &[u8],
-) -> Result<L2CapConnectionUpdateResult, Error> {
+) -> Result<L2CapConnectionUpdateResult, BlueNRGError> {
     match buffer[5] {
         0x01 => Ok(L2CapConnectionUpdateResult::CommandRejected(
             LittleEndian::read_u16(&buffer[9..]).try_into()?,
         )),
         0x13 => to_l2cap_connection_update_accepted_result(LittleEndian::read_u16(&buffer[9..])),
-        _ => Err(Error::BadL2CapConnectionResponseCode(buffer[5])),
+        _ => Err(BlueNRGError::BadL2CapConnectionResponseCode(buffer[5])),
     }
 }
 
 fn to_l2cap_connection_update_response(
     buffer: &[u8],
-) -> Result<L2CapConnectionUpdateResponse, hci::event::Error<Error>> {
+) -> Result<L2CapConnectionUpdateResponse, hci::event::Error<BlueNRGError>> {
     require_len!(buffer, 11);
     require_l2cap_event_data_len!(buffer, 6);
     require_l2cap_len!(LittleEndian::read_u16(&buffer[7..]), 2);
@@ -979,7 +991,9 @@ pub struct L2CapProcedureTimeout {
     pub conn_handle: ConnectionHandle,
 }
 
-fn to_l2cap_procedure_timeout(buffer: &[u8]) -> Result<ConnectionHandle, hci::event::Error<Error>> {
+fn to_l2cap_procedure_timeout(
+    buffer: &[u8],
+) -> Result<ConnectionHandle, hci::event::Error<BlueNRGError>> {
     require_len!(buffer, 5);
     require_l2cap_event_data_len!(buffer, 0);
 
@@ -1034,7 +1048,7 @@ fn outside_interval_range(value: u16) -> bool {
 
 fn to_l2cap_connection_update_request(
     buffer: &[u8],
-) -> Result<L2CapConnectionUpdateRequest, hci::event::Error<Error>> {
+) -> Result<L2CapConnectionUpdateRequest, hci::event::Error<BlueNRGError>> {
     require_len!(buffer, 16);
     require_l2cap_event_data_len!(buffer, 11);
     require_l2cap_len!(LittleEndian::read_u16(&buffer[6..]), 8);
@@ -1046,14 +1060,14 @@ fn to_l2cap_connection_update_request(
         || interval_min > interval_max
     {
         return Err(hci::event::Error::Vendor(
-            Error::BadL2CapConnectionUpdateRequestInterval(interval_min, interval_max),
+            BlueNRGError::BadL2CapConnectionUpdateRequestInterval(interval_min, interval_max),
         ));
     }
 
     let timeout_mult = LittleEndian::read_u16(&buffer[14..]);
     if timeout_mult < 10 || timeout_mult > 3200 {
         return Err(hci::event::Error::Vendor(
-            Error::BadL2CapConnectionUpdateRequestTimeoutMult(timeout_mult),
+            BlueNRGError::BadL2CapConnectionUpdateRequestTimeoutMult(timeout_mult),
         ));
     }
 
@@ -1068,7 +1082,10 @@ fn to_l2cap_connection_update_request(
     let slave_latency_limit = min(500, (4 * timeout_mult) / interval_max - 1);
     if slave_latency >= slave_latency_limit {
         return Err(hci::event::Error::Vendor(
-            Error::BadL2CapConnectionUpdateRequestLatency(slave_latency, slave_latency_limit),
+            BlueNRGError::BadL2CapConnectionUpdateRequestLatency(
+                slave_latency,
+                slave_latency_limit,
+            ),
         ));
     }
 
@@ -1107,19 +1124,21 @@ pub enum GapPairingStatus {
 }
 
 impl TryFrom<u8> for GapPairingStatus {
-    type Error = Error;
+    type Error = BlueNRGError;
 
     fn try_from(value: u8) -> Result<GapPairingStatus, Self::Error> {
         match value {
             0 => Ok(GapPairingStatus::Success),
             1 => Ok(GapPairingStatus::Timeout),
             2 => Ok(GapPairingStatus::Failed),
-            _ => Err(Error::BadGapPairingStatus(value)),
+            _ => Err(BlueNRGError::BadGapPairingStatus(value)),
         }
     }
 }
 
-fn to_gap_pairing_complete(buffer: &[u8]) -> Result<GapPairingComplete, hci::event::Error<Error>> {
+fn to_gap_pairing_complete(
+    buffer: &[u8],
+) -> Result<GapPairingComplete, hci::event::Error<BlueNRGError>> {
     require_len!(buffer, 5);
     Ok(GapPairingComplete {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
@@ -1127,7 +1146,7 @@ fn to_gap_pairing_complete(buffer: &[u8]) -> Result<GapPairingComplete, hci::eve
     })
 }
 
-fn to_conn_handle(buffer: &[u8]) -> Result<ConnectionHandle, hci::event::Error<Error>> {
+fn to_conn_handle(buffer: &[u8]) -> Result<ConnectionHandle, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 4);
     Ok(ConnectionHandle(LittleEndian::read_u16(&buffer[2..])))
 }
@@ -1154,7 +1173,7 @@ pub struct GapDeviceFound {
 
 pub use hci::event::AdvertisementEvent as GapDeviceFoundEvent;
 
-fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Error<Error>> {
+fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 12);
 
     let data_len = buffer[10] as usize;
@@ -1163,7 +1182,7 @@ fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Erro
     const RSSI_UNAVAILABLE: i8 = 127;
     let rssi = unsafe { mem::transmute::<u8, i8>(buffer[buffer.len() - 1]) };
     if rssi == RSSI_UNAVAILABLE {
-        return Err(hci::event::Error::Vendor(Error::GapRssiUnavailable));
+        return Err(hci::event::Error::Vendor(BlueNRGError::GapRssiUnavailable));
     }
 
     let mut addr = BdAddr([0; 6]);
@@ -1171,13 +1190,13 @@ fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Erro
     let mut event = GapDeviceFound {
         event: buffer[2].try_into().map_err(|e| {
             if let hci::event::Error::BadLeAdvertisementType(code) = e {
-                hci::event::Error::Vendor(Error::BadGapDeviceFoundEvent(code))
+                hci::event::Error::Vendor(BlueNRGError::BadGapDeviceFoundEvent(code))
             } else {
                 unreachable!()
             }
         })?,
         bdaddr: hci::to_bd_addr_type(buffer[3], addr)
-            .map_err(|e| hci::event::Error::Vendor(Error::BadGapBdAddrType(e.0)))?,
+            .map_err(|e| hci::event::Error::Vendor(BlueNRGError::BadGapBdAddrType(e.0)))?,
         data_len: data_len,
         data: [0; 31],
         rssi: rssi,
@@ -1258,21 +1277,21 @@ pub enum GapProcedureStatus {
 }
 
 impl TryFrom<u8> for GapProcedureStatus {
-    type Error = Error;
+    type Error = BlueNRGError;
 
     fn try_from(value: u8) -> Result<GapProcedureStatus, Self::Error> {
         match value {
             0x00 => Ok(GapProcedureStatus::Success),
             0x41 => Ok(GapProcedureStatus::Failed),
             0x05 => Ok(GapProcedureStatus::AuthFailure),
-            _ => Err(Error::BadGapProcedureStatus(value)),
+            _ => Err(BlueNRGError::BadGapProcedureStatus(value)),
         }
     }
 }
 
 fn to_gap_procedure_complete(
     buffer: &[u8],
-) -> Result<GapProcedureComplete, hci::event::Error<Error>> {
+) -> Result<GapProcedureComplete, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 4);
 
     let procedure = match buffer[2] {
@@ -1296,7 +1315,9 @@ fn to_gap_procedure_complete(
         0x20 => GapProcedure::SelectiveConnectionEstablishment,
         0x40 => GapProcedure::DirectConnectionEstablishment,
         _ => {
-            return Err(hci::event::Error::Vendor(Error::BadGapProcedure(buffer[2])));
+            return Err(hci::event::Error::Vendor(BlueNRGError::BadGapProcedure(
+                buffer[2],
+            )));
         }
     };
 
@@ -1307,7 +1328,7 @@ fn to_gap_procedure_complete(
 }
 
 #[cfg(not(feature = "ms"))]
-fn to_gap_reconnection_address(buffer: &[u8]) -> Result<BdAddr, hci::event::Error<Error>> {
+fn to_gap_reconnection_address(buffer: &[u8]) -> Result<BdAddr, hci::event::Error<BlueNRGError>> {
     require_len!(buffer, 8);
     let mut addr = BdAddr([0; 6]);
     addr.0.copy_from_slice(&buffer[2..]);
@@ -1391,7 +1412,7 @@ impl Debug for GattAttributeModified {
 #[cfg(feature = "ms")]
 fn to_gatt_attribute_modified(
     buffer: &[u8],
-) -> Result<GattAttributeModified, hci::event::Error<Error>> {
+) -> Result<GattAttributeModified, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 9);
 
     let data_len = buffer[6] as usize;
@@ -1414,7 +1435,7 @@ fn to_gatt_attribute_modified(
 #[cfg(not(feature = "ms"))]
 fn to_gatt_attribute_modified(
     buffer: &[u8],
-) -> Result<GattAttributeModified, hci::event::Error<Error>> {
+) -> Result<GattAttributeModified, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 7);
 
     let data_len = buffer[6] as usize;
@@ -1443,7 +1464,7 @@ pub struct AttExchangeMtuResponse {
 
 fn to_att_exchange_mtu_resp(
     buffer: &[u8],
-) -> Result<AttExchangeMtuResponse, hci::event::Error<Error>> {
+) -> Result<AttExchangeMtuResponse, hci::event::Error<BlueNRGError>> {
     require_len!(buffer, 7);
     Ok(AttExchangeMtuResponse {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
@@ -1610,7 +1631,7 @@ impl<'a> Iterator for HandleUuid128PairIterator<'a> {
 
 fn to_att_find_information_response(
     buffer: &[u8],
-) -> Result<AttFindInformationResponse, hci::event::Error<Error>> {
+) -> Result<AttFindInformationResponse, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 6);
 
     let data_len = buffer[4] as usize;
@@ -1623,17 +1644,17 @@ fn to_att_find_information_response(
             2 => to_handle_uuid128_pairs(&buffer[6..]).map_err(hci::event::Error::Vendor)?,
             _ => {
                 return Err(hci::event::Error::Vendor(
-                    Error::BadAttFindInformationResponseFormat(buffer[5]),
+                    BlueNRGError::BadAttFindInformationResponseFormat(buffer[5]),
                 ));
             }
         },
     })
 }
 
-fn to_handle_uuid16_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, Error> {
+fn to_handle_uuid16_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, BlueNRGError> {
     const PAIR_LEN: usize = 4;
     if buffer.len() % PAIR_LEN != 0 {
-        return Err(Error::AttFindInformationResponsePartialPair16);
+        return Err(BlueNRGError::AttFindInformationResponsePartialPair16);
     }
 
     let count = buffer.len() / PAIR_LEN;
@@ -1650,10 +1671,10 @@ fn to_handle_uuid16_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, Error> {
     Ok(HandleUuidPairs::Format16(count, pairs))
 }
 
-fn to_handle_uuid128_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, Error> {
+fn to_handle_uuid128_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, BlueNRGError> {
     const PAIR_LEN: usize = 18;
     if buffer.len() % PAIR_LEN != 0 {
-        return Err(Error::AttFindInformationResponsePartialPair128);
+        return Err(BlueNRGError::AttFindInformationResponsePartialPair128);
     }
 
     let count = buffer.len() / PAIR_LEN;
@@ -1752,7 +1773,7 @@ impl<'a> Iterator for HandleInfoPairIterator<'a> {
 
 fn to_att_find_by_value_type_response(
     buffer: &[u8],
-) -> Result<AttFindByTypeValueResponse, hci::event::Error<Error>> {
+) -> Result<AttFindByTypeValueResponse, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 5);
 
     let data_len = buffer[4] as usize;
@@ -1761,7 +1782,9 @@ fn to_att_find_by_value_type_response(
     const PAIR_LEN: usize = 4;
     let pair_buffer = &buffer[5..];
     if pair_buffer.len() % PAIR_LEN != 0 {
-        return Err(hci::event::Error::Vendor(Error::AttFindByTypeValuePartial));
+        return Err(hci::event::Error::Vendor(
+            BlueNRGError::AttFindByTypeValuePartial,
+        ));
     }
 
     let count = pair_buffer.len() / PAIR_LEN;
@@ -1863,7 +1886,7 @@ pub struct HandleValuePair<'a> {
 
 fn to_att_read_by_type_response(
     buffer: &[u8],
-) -> Result<AttReadByTypeResponse, hci::event::Error<Error>> {
+) -> Result<AttReadByTypeResponse, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 6);
 
     let data_len = buffer[4] as usize;
@@ -1873,7 +1896,7 @@ fn to_att_read_by_type_response(
     let handle_value_pair_buf = &buffer[6..];
     if handle_value_pair_buf.len() % handle_value_pair_len != 0 {
         return Err(hci::event::Error::Vendor(
-            Error::AttReadByTypeResponsePartial,
+            BlueNRGError::AttReadByTypeResponsePartial,
         ));
     }
 
@@ -1924,7 +1947,7 @@ impl AttReadResponse {
     }
 }
 
-fn to_att_read_response(buffer: &[u8]) -> Result<AttReadResponse, hci::event::Error<Error>> {
+fn to_att_read_response(buffer: &[u8]) -> Result<AttReadResponse, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 5);
 
     let data_len = buffer[4] as usize;
@@ -2032,7 +2055,7 @@ pub struct AttributeData<'a> {
 
 fn to_att_read_by_group_type_response(
     buffer: &[u8],
-) -> Result<AttReadByGroupTypeResponse, hci::event::Error<Error>> {
+) -> Result<AttReadByGroupTypeResponse, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 6);
 
     let data_len = buffer[4] as usize;
@@ -2042,7 +2065,7 @@ fn to_att_read_by_group_type_response(
 
     if &buffer[6..].len() % attribute_group_len != 0 {
         return Err(hci::event::Error::Vendor(
-            Error::AttReadByGroupTypeResponsePartial,
+            BlueNRGError::AttReadByGroupTypeResponsePartial,
         ));
     }
 
@@ -2098,7 +2121,7 @@ impl AttPrepareWriteResponse {
 
 fn to_att_prepare_write_response(
     buffer: &[u8],
-) -> Result<AttPrepareWriteResponse, hci::event::Error<Error>> {
+) -> Result<AttPrepareWriteResponse, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 9);
 
     let data_len = buffer[4] as usize;
@@ -2153,7 +2176,7 @@ impl AttributeValue {
     }
 }
 
-fn to_attribute_value(buffer: &[u8]) -> Result<AttributeValue, hci::event::Error<Error>> {
+fn to_attribute_value(buffer: &[u8]) -> Result<AttributeValue, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 7);
 
     let data_len = buffer[4] as usize;
@@ -2170,7 +2193,9 @@ fn to_attribute_value(buffer: &[u8]) -> Result<AttributeValue, hci::event::Error
     })
 }
 
-fn to_write_permit_request(buffer: &[u8]) -> Result<AttributeValue, hci::event::Error<Error>> {
+fn to_write_permit_request(
+    buffer: &[u8],
+) -> Result<AttributeValue, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 7);
 
     let data_len = buffer[6] as usize;
@@ -2209,20 +2234,20 @@ pub enum GattProcedureStatus {
 }
 
 impl TryFrom<u8> for GattProcedureStatus {
-    type Error = Error;
+    type Error = BlueNRGError;
 
     fn try_from(value: u8) -> Result<GattProcedureStatus, Self::Error> {
         match value {
             0x00 => Ok(GattProcedureStatus::Success),
             0x41 => Ok(GattProcedureStatus::Failed),
-            _ => Err(Error::BadGattProcedureStatus(value)),
+            _ => Err(BlueNRGError::BadGattProcedureStatus(value)),
         }
     }
 }
 
 fn to_gatt_procedure_complete(
     buffer: &[u8],
-) -> Result<GattProcedureComplete, hci::event::Error<Error>> {
+) -> Result<GattProcedureComplete, hci::event::Error<BlueNRGError>> {
     require_len!(buffer, 6);
 
     Ok(GattProcedureComplete {
@@ -2839,7 +2864,7 @@ pub enum AttRequest {
 }
 
 impl TryFrom<u8> for AttRequest {
-    type Error = Error;
+    type Error = BlueNRGError;
 
     fn try_from(value: u8) -> Result<AttRequest, Self::Error> {
         match value {
@@ -2871,12 +2896,14 @@ impl TryFrom<u8> for AttRequest {
             0x1B => Ok(AttRequest::HandleValueNotification),
             0x1D => Ok(AttRequest::HandleValueIndication),
             0x1E => Ok(AttRequest::HandleValueConfirmation),
-            _ => Err(Error::BadAttRequestOpcode(value)),
+            _ => Err(BlueNRGError::BadAttRequestOpcode(value)),
         }
     }
 }
 
-fn to_att_error_response(buffer: &[u8]) -> Result<AttErrorResponse, hci::event::Error<Error>> {
+fn to_att_error_response(
+    buffer: &[u8],
+) -> Result<AttErrorResponse, hci::event::Error<BlueNRGError>> {
     require_len!(buffer, 9);
     Ok(AttErrorResponse {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
@@ -2908,7 +2935,7 @@ pub struct AttReadPermitRequest {
 
 fn to_att_read_permit_request(
     buffer: &[u8],
-) -> Result<AttReadPermitRequest, hci::event::Error<Error>> {
+) -> Result<AttReadPermitRequest, hci::event::Error<BlueNRGError>> {
     require_len!(buffer, 9);
     Ok(AttReadPermitRequest {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
@@ -2961,13 +2988,13 @@ impl AttReadMultiplePermitRequest {
 
 fn to_att_read_multiple_permit_request(
     buffer: &[u8],
-) -> Result<AttReadMultiplePermitRequest, hci::event::Error<Error>> {
+) -> Result<AttReadMultiplePermitRequest, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 5);
 
     let data_len = buffer[4] as usize;
     if data_len % 2 != 0 {
         return Err(hci::event::Error::Vendor(
-            Error::AttReadMultiplePermitRequestPartial,
+            BlueNRGError::AttReadMultiplePermitRequestPartial,
         ));
     }
 
@@ -3000,7 +3027,7 @@ pub struct GattTxPoolAvailable {
 #[cfg(feature = "ms")]
 fn to_gatt_tx_pool_available(
     buffer: &[u8],
-) -> Result<GattTxPoolAvailable, hci::event::Error<Error>> {
+) -> Result<GattTxPoolAvailable, hci::event::Error<BlueNRGError>> {
     require_len!(buffer, 6);
     Ok(GattTxPoolAvailable {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
@@ -3062,7 +3089,7 @@ impl AttPrepareWritePermitRequest {
 #[cfg(feature = "ms")]
 fn to_att_prepare_write_permit_request(
     buffer: &[u8],
-) -> Result<AttPrepareWritePermitRequest, hci::event::Error<Error>> {
+) -> Result<AttPrepareWritePermitRequest, hci::event::Error<BlueNRGError>> {
     require_len_at_least!(buffer, 9);
 
     let data_len = buffer[8] as usize;
