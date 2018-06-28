@@ -7,6 +7,38 @@ use bluenrg::*;
 use hci::host::uart::Error as UartError;
 use std::time::Duration;
 
+static mut DUMMY_RX_BUFFER: [u8; 8] = [0; 8];
+
+struct Fixture {
+    sink: RecordingSink,
+    bnrg: BlueNRG<'static, RecordingSink, DummyPin, DummyPin, DummyPin>,
+}
+
+impl Fixture {
+    fn new() -> Fixture {
+        Fixture {
+            sink: RecordingSink::new(),
+            bnrg: unsafe { BlueNRG::new(&mut DUMMY_RX_BUFFER, DummyPin, DummyPin, DummyPin) },
+        }
+    }
+
+    fn act<T, F>(&mut self, body: F) -> T
+    where
+        F: FnOnce(&mut ActiveBlueNRG<RecordingSink, DummyPin, DummyPin, DummyPin>) -> T,
+    {
+        self.bnrg.with_spi(&mut self.sink, body)
+    }
+
+    fn wrote_header(&self) -> bool {
+        self.sink.written_header == [0x0A, 0x00, 0x00, 0x00, 0x00]
+    }
+
+    fn wrote(&self, bytes: &[u8]) -> bool {
+        self.sink.written_header == [0x0A, 0x00, 0x00, 0x00, 0x00]
+            && self.sink.written_data == bytes
+    }
+}
+
 struct RecordingSink {
     written_header: Vec<u8>,
     written_data: Vec<u8>,
@@ -72,78 +104,62 @@ impl hal::digital::InputPin for DummyPin {
     }
 }
 
-macro_rules! bnrg_test {
-    (fn $fn:ident() { | $controller:ident | $act:expr => | $sink:ident | $assert:expr }) => {
-        #[test]
-        fn $fn() {
-            let mut $sink = RecordingSink::new();
-            let mut rx_buffer = [0; 8];
-            let cs = DummyPin {};
-            let dr = DummyPin {};
-            let rst = DummyPin {};
-            let mut bnrg = BlueNRG::new(&mut rx_buffer, cs, dr, rst);
-            bnrg.with_spi(&mut $sink, |$controller| $act);
-            assert_eq!($sink.written_header, [0x0A, 0x00, 0x00, 0x00, 0x00]);
-            $assert
-        }
-    };
-}
-
-bnrg_test! {
-    fn aci_l2cap_connection_parameter_update_request() {
-        |controller| {
+#[test]
+fn aci_l2cap_connection_parameter_update_request() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
             controller.aci_l2cap_connection_parameter_update_request(
                 &L2CapConnectionParameterUpdateRequest {
                     conn_handle: hci::ConnectionHandle(0x0201),
                     interval: (Duration::from_millis(30), Duration::from_millis(300)),
                     conn_latency: 10,
                     timeout: Duration::from_millis(1000),
-                }
-            ).unwrap();
-        } => |sink| {
-            assert_eq!(
-                sink.written_data,
-                [1, 0x81, 0xFD, 10, 0x01, 0x02, 0x18, 0x00, 0xF0, 0x00, 0x0A, 0x00, 0x64, 0x00]
-            );
-        }
-    }
+                },
+            )
+        })
+        .unwrap();
+    assert!(
+        fixture.wrote(&[
+            1, 0x81, 0xFD, 10, 0x01, 0x02, 0x18, 0x00, 0xF0, 0x00, 0x0A, 0x00, 0x64, 0x00
+        ])
+    );
 }
 
-bnrg_test! {
-    fn aci_l2cap_connection_parameter_update_response() {
-        |controller| {
+#[test]
+fn aci_l2cap_connection_parameter_update_response() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
             controller.aci_l2cap_connection_parameter_update_response(
                 &L2CapConnectionParameterUpdateResponse {
                     conn_handle: hci::ConnectionHandle(0x0201),
                     interval: (Duration::from_millis(30), Duration::from_millis(300)),
                     conn_latency: 10,
                     timeout: Duration::from_millis(1000),
-                    expected_connection_length_range: (Duration::from_millis(500),
-                                                       Duration::from_millis(1250)),
+                    expected_connection_length_range: (
+                        Duration::from_millis(500),
+                        Duration::from_millis(1250),
+                    ),
                     identifier: 0x0F,
                     accepted: true,
-                }
-            ).unwrap();
-        } => |sink| {
-            assert_eq!(
-                sink.written_data,
+                },
+            )
+        })
+        .unwrap();
+    assert!(
+        fixture.wrote(&
                 [1, 0x82, 0xFD, 16, 0x01, 0x02, 0x18, 0x00, 0xF0, 0x00, 0x0A, 0x00, 0x64, 0x00,
                  0x20, 0x03, 0xD0, 0x07, 0x0F, 0x01]
             );
-        }
-    }
+        );
 }
 
 #[test]
 fn aci_l2cap_connection_parameter_update_response_bad_connection_interval() {
-    let mut sink = RecordingSink::new();
-    let mut rx_buffer = [0; 8];
-    let cs = DummyPin {};
-    let dr = DummyPin {};
-    let rst = DummyPin {};
-    let mut bnrg = BlueNRG::new(&mut rx_buffer, cs, dr, rst);
-    let err =
-        bnrg.with_spi(&mut sink, |controller| {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
             controller.aci_l2cap_connection_parameter_update_response(
                 &L2CapConnectionParameterUpdateResponse {
                     conn_handle: hci::ConnectionHandle(0x0201),
@@ -158,8 +174,9 @@ fn aci_l2cap_connection_parameter_update_response_bad_connection_interval() {
                     accepted: true,
                 },
             )
-        }).err()
-            .unwrap();
+        })
+        .err()
+        .unwrap();
     assert_eq!(
         err,
         nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
@@ -169,19 +186,15 @@ fn aci_l2cap_connection_parameter_update_response_bad_connection_interval() {
             )
         )))
     );
-    assert_eq!(sink.written_data, []);
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
 }
 
 #[test]
 fn aci_l2cap_connection_parameter_update_response_bad_expected_connection_length_range() {
-    let mut sink = RecordingSink::new();
-    let mut rx_buffer = [0; 8];
-    let cs = DummyPin {};
-    let dr = DummyPin {};
-    let rst = DummyPin {};
-    let mut bnrg = BlueNRG::new(&mut rx_buffer, cs, dr, rst);
-    let err =
-        bnrg.with_spi(&mut sink, |controller| {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
             controller.aci_l2cap_connection_parameter_update_response(
                 &L2CapConnectionParameterUpdateResponse {
                     conn_handle: hci::ConnectionHandle(0x0201),
@@ -196,8 +209,9 @@ fn aci_l2cap_connection_parameter_update_response_bad_expected_connection_length
                     accepted: true,
                 },
             )
-        }).err()
-            .unwrap();
+        })
+        .err()
+        .unwrap();
     assert_eq!(
         err,
         nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
@@ -207,5 +221,6 @@ fn aci_l2cap_connection_parameter_update_response_bad_expected_connection_length
             )
         )))
     );
-    assert_eq!(sink.written_data, []);
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
 }
