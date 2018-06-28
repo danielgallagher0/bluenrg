@@ -41,4 +41,9 @@ status_only! {
         0xFD,
         BNRGParams::AciL2CapConnectionParameterUpdateRequest
     );
+    aci_l2cap_connection_parameter_update_response(
+        0x82,
+        0xFD,
+        BNRGParams::AciL2CapConnectionParameterUpdateResponse
+    );
 }

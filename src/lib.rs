@@ -244,14 +244,58 @@ where
 
     /// Send an L2CAP connection parameter update request from the peripheral to the central
     /// device.
+    ///
+    /// # Errors
+    ///
+    /// - Underlying communication errors.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command
+    /// Complete](event::command::ReturnParameters::AciL2CapConnectionParameterUpdateRequest) event
+    /// is generated.
     pub fn aci_l2cap_connection_parameter_update_request(
         &mut self,
         params: &L2CapConnectionParameterUpdateRequest,
     ) -> nb::Result<(), UartError<E, BlueNRGError>> {
-        let mut bytes = [0; 10];
+        let mut bytes = [0; L2CapConnectionParameterUpdateRequest::LENGTH];
         params.into_bytes(&mut bytes);
 
         self.write_command(opcode::L2CAP_CONN_PARAM_UPDATE_REQ, &bytes)
+    }
+
+    /// This command should be sent in response to the
+    /// [`L2CapConnectionUpdateResponse`](event::BlueNRGEvent::L2CapConnectionUpdateResponse) event
+    /// from the controller. The accept parameter has to be set to true if the connection parameters
+    /// given in the event are acceptable.
+    ///
+    /// # Errors
+    ///
+    /// - [`BadConnectionInterval`](BlueNRGError::BadConnectionInterval) if
+    ///   [`interval`](L2CapConnectionParameterUpdateResponse::interval) is inverted; that is, if
+    ///   the minimum is greater than the maximum.
+    /// - [`BadConnectionLengthRange`](BlueNRGError::BadConnectionLengthRange) if
+    ///   [`expected_connection_length_range`](L2CapConnectionParameterUpdateResponse::expected_connection_length_range)
+    ///   is inverted; that is, if the minimum is greater than the maximum.
+    /// - Underlying communication errors.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command
+    /// Complete](event::command::ReturnParameters::AciL2CapConnectionParameterUpdateResponse) event
+    /// is generated.
+    pub fn aci_l2cap_connection_parameter_update_response(
+        &mut self,
+        params: &L2CapConnectionParameterUpdateResponse,
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        params
+            .validate()
+            .map_err(|e| nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(e))))?;
+
+        let mut bytes = [0; L2CapConnectionParameterUpdateResponse::LENGTH];
+        params.into_bytes(&mut bytes);
+
+        self.write_command(opcode::L2CAP_CONN_PARAM_UPDATE_RESP, &bytes)
     }
 }
 

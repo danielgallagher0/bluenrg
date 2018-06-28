@@ -12,6 +12,7 @@ use core::cmp::{min, PartialEq};
 use core::convert::{TryFrom, TryInto};
 use core::fmt::{Debug, Formatter, Result as FmtResult};
 use core::mem;
+use core::time::Duration;
 
 pub use hci::{BdAddr, BdAddrType, ConnectionHandle};
 
@@ -238,7 +239,7 @@ pub enum BlueNRGEvent {
 }
 
 /// Enumeration of potential errors when deserializing events.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum BlueNRGError {
     /// The event is not recoginized. Includes the unknown opcode.
     UnknownEvent(u16),
@@ -369,6 +370,18 @@ pub enum BlueNRGError {
     /// For the ATT Read Multiple Permit Request event: The packet ends with a partial attribute
     /// handle.
     AttReadMultiplePermitRequestPartial,
+
+    /// For the [L2CAP Connection Parameter Update
+    /// Response](::ActiveBlueNRG::aci_l2cap_connection_parameter_update_response), the connection
+    /// interval is inverted (the min is greater than the max).  Return the provided min as the
+    /// first element, max as the second.
+    BadConnectionInterval(Duration, Duration),
+
+    /// For the [L2CAP Connection Parameter Update
+    /// Response](::ActiveBlueNRG::aci_l2cap_connection_parameter_update_response), the expected
+    /// connection length range is inverted (the min is greater than the max).  Return the provided
+    /// min as the first element, max as the second.
+    BadConnectionLengthRange(Duration, Duration),
 }
 
 macro_rules! require_len {

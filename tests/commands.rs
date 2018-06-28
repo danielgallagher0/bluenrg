@@ -4,6 +4,7 @@ extern crate embedded_hal as hal;
 extern crate nb;
 
 use bluenrg::*;
+use hci::host::uart::Error as UartError;
 use std::time::Duration;
 
 struct RecordingSink {
@@ -106,4 +107,105 @@ bnrg_test! {
             );
         }
     }
+}
+
+bnrg_test! {
+    fn aci_l2cap_connection_parameter_update_response() {
+        |controller| {
+            controller.aci_l2cap_connection_parameter_update_response(
+                &L2CapConnectionParameterUpdateResponse {
+                    conn_handle: hci::ConnectionHandle(0x0201),
+                    interval: (Duration::from_millis(30), Duration::from_millis(300)),
+                    conn_latency: 10,
+                    timeout: Duration::from_millis(1000),
+                    expected_connection_length_range: (Duration::from_millis(500),
+                                                       Duration::from_millis(1250)),
+                    identifier: 0x0F,
+                    accepted: true,
+                }
+            ).unwrap();
+        } => |sink| {
+            assert_eq!(
+                sink.written_data,
+                [1, 0x82, 0xFD, 16, 0x01, 0x02, 0x18, 0x00, 0xF0, 0x00, 0x0A, 0x00, 0x64, 0x00,
+                 0x20, 0x03, 0xD0, 0x07, 0x0F, 0x01]
+            );
+        }
+    }
+}
+
+#[test]
+fn aci_l2cap_connection_parameter_update_response_bad_connection_interval() {
+    let mut sink = RecordingSink::new();
+    let mut rx_buffer = [0; 8];
+    let cs = DummyPin {};
+    let dr = DummyPin {};
+    let rst = DummyPin {};
+    let mut bnrg = BlueNRG::new(&mut rx_buffer, cs, dr, rst);
+    let err =
+        bnrg.with_spi(&mut sink, |controller| {
+            controller.aci_l2cap_connection_parameter_update_response(
+                &L2CapConnectionParameterUpdateResponse {
+                    conn_handle: hci::ConnectionHandle(0x0201),
+                    interval: (Duration::from_millis(500), Duration::from_millis(499)),
+                    conn_latency: 10,
+                    timeout: Duration::from_millis(50),
+                    expected_connection_length_range: (
+                        Duration::from_millis(7),
+                        Duration::from_millis(8),
+                    ),
+                    identifier: 0x10,
+                    accepted: true,
+                },
+            )
+        }).err()
+            .unwrap();
+    assert_eq!(
+        err,
+        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+            BlueNRGError::BadConnectionInterval(
+                Duration::from_millis(500),
+                Duration::from_millis(499)
+            )
+        )))
+    );
+    assert_eq!(sink.written_data, []);
+}
+
+#[test]
+fn aci_l2cap_connection_parameter_update_response_bad_expected_connection_length_range() {
+    let mut sink = RecordingSink::new();
+    let mut rx_buffer = [0; 8];
+    let cs = DummyPin {};
+    let dr = DummyPin {};
+    let rst = DummyPin {};
+    let mut bnrg = BlueNRG::new(&mut rx_buffer, cs, dr, rst);
+    let err =
+        bnrg.with_spi(&mut sink, |controller| {
+            controller.aci_l2cap_connection_parameter_update_response(
+                &L2CapConnectionParameterUpdateResponse {
+                    conn_handle: hci::ConnectionHandle(0x0201),
+                    interval: (Duration::from_millis(500), Duration::from_millis(501)),
+                    conn_latency: 10,
+                    timeout: Duration::from_millis(50),
+                    expected_connection_length_range: (
+                        Duration::from_millis(9),
+                        Duration::from_millis(8),
+                    ),
+                    identifier: 0x10,
+                    accepted: true,
+                },
+            )
+        }).err()
+            .unwrap();
+    assert_eq!(
+        err,
+        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+            BlueNRGError::BadConnectionLengthRange(
+                Duration::from_millis(9),
+                Duration::from_millis(8)
+            )
+        )))
+    );
+    assert_eq!(sink.written_data, []);
 }

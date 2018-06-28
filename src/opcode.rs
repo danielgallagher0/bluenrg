@@ -25,5 +25,6 @@ opcodes! {
     L2Cap = 0x3;
     {
         pub const L2CAP_CONN_PARAM_UPDATE_REQ = 0x01;
+        pub const L2CAP_CONN_PARAM_UPDATE_RESP = 0x02;
     }
 }
