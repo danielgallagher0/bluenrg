@@ -5,7 +5,7 @@ use byteorder::{ByteOrder, LittleEndian};
 use core::time::Duration;
 
 /// Parameters for the
-/// [`aci_l2cap_connection_parameter_update_request`](::ActiveBlueNRG::aci_l2cap_connection_parameter_update_request)
+/// [`l2cap_connection_parameter_update_request`](::ActiveBlueNRG::l2cap_connection_parameter_update_request)
 /// command.
 pub struct L2CapConnectionParameterUpdateRequest {
     /// Connection handle of the link which the connection parameter update request has to be sent.
@@ -38,7 +38,7 @@ impl L2CapConnectionParameterUpdateRequest {
 }
 
 /// Parameters for the
-/// [`aci_l2cap_connection_parameter_update_response`](::ActiveBlueNRG::aci_l2cap_connection_parameter_update_response)
+/// [`l2cap_connection_parameter_update_response`](::ActiveBlueNRG::l2cap_connection_parameter_update_response)
 /// command.
 pub struct L2CapConnectionParameterUpdateResponse {
     /// [Connection handle](::event::L2CapConnectionUpdateRequest::conn_handle) received in the

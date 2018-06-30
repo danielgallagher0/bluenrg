@@ -14,13 +14,13 @@ use core::convert::TryInto;
 /// parameters, they are included in the enum.
 #[derive(Clone, Debug)]
 pub enum ReturnParameters {
-    /// Status returned by the [ACI L2CAP Connection Parameter Update
-    /// Request](::ActiveBlueNRG::aci_l2cap_connection_parameter_update_request) command.
-    AciL2CapConnectionParameterUpdateRequest(hci::Status),
+    /// Status returned by the [L2CAP Connection Parameter Update
+    /// Request](::ActiveBlueNRG::l2cap_connection_parameter_update_request) command.
+    L2CapConnectionParameterUpdateRequest(hci::Status),
 
-    /// Status returned by the [ACI L2CAP Connection Parameter Update
-    /// Response](::ActiveBlueNRG::aci_l2cap_connection_parameter_update_response) command.
-    AciL2CapConnectionParameterUpdateResponse(hci::Status),
+    /// Status returned by the [L2CAP Connection Parameter Update
+    /// Response](::ActiveBlueNRG::l2cap_connection_parameter_update_response) command.
+    L2CapConnectionParameterUpdateResponse(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -31,13 +31,11 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
 
         match hci::Opcode(LittleEndian::read_u16(&bytes[1..])) {
             ::opcode::L2CAP_CONN_PARAM_UPDATE_REQ => Ok(
-                ReturnParameters::AciL2CapConnectionParameterUpdateRequest(to_status(&bytes[3..])?),
+                ReturnParameters::L2CapConnectionParameterUpdateRequest(to_status(&bytes[3..])?),
             ),
-            ::opcode::L2CAP_CONN_PARAM_UPDATE_RESP => {
-                Ok(ReturnParameters::AciL2CapConnectionParameterUpdateResponse(
-                    to_status(&bytes[3..])?,
-                ))
-            }
+            ::opcode::L2CAP_CONN_PARAM_UPDATE_RESP => Ok(
+                ReturnParameters::L2CapConnectionParameterUpdateResponse(to_status(&bytes[3..])?),
+            ),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }

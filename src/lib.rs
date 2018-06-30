@@ -252,9 +252,9 @@ where
     /// # Generated events
     ///
     /// A [Command
-    /// Complete](event::command::ReturnParameters::AciL2CapConnectionParameterUpdateRequest) event
+    /// Complete](event::command::ReturnParameters::L2CapConnectionParameterUpdateRequest) event
     /// is generated.
-    pub fn aci_l2cap_connection_parameter_update_request(
+    pub fn l2cap_connection_parameter_update_request(
         &mut self,
         params: &L2CapConnectionParameterUpdateRequest,
     ) -> nb::Result<(), UartError<E, BlueNRGError>> {
@@ -282,9 +282,9 @@ where
     /// # Generated events
     ///
     /// A [Command
-    /// Complete](event::command::ReturnParameters::AciL2CapConnectionParameterUpdateResponse) event
+    /// Complete](event::command::ReturnParameters::L2CapConnectionParameterUpdateResponse) event
     /// is generated.
-    pub fn aci_l2cap_connection_parameter_update_response(
+    pub fn l2cap_connection_parameter_update_response(
         &mut self,
         params: &L2CapConnectionParameterUpdateResponse,
     ) -> nb::Result<(), UartError<E, BlueNRGError>> {

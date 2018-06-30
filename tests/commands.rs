@@ -105,11 +105,11 @@ impl hal::digital::InputPin for DummyPin {
 }
 
 #[test]
-fn aci_l2cap_connection_parameter_update_request() {
+fn l2cap_connection_parameter_update_request() {
     let mut fixture = Fixture::new();
     fixture
         .act(|controller| {
-            controller.aci_l2cap_connection_parameter_update_request(
+            controller.l2cap_connection_parameter_update_request(
                 &L2CapConnectionParameterUpdateRequest {
                     conn_handle: hci::ConnectionHandle(0x0201),
                     interval: (Duration::from_millis(30), Duration::from_millis(300)),
@@ -127,11 +127,11 @@ fn aci_l2cap_connection_parameter_update_request() {
 }
 
 #[test]
-fn aci_l2cap_connection_parameter_update_response() {
+fn l2cap_connection_parameter_update_response() {
     let mut fixture = Fixture::new();
     fixture
         .act(|controller| {
-            controller.aci_l2cap_connection_parameter_update_response(
+            controller.l2cap_connection_parameter_update_response(
                 &L2CapConnectionParameterUpdateResponse {
                     conn_handle: hci::ConnectionHandle(0x0201),
                     interval: (Duration::from_millis(30), Duration::from_millis(300)),
@@ -156,11 +156,11 @@ fn aci_l2cap_connection_parameter_update_response() {
 }
 
 #[test]
-fn aci_l2cap_connection_parameter_update_response_bad_connection_interval() {
+fn l2cap_connection_parameter_update_response_bad_connection_interval() {
     let mut fixture = Fixture::new();
     let err = fixture
         .act(|controller| {
-            controller.aci_l2cap_connection_parameter_update_response(
+            controller.l2cap_connection_parameter_update_response(
                 &L2CapConnectionParameterUpdateResponse {
                     conn_handle: hci::ConnectionHandle(0x0201),
                     interval: (Duration::from_millis(500), Duration::from_millis(499)),
@@ -191,11 +191,11 @@ fn aci_l2cap_connection_parameter_update_response_bad_connection_interval() {
 }
 
 #[test]
-fn aci_l2cap_connection_parameter_update_response_bad_expected_connection_length_range() {
+fn l2cap_connection_parameter_update_response_bad_expected_connection_length_range() {
     let mut fixture = Fixture::new();
     let err = fixture
         .act(|controller| {
-            controller.aci_l2cap_connection_parameter_update_response(
+            controller.l2cap_connection_parameter_update_response(
                 &L2CapConnectionParameterUpdateResponse {
                     conn_handle: hci::ConnectionHandle(0x0201),
                     interval: (Duration::from_millis(500), Duration::from_millis(501)),

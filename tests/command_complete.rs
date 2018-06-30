@@ -36,14 +36,15 @@ macro_rules! status_only {
 }
 
 status_only! {
-    aci_l2cap_connection_parameter_update_request(
+    l2cap_connection_parameter_update_request(
         0x81,
         0xFD,
-        BNRGParams::AciL2CapConnectionParameterUpdateRequest
+        BNRGParams::L2CapConnectionParameterUpdateRequest
     );
-    aci_l2cap_connection_parameter_update_response(
+    l2cap_connection_parameter_update_response(
         0x82,
         0xFD,
-        BNRGParams::AciL2CapConnectionParameterUpdateResponse
+        BNRGParams::L2CapConnectionParameterUpdateResponse
+    );
     );
 }
