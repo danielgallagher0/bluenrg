@@ -297,6 +297,21 @@ where
 
         self.write_command(opcode::L2CAP_CONN_PARAM_UPDATE_RESP, &bytes)
     }
+
+    /// Set the device in non-discoverable mode. This command will disable the LL advertising and
+    /// put the device in standby state.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapSetNondiscoverable) event is
+    /// generated.
+    pub fn gap_set_nondiscoverable(&mut self) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        self.write_command(opcode::GAP_SET_NONDISCOVERABLE, &[])
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

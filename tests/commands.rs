@@ -224,3 +224,13 @@ fn l2cap_connection_parameter_update_response_bad_expected_connection_length_ran
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
 }
+
+#[test]
+fn gap_set_nondiscoverable() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_set_nondiscoverable())
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x81, 0xFC, 0]);
+}

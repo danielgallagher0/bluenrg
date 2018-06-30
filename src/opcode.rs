@@ -22,6 +22,12 @@ macro_rules! opcodes {
 }
 
 opcodes! {
+    // Hci = 0x0;
+    Gap = 0x1;
+    {
+        pub const GAP_SET_NONDISCOVERABLE = 0x01;
+    }
+    // Gatt = 0x2;
     L2Cap = 0x3;
     {
         pub const L2CAP_CONN_PARAM_UPDATE_REQ = 0x01;

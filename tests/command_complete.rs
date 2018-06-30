@@ -46,5 +46,5 @@ status_only! {
         0xFD,
         BNRGParams::L2CapConnectionParameterUpdateResponse
     );
-    );
+    gap_set_nondiscoverable(0x81, 0xFC, BNRGParams::GapSetNondiscoverable);
 }

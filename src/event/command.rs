@@ -21,6 +21,10 @@ pub enum ReturnParameters {
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Response](::ActiveBlueNRG::l2cap_connection_parameter_update_response) command.
     L2CapConnectionParameterUpdateResponse(hci::Status),
+
+    /// Status returned by the [GAP Set Non-Discoverable](::ActiveBlueNRG::gap_set_nondiscoverable)
+    /// command
+    GapSetNondiscoverable(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -36,6 +40,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::L2CAP_CONN_PARAM_UPDATE_RESP => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateResponse(to_status(&bytes[3..])?),
             ),
+            ::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNondiscoverable(
+                to_status(&bytes[3..])?,
+            )),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }
