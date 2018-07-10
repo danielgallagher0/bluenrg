@@ -238,7 +238,7 @@ pub enum BlueNRGEvent {
     AttPrepareWritePermitRequest(AttPrepareWritePermitRequest),
 }
 
-/// Enumeration of potential errors when deserializing events.
+/// Enumeration of potential errors when sending commands or deserializing events.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum BlueNRGError {
     /// The event is not recoginized. Includes the unknown opcode.
@@ -382,6 +382,15 @@ pub enum BlueNRGError {
     /// connection length range is inverted (the min is greater than the max).  Return the provided
     /// min as the first element, max as the second.
     BadConnectionLengthRange(Duration, Duration),
+
+    /// For the [GAP Set Limited Discoverable](::ActiveBlueNRG::gap_set_limited_discoverable)
+    /// command, the advertising type is disallowed.  Returns the invalid advertising type.
+    BadAdvertisingType(::AdvertisingType),
+
+    /// For the [GAP Set Limited Discoverable](::ActiveBlueNRG::gap_set_limited_discoverable)
+    /// command, the advertising interval is inverted (that is, the max is less than the
+    /// min). Includes the provided range.
+    BadAdvertisingInterval(Duration, Duration),
 }
 
 macro_rules! require_len {

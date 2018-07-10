@@ -65,6 +65,7 @@ mod opcode;
 pub use command::*;
 pub use event::BlueNRGError;
 pub use event::BlueNRGEvent;
+pub use hci::host::{AdvertisingFilterPolicy, AdvertisingType, OwnAddressType};
 
 /// Handle for interfacing with the BlueNRG-MS.
 pub struct BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin> {
@@ -311,6 +312,26 @@ where
     /// generated.
     pub fn gap_set_nondiscoverable(&mut self) -> nb::Result<(), UartError<E, BlueNRGError>> {
         self.write_command(opcode::GAP_SET_NONDISCOVERABLE, &[])
+    }
+
+    /// Set the device in limited discoverable mode.
+    ///
+    /// Limited discoverability is defined in in GAP specification volume 3, section 9.2.3. The
+    /// device will be discoverable for maximum period of TGAP (lim_adv_timeout) = 180 seconds (from
+    /// errata). The advertising can be disabled at any time by issuing a
+    /// [`gap_set_nondiscoverable`](ActiveBlueNRG::gap_set_nondiscoverable) command.
+    pub fn gap_set_limited_discoverable<'a, 'b>(
+        &mut self,
+        params: &GapLimitedDiscoverableParameters<'a, 'b>,
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        params
+            .validate()
+            .map_err(|e| nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(e))))?;
+
+        let mut bytes = [0; GapLimitedDiscoverableParameters::MAX_LENGTH];
+        let len = params.into_bytes(&mut bytes);
+
+        self.write_command(opcode::GAP_SET_LIMITED_DISCOVERABLE, &bytes[..len])
     }
 }
 

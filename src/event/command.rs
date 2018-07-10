@@ -23,8 +23,12 @@ pub enum ReturnParameters {
     L2CapConnectionParameterUpdateResponse(hci::Status),
 
     /// Status returned by the [GAP Set Non-Discoverable](::ActiveBlueNRG::gap_set_nondiscoverable)
-    /// command
+    /// command.
     GapSetNondiscoverable(hci::Status),
+
+    /// Status returned by the [GAP Set Limited
+    /// Discoverable](::ActiveBlueNRG::gap_set_limited_discoverable) command.
+    GapSetLimitedDiscoverable(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -43,6 +47,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNondiscoverable(
                 to_status(&bytes[3..])?,
             )),
+            ::opcode::GAP_SET_LIMITED_DISCOVERABLE => Ok(
+                ReturnParameters::GapSetLimitedDiscoverable(to_status(&bytes[3..])?),
+            ),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }

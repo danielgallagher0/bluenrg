@@ -47,4 +47,5 @@ status_only! {
         BNRGParams::L2CapConnectionParameterUpdateResponse
     );
     gap_set_nondiscoverable(0x81, 0xFC, BNRGParams::GapSetNondiscoverable);
+    gap_set_limited_discoverable(0x82, 0xFC, BNRGParams::GapSetLimitedDiscoverable);
 }

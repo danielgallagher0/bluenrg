@@ -26,6 +26,7 @@ opcodes! {
     Gap = 0x1;
     {
         pub const GAP_SET_NONDISCOVERABLE = 0x01;
+        pub const GAP_SET_LIMITED_DISCOVERABLE = 0x02;
     }
     // Gatt = 0x2;
     L2Cap = 0x3;
