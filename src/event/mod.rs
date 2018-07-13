@@ -882,6 +882,7 @@ impl Debug for FaultData {
     }
 }
 
+#[cfg(feature = "ms")]
 impl FaultData {
     /// Returns the valid debug data.
     pub fn debug_data(&self) -> &[u8] {
