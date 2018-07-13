@@ -155,20 +155,7 @@ fn hal_crash_info() {
             assert_eq!(info.lr, 0x1c1b1a19);
             assert_eq!(info.pc, 0x201f1e1d);
             assert_eq!(info.xpsr, 0x24232221);
-            assert_eq!(info.debug_data_len, 6);
-
-            let mut debug_data = [0; MAX_DEBUG_DATA_LEN];
-            debug_data[0] = 0x25;
-            debug_data[1] = 0x26;
-            debug_data[2] = 0x27;
-            debug_data[3] = 0x28;
-            debug_data[4] = 0x29;
-            debug_data[5] = 0x2a;
-            let debug_data = debug_data;
-            assert_eq!(info.debug_data.len(), debug_data.len());
-            for (actual, expected) in info.debug_data.iter().zip(debug_data.iter()) {
-                assert_eq!(actual, expected);
-            }
+            assert_eq!(info.debug_data(), [0x25, 0x26, 0x27, 0x28, 0x29, 0x2a]);
         }
         other => panic!("Did not get crash info: {:?}", other),
     }
@@ -702,15 +689,8 @@ fn gap_device_found() {
         Ok(BlueNRGEvent::GapDeviceFound(event)) => {
             assert_eq!(event.event, GapDeviceFoundEvent::Advertisement);
             assert_eq!(event.bdaddr, BdAddrType::Public(BdAddr([1, 2, 3, 4, 5, 6])));
-            assert_eq!(event.rssi, 0x04);
-
-            let mut data = [0; 31];
-            data[0] = 1;
-            data[1] = 2;
-            data[2] = 3;
-            let data = data;
-            assert_eq!(event.data_len, 3);
-            assert_eq!(event.data, data);
+            assert_eq!(event.rssi, Some(0x04));
+            assert_eq!(event.data(), [1, 2, 3]);
         }
         other => panic!("Did not get GAP Device found: {:?}", other),
     }
@@ -759,11 +739,16 @@ fn gap_device_found_failure_bad_data_length() {
 #[test]
 fn gap_device_found_failure_bad_rssi() {
     let buffer = [
-        0x06, 0x04, 0x04, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 3, 0x01, 0x02, 0x03, 0x7F,
+        0x06, 0x04, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 3, 0x01, 0x02, 0x03, 0x7F,
     ];
     match BlueNRGEvent::new(&buffer) {
-        Err(HciError::Vendor(BlueNRGError::GapRssiUnavailable)) => (),
-        other => panic!("Did not get bad GAP RSSI: {:?}", other),
+        Ok(BlueNRGEvent::GapDeviceFound(event)) => {
+            assert_eq!(event.event, GapDeviceFoundEvent::Advertisement);
+            assert_eq!(event.bdaddr, BdAddrType::Public(BdAddr([1, 2, 3, 4, 5, 6])));
+            assert_eq!(event.rssi, None);
+            assert_eq!(event.data(), [1, 2, 3]);
+        }
+        other => panic!("Did not get GAP Device found: {:?}", other),
     }
 }
 

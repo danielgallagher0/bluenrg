@@ -274,10 +274,6 @@ pub enum BlueNRGError {
     /// recognized. Includes the unrecognized byte.
     BadGapBdAddrType(u8),
 
-    /// For the [GAP Device Found](BlueNRGEvent::GapDeviceFound) event: the RSSI code at the end of
-    /// the packet indicated that the RSSI is unavailable.
-    GapRssiUnavailable,
-
     /// For the [GAP Procedure Complete](BlueNRGEvent::GapProcedureComplete) event: The procedure
     /// code was not recognized. Includes the unrecognized byte.
     BadGapProcedure(u8),
@@ -792,10 +788,10 @@ fn to_lost_event(buffer: &[u8]) -> Result<EventFlags, hci::event::Error<BlueNRGE
     EventFlags::from_bits(bits).ok_or(hci::event::Error::Vendor(BlueNRGError::BadEventFlags(bits)))
 }
 
-/// The maximum length of [`FaultData::debug_data`]. The maximum length of an event is 255 bytes,
-/// and the non-variable data of the event takes up 40 bytes.
+// The maximum length of [`FaultData::debug_data`]. The maximum length of an event is 255 bytes,
+// and the non-variable data of the event takes up 40 bytes.
 #[cfg(feature = "ms")]
-pub const MAX_DEBUG_DATA_LEN: usize = 215;
+const MAX_DEBUG_DATA_LEN: usize = 215;
 
 /// Specific reason for the fault reported with [FaultData].
 #[cfg(feature = "ms")]
@@ -803,10 +799,8 @@ pub const MAX_DEBUG_DATA_LEN: usize = 215;
 pub enum CrashReason {
     /// The controller reset because an assertion failed.
     Assertion,
-
     /// The controller reset because of an NMI fault.
     NmiFault,
-
     /// The controller reset because of a hard fault.
     HardFault,
 }
@@ -857,11 +851,11 @@ pub struct FaultData {
     /// MCU xPSR register
     pub xpsr: u32,
 
-    /// Number of valid bytes in debug_data
-    pub debug_data_len: usize,
+    // Number of valid bytes in debug_data
+    debug_data_len: usize,
 
-    /// Additional crash dump data
-    pub debug_data: [u8; MAX_DEBUG_DATA_LEN],
+    // Additional crash dump data
+    debug_data_buf: [u8; MAX_DEBUG_DATA_LEN],
 }
 
 #[cfg(feature = "ms")]
@@ -877,10 +871,17 @@ impl Debug for FaultData {
             "r12: {:x}, lr: {:x}, pc: {:x}, xpsr: {:x}, debug_data: [",
             self.r12, self.lr, self.pc, self.xpsr
         )?;
-        for byte in &self.debug_data[..self.debug_data_len] {
+        for byte in self.debug_data() {
             write!(f, " {:x}", byte)?;
         }
         write!(f, " ] }}")
+    }
+}
+
+impl FaultData {
+    /// Returns the valid debug data.
+    pub fn debug_data(&self) -> &[u8] {
+        &self.debug_data_buf[..self.debug_data_len]
     }
 }
 
@@ -903,9 +904,9 @@ fn to_crash_report(buffer: &[u8]) -> Result<FaultData, hci::event::Error<BlueNRG
         pc: LittleEndian::read_u32(&buffer[31..]),
         xpsr: LittleEndian::read_u32(&buffer[35..]),
         debug_data_len: debug_data_len,
-        debug_data: [0; MAX_DEBUG_DATA_LEN],
+        debug_data_buf: [0; MAX_DEBUG_DATA_LEN],
     };
-    fault_data.debug_data[..debug_data_len].copy_from_slice(&buffer[40..]);
+    fault_data.debug_data_buf[..debug_data_len].copy_from_slice(&buffer[40..]);
 
     Ok(fault_data)
 }
@@ -1203,14 +1204,21 @@ pub struct GapDeviceFound {
     /// Address of the peer device found during scanning
     pub bdaddr: BdAddrType,
 
-    /// Length of significant data
-    pub data_len: usize,
+    // Length of significant data
+    data_len: usize,
 
-    /// Advertising or scan response data.
-    pub data: [u8; 31],
+    // Advertising or scan response data.
+    data_buf: [u8; 31],
 
-    /// Received signal strength indicator (range: -127 - 20)
-    pub rssi: i8,
+    /// Received signal strength indicator (range: -127 - 20).
+    pub rssi: Option<i8>,
+}
+
+impl GapDeviceFound {
+    /// Returns the valid scan response data.
+    pub fn data(&self) -> &[u8] {
+        &self.data_buf[..self.data_len]
+    }
 }
 
 pub use hci::event::AdvertisementEvent as GapDeviceFoundEvent;
@@ -1223,9 +1231,6 @@ fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Erro
 
     const RSSI_UNAVAILABLE: i8 = 127;
     let rssi = unsafe { mem::transmute::<u8, i8>(buffer[buffer.len() - 1]) };
-    if rssi == RSSI_UNAVAILABLE {
-        return Err(hci::event::Error::Vendor(BlueNRGError::GapRssiUnavailable));
-    }
 
     let mut addr = BdAddr([0; 6]);
     addr.0.copy_from_slice(&buffer[4..10]);
@@ -1240,10 +1245,14 @@ fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Erro
         bdaddr: hci::to_bd_addr_type(buffer[3], addr)
             .map_err(|e| hci::event::Error::Vendor(BlueNRGError::BadGapBdAddrType(e.0)))?,
         data_len: data_len,
-        data: [0; 31],
-        rssi: rssi,
+        data_buf: [0; 31],
+        rssi: if rssi == RSSI_UNAVAILABLE {
+            None
+        } else {
+            Some(rssi)
+        },
     };
-    event.data[..event.data_len].copy_from_slice(&buffer[11..buffer.len() - 1]);
+    event.data_buf[..event.data_len].copy_from_slice(&buffer[11..buffer.len() - 1]);
 
     Ok(event)
 }
