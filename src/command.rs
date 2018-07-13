@@ -50,7 +50,7 @@ pub struct L2CapConnectionParameterUpdateResponse {
     /// [`L2CapConnectionUpdateRequest`](::event::BlueNRGEvent::L2CapConnectionUpdateRequest) event.
     pub interval: (Duration, Duration),
 
-    /// [Peripheral latency](::event::L2CapConnectionUpdateRequest::slave_latency) received in the
+    /// [Connection latency](::event::L2CapConnectionUpdateRequest::conn_latency) received in the
     /// [`L2CapConnectionUpdateRequest`](::event::BlueNRGEvent::L2CapConnectionUpdateRequest) event.
     pub conn_latency: u16,
 

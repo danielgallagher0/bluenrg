@@ -58,7 +58,7 @@ pub enum BlueNRGEvent {
 
     /// This event is generated when the peripheral security request is successfully sent to the
     /// central device.
-    GapSlaveSecurityInitiated,
+    GapPeripheralSecurityInitiated,
 
     /// This event is generated on the peripheral when a `gap_peripheral_security_request` is called
     /// to reestablish the bond with the central device but the central device has lost the
@@ -93,14 +93,14 @@ pub enum BlueNRGEvent {
     #[cfg(not(feature = "ms"))]
     GapReconnectionAddress(BdAddr),
 
-    /// This event is generated when the master responds to the L2CAP connection update request
-    /// packet. For more info see
+    /// This event is generated when the central device responds to the L2CAP connection update
+    /// request packet. For more info see
     /// [ConnectionParameterUpdateResponse]($crate::command::L2CapConnectionParameterUpdateResponse)
     /// and CommandReject in Bluetooth Core v4.0 spec.
     L2CapConnectionUpdateResponse(L2CapConnectionUpdateResponse),
 
-    /// This event is generated when the master does not respond to the connection update request
-    /// within 30 seconds.
+    /// This event is generated when the central device does not respond to the connection update
+    /// request within 30 seconds.
     L2CapProcedureTimeout(ConnectionHandle),
 
     /// The event is given by the L2CAP layer when a connection update request is received from the
@@ -465,7 +465,7 @@ impl hci::event::VendorEvent for BlueNRGEvent {
             0x0403 => Ok(BlueNRGEvent::GapAuthorizationRequest(to_conn_handle(
                 buffer,
             )?)),
-            0x0404 => Ok(BlueNRGEvent::GapSlaveSecurityInitiated),
+            0x0404 => Ok(BlueNRGEvent::GapPeripheralSecurityInitiated),
             0x0405 => Ok(BlueNRGEvent::GapBondLost),
             0x0406 => Ok(BlueNRGEvent::GapDeviceFound(to_gap_device_found(buffer)?)),
             0x0407 => Ok(BlueNRGEvent::GapProcedureComplete(
@@ -691,8 +691,9 @@ bitflags! {
         const GAP_PASS_KEY_REQUEST = 1 << 11;
         /// BlueNRG Event: [GAP Authorization Request](BlueNRGEvent::GapAuthorizationRequest).
         const GAP_AUTHORIZATION_REQUEST = 1 << 12;
-        /// BlueNRG Event: [GAP Slave Security Initiated](BlueNRGEvent::GapSlaveSecurityInitiated).
-        const GAP_SLAVE_SECURITY_INITIATED = 1 << 13;
+        /// BlueNRG Event: [GAP Peripheral Security
+        /// Initiated](BlueNRGEvent::GapPeripheralSecurityInitiated).
+        const GAP_PERIPHERAL_SECURITY_INITIATED = 1 << 13;
         /// BlueNRG Event: [GAP Bond Lost](BlueNRGEvent::GapBondLost).
         const GAP_BOND_LOST = 1 << 14;
         /// BlueNRG Event: [GAP Procedure complete](BlueNRGEvent::GapProcedureComplete).
@@ -930,7 +931,8 @@ macro_rules! require_l2cap_len {
     };
 }
 
-/// This event is generated when the master responds to the L2CAP connection update request packet.
+/// This event is generated when the central device responds to the L2CAP connection update request
+/// packet.
 ///
 /// For more info see connection parameter update response and command reject in Bluetooth Core v4.0
 /// spec.
@@ -1022,8 +1024,8 @@ fn to_l2cap_connection_update_response(
     })
 }
 
-/// This event is generated when the master does not respond to the connection update request within
-/// 30 seconds.
+/// This event is generated when the central device does not respond to the connection update
+/// request within 30 seconds.
 #[derive(Copy, Clone, Debug)]
 pub struct L2CapProcedureTimeout {
     /// The connection handle related to the event.
@@ -1075,8 +1077,8 @@ pub struct L2CapConnectionUpdateRequest {
     /// Defines the connection latency parameter.
     ///
     /// The valid range is from 0 to `((connSupervisionTimeout /
-    /// (connIntervalMax*2)) - 1)`. The Slave Latency field shall be less than 500.
-    pub slave_latency: u16,
+    /// (connIntervalMax*2)) - 1)`. The connection latency field shall be less than 500.
+    pub conn_latency: u16,
 
     /// Defines connection timeout parameter in the following manner: `connSupervisionTimeout =
     /// Timeout Multiplier * 10 ms`. The Timeout Multiplier field shall have a value in the range of
@@ -1113,21 +1115,18 @@ fn to_l2cap_connection_update_request(
         ));
     }
 
-    let slave_latency = LittleEndian::read_u16(&buffer[12..]);
+    let conn_latency = LittleEndian::read_u16(&buffer[12..]);
 
-    // The maximum allowed slave latency is defined by ((supervision_timeout / (2 *
+    // The maximum allowed connection latency is defined by ((supervision_timeout / (2 *
     // connection_interval_max)) - 1), where
     //   supervision_timeout = 10 * timeout_mult
     //   connection_interval_max = 1.25 * interval_max
-    // This simplifies to the expression below. Regardless of the other values, the slave latency
-    // must be less than 500.
-    let slave_latency_limit = min(500, (4 * timeout_mult) / interval_max - 1);
-    if slave_latency >= slave_latency_limit {
+    // This simplifies to the expression below. Regardless of the other values, the connection
+    // latency must be less than 500.
+    let conn_latency_limit = min(500, (4 * timeout_mult) / interval_max - 1);
+    if conn_latency >= conn_latency_limit {
         return Err(hci::event::Error::Vendor(
-            BlueNRGError::BadL2CapConnectionUpdateRequestLatency(
-                slave_latency,
-                slave_latency_limit,
-            ),
+            BlueNRGError::BadL2CapConnectionUpdateRequestLatency(conn_latency, conn_latency_limit),
         ));
     }
 
@@ -1136,7 +1135,7 @@ fn to_l2cap_connection_update_request(
         identifier: buffer[5],
         interval_min: interval_min,
         interval_max: interval_max,
-        slave_latency: slave_latency,
+        conn_latency: conn_latency,
         timeout_mult: timeout_mult,
     })
 }

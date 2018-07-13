@@ -404,7 +404,7 @@ fn l2cap_connection_update_request_buffer(
     l2cap_len: u16,
     interval_min: u16,
     interval_max: u16,
-    slave_latency: u16,
+    conn_latency: u16,
     timeout_mult: u16,
 ) -> [u8; 16] {
     let mut buffer = [0; 16];
@@ -415,7 +415,7 @@ fn l2cap_connection_update_request_buffer(
     LittleEndian::write_u16(&mut buffer[6..], l2cap_len);
     LittleEndian::write_u16(&mut buffer[8..], interval_min);
     LittleEndian::write_u16(&mut buffer[10..], interval_max);
-    LittleEndian::write_u16(&mut buffer[12..], slave_latency);
+    LittleEndian::write_u16(&mut buffer[12..], conn_latency);
     LittleEndian::write_u16(&mut buffer[14..], timeout_mult);
 
     buffer
@@ -437,7 +437,7 @@ fn l2cap_connection_update_request() {
             assert_eq!(req.identifier, 2);
             assert_eq!(req.interval_min, 6);
             assert_eq!(req.interval_max, 10);
-            assert_eq!(req.slave_latency, 10);
+            assert_eq!(req.conn_latency, 10);
             assert_eq!(req.timeout_mult, 3200);
         }
         other => panic!("Did not get L2CAP connection update request: {:?}", other),
@@ -543,7 +543,7 @@ fn l2cap_connection_update_request_failed_bad_interval() {
 }
 
 #[test]
-fn l2cap_connection_update_request_failed_bad_slave_latency() {
+fn l2cap_connection_update_request_failed_bad_conn_latency() {
     let buffer_absolute_max = l2cap_connection_update_request_buffer(
         L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
         L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
@@ -560,7 +560,7 @@ fn l2cap_connection_update_request_failed_bad_slave_latency() {
             assert_eq!(latency, 500);
         }
         other => panic!(
-            "Did not get L2CAP connection update request slave latency: {:?}",
+            "Did not get L2CAP connection update request conn latency: {:?}",
             other
         ),
     }
@@ -578,7 +578,7 @@ fn l2cap_connection_update_request_failed_bad_slave_latency() {
             assert_eq!(latency, 6);
         }
         other => panic!(
-            "Did not get L2CAP connection update request slave latency: {:?}",
+            "Did not get L2CAP connection update request conn latency: {:?}",
             other
         ),
     }
@@ -676,11 +676,11 @@ fn gap_authorization_request() {
 }
 
 #[test]
-fn gap_slave_security_initiated() {
+fn gap_peripheral_security_initiated() {
     let buffer = [0x04, 0x04];
     match BlueNRGEvent::new(&buffer) {
-        Ok(BlueNRGEvent::GapSlaveSecurityInitiated) => (),
-        other => panic!("Did not get GAP slave security initiated: {:?}", other),
+        Ok(BlueNRGEvent::GapPeripheralSecurityInitiated) => (),
+        other => panic!("Did not get GAP peripheral security initiated: {:?}", other),
     }
 }
 
