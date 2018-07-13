@@ -367,6 +367,10 @@ pub enum BlueNRGError {
     /// not recognized. Includes the unrecognized byte.
     BadAttRequestOpcode(u8),
 
+    /// For the [ATT Error Response](BlueNRGEvent::AttErrorResponse) event: The error code was not
+    /// recognized. Includes the unrecognized byte.
+    BadAttError(u8),
+
     /// For the [ATT Read Multiple Permit Request](BlueNRGEvent::AttReadMultiplePermitRequest)
     /// event: The packet ends with a partial attribute handle.
     AttReadMultiplePermitRequestPartial,
@@ -2368,226 +2372,6 @@ pub enum AttError {
     UnsupportedGroupType = 0x10,
     /// Insufficient Resources to complete the request.
     InsufficientResources = 0x11,
-    /// Reserved for future use
-    Reserved0x12 = 0x12,
-    /// Reserved for future use
-    Reserved0x13 = 0x13,
-    /// Reserved for future use
-    Reserved0x14 = 0x14,
-    /// Reserved for future use
-    Reserved0x15 = 0x15,
-    /// Reserved for future use
-    Reserved0x16 = 0x16,
-    /// Reserved for future use
-    Reserved0x17 = 0x17,
-    /// Reserved for future use
-    Reserved0x18 = 0x18,
-    /// Reserved for future use
-    Reserved0x19 = 0x19,
-    /// Reserved for future use
-    Reserved0x1A = 0x1A,
-    /// Reserved for future use
-    Reserved0x1B = 0x1B,
-    /// Reserved for future use
-    Reserved0x1C = 0x1C,
-    /// Reserved for future use
-    Reserved0x1D = 0x1D,
-    /// Reserved for future use
-    Reserved0x1E = 0x1E,
-    /// Reserved for future use
-    Reserved0x1F = 0x1F,
-    /// Reserved for future use
-    Reserved0x20 = 0x20,
-    /// Reserved for future use
-    Reserved0x21 = 0x21,
-    /// Reserved for future use
-    Reserved0x22 = 0x22,
-    /// Reserved for future use
-    Reserved0x23 = 0x23,
-    /// Reserved for future use
-    Reserved0x24 = 0x24,
-    /// Reserved for future use
-    Reserved0x25 = 0x25,
-    /// Reserved for future use
-    Reserved0x26 = 0x26,
-    /// Reserved for future use
-    Reserved0x27 = 0x27,
-    /// Reserved for future use
-    Reserved0x28 = 0x28,
-    /// Reserved for future use
-    Reserved0x29 = 0x29,
-    /// Reserved for future use
-    Reserved0x2A = 0x2A,
-    /// Reserved for future use
-    Reserved0x2B = 0x2B,
-    /// Reserved for future use
-    Reserved0x2C = 0x2C,
-    /// Reserved for future use
-    Reserved0x2D = 0x2D,
-    /// Reserved for future use
-    Reserved0x2E = 0x2E,
-    /// Reserved for future use
-    Reserved0x2F = 0x2F,
-    /// Reserved for future use
-    Reserved0x30 = 0x30,
-    /// Reserved for future use
-    Reserved0x31 = 0x31,
-    /// Reserved for future use
-    Reserved0x32 = 0x32,
-    /// Reserved for future use
-    Reserved0x33 = 0x33,
-    /// Reserved for future use
-    Reserved0x34 = 0x34,
-    /// Reserved for future use
-    Reserved0x35 = 0x35,
-    /// Reserved for future use
-    Reserved0x36 = 0x36,
-    /// Reserved for future use
-    Reserved0x37 = 0x37,
-    /// Reserved for future use
-    Reserved0x38 = 0x38,
-    /// Reserved for future use
-    Reserved0x39 = 0x39,
-    /// Reserved for future use
-    Reserved0x3A = 0x3A,
-    /// Reserved for future use
-    Reserved0x3B = 0x3B,
-    /// Reserved for future use
-    Reserved0x3C = 0x3C,
-    /// Reserved for future use
-    Reserved0x3D = 0x3D,
-    /// Reserved for future use
-    Reserved0x3E = 0x3E,
-    /// Reserved for future use
-    Reserved0x3F = 0x3F,
-    /// Reserved for future use
-    Reserved0x40 = 0x40,
-    /// Reserved for future use
-    Reserved0x41 = 0x41,
-    /// Reserved for future use
-    Reserved0x42 = 0x42,
-    /// Reserved for future use
-    Reserved0x43 = 0x43,
-    /// Reserved for future use
-    Reserved0x44 = 0x44,
-    /// Reserved for future use
-    Reserved0x45 = 0x45,
-    /// Reserved for future use
-    Reserved0x46 = 0x46,
-    /// Reserved for future use
-    Reserved0x47 = 0x47,
-    /// Reserved for future use
-    Reserved0x48 = 0x48,
-    /// Reserved for future use
-    Reserved0x49 = 0x49,
-    /// Reserved for future use
-    Reserved0x4A = 0x4A,
-    /// Reserved for future use
-    Reserved0x4B = 0x4B,
-    /// Reserved for future use
-    Reserved0x4C = 0x4C,
-    /// Reserved for future use
-    Reserved0x4D = 0x4D,
-    /// Reserved for future use
-    Reserved0x4E = 0x4E,
-    /// Reserved for future use
-    Reserved0x4F = 0x4F,
-    /// Reserved for future use
-    Reserved0x50 = 0x50,
-    /// Reserved for future use
-    Reserved0x51 = 0x51,
-    /// Reserved for future use
-    Reserved0x52 = 0x52,
-    /// Reserved for future use
-    Reserved0x53 = 0x53,
-    /// Reserved for future use
-    Reserved0x54 = 0x54,
-    /// Reserved for future use
-    Reserved0x55 = 0x55,
-    /// Reserved for future use
-    Reserved0x56 = 0x56,
-    /// Reserved for future use
-    Reserved0x57 = 0x57,
-    /// Reserved for future use
-    Reserved0x58 = 0x58,
-    /// Reserved for future use
-    Reserved0x59 = 0x59,
-    /// Reserved for future use
-    Reserved0x5A = 0x5A,
-    /// Reserved for future use
-    Reserved0x5B = 0x5B,
-    /// Reserved for future use
-    Reserved0x5C = 0x5C,
-    /// Reserved for future use
-    Reserved0x5D = 0x5D,
-    /// Reserved for future use
-    Reserved0x5E = 0x5E,
-    /// Reserved for future use
-    Reserved0x5F = 0x5F,
-    /// Reserved for future use
-    Reserved0x60 = 0x60,
-    /// Reserved for future use
-    Reserved0x61 = 0x61,
-    /// Reserved for future use
-    Reserved0x62 = 0x62,
-    /// Reserved for future use
-    Reserved0x63 = 0x63,
-    /// Reserved for future use
-    Reserved0x64 = 0x64,
-    /// Reserved for future use
-    Reserved0x65 = 0x65,
-    /// Reserved for future use
-    Reserved0x66 = 0x66,
-    /// Reserved for future use
-    Reserved0x67 = 0x67,
-    /// Reserved for future use
-    Reserved0x68 = 0x68,
-    /// Reserved for future use
-    Reserved0x69 = 0x69,
-    /// Reserved for future use
-    Reserved0x6A = 0x6A,
-    /// Reserved for future use
-    Reserved0x6B = 0x6B,
-    /// Reserved for future use
-    Reserved0x6C = 0x6C,
-    /// Reserved for future use
-    Reserved0x6D = 0x6D,
-    /// Reserved for future use
-    Reserved0x6E = 0x6E,
-    /// Reserved for future use
-    Reserved0x6F = 0x6F,
-    /// Reserved for future use
-    Reserved0x70 = 0x70,
-    /// Reserved for future use
-    Reserved0x71 = 0x71,
-    /// Reserved for future use
-    Reserved0x72 = 0x72,
-    /// Reserved for future use
-    Reserved0x73 = 0x73,
-    /// Reserved for future use
-    Reserved0x74 = 0x74,
-    /// Reserved for future use
-    Reserved0x75 = 0x75,
-    /// Reserved for future use
-    Reserved0x76 = 0x76,
-    /// Reserved for future use
-    Reserved0x77 = 0x77,
-    /// Reserved for future use
-    Reserved0x78 = 0x78,
-    /// Reserved for future use
-    Reserved0x79 = 0x79,
-    /// Reserved for future use
-    Reserved0x7A = 0x7A,
-    /// Reserved for future use
-    Reserved0x7B = 0x7B,
-    /// Reserved for future use
-    Reserved0x7C = 0x7C,
-    /// Reserved for future use
-    Reserved0x7D = 0x7D,
-    /// Reserved for future use
-    Reserved0x7E = 0x7E,
-    /// Reserved for future use
-    Reserved0x7F = 0x7F,
     /// Application error code defined by a higher layer specification.
     ApplicationError0x80 = 0x80,
     /// Application error code defined by a higher layer specification.
@@ -2652,190 +2436,6 @@ pub enum AttError {
     ApplicationError0x9E = 0x9E,
     /// Application error code defined by a higher layer specification.
     ApplicationError0x9F = 0x9F,
-    /// Reserved0x80 future use
-    Reserveda0h = 0xA0,
-    /// Reserved for future use
-    Reserved0xA1 = 0xA1,
-    /// Reserved for future use
-    Reserved0xA2 = 0xA2,
-    /// Reserved for future use
-    Reserved0xA3 = 0xA3,
-    /// Reserved for future use
-    Reserved0xA4 = 0xA4,
-    /// Reserved for future use
-    Reserved0xA5 = 0xA5,
-    /// Reserved for future use
-    Reserved0xA6 = 0xA6,
-    /// Reserved for future use
-    Reserved0xA7 = 0xA7,
-    /// Reserved for future use
-    Reserved0xA8 = 0xA8,
-    /// Reserved for future use
-    Reserved0xA9 = 0xA9,
-    /// Reserved for future use
-    Reserved0xAA = 0xAA,
-    /// Reserved for future use
-    Reserved0xAB = 0xAB,
-    /// Reserved for future use
-    Reserved0xAC = 0xAC,
-    /// Reserved for future use
-    Reserved0xAD = 0xAD,
-    /// Reserved for future use
-    Reserved0xAE = 0xAE,
-    /// Reserved for future use
-    Reserved0xAF = 0xAF,
-    /// Reserved for future use
-    Reserved0xB0 = 0xB0,
-    /// Reserved for future use
-    Reserved0xB1 = 0xB1,
-    /// Reserved for future use
-    Reserved0xB2 = 0xB2,
-    /// Reserved for future use
-    Reserved0xB3 = 0xB3,
-    /// Reserved for future use
-    Reserved0xB4 = 0xB4,
-    /// Reserved for future use
-    Reserved0xB5 = 0xB5,
-    /// Reserved for future use
-    Reserved0xB6 = 0xB6,
-    /// Reserved for future use
-    Reserved0xB7 = 0xB7,
-    /// Reserved for future use
-    Reserved0xB8 = 0xB8,
-    /// Reserved for future use
-    Reserved0xB9 = 0xB9,
-    /// Reserved for future use
-    Reserved0xBA = 0xBA,
-    /// Reserved for future use
-    Reserved0xBB = 0xBB,
-    /// Reserved for future use
-    Reserved0xBC = 0xBC,
-    /// Reserved for future use
-    Reserved0xBD = 0xBD,
-    /// Reserved for future use
-    Reserved0xBE = 0xBE,
-    /// Reserved for future use
-    Reserved0xBF = 0xBF,
-    /// Reserved for future use
-    Reserved0xC0 = 0xC0,
-    /// Reserved for future use
-    Reserved0xC1 = 0xC1,
-    /// Reserved for future use
-    Reserved0xC2 = 0xC2,
-    /// Reserved for future use
-    Reserved0xC3 = 0xC3,
-    /// Reserved for future use
-    Reserved0xC4 = 0xC4,
-    /// Reserved for future use
-    Reserved0xC5 = 0xC5,
-    /// Reserved for future use
-    Reserved0xC6 = 0xC6,
-    /// Reserved for future use
-    Reserved0xC7 = 0xC7,
-    /// Reserved for future use
-    Reserved0xC8 = 0xC8,
-    /// Reserved for future use
-    Reserved0xC9 = 0xC9,
-    /// Reserved for future use
-    Reserved0xCA = 0xCA,
-    /// Reserved for future use
-    Reserved0xCB = 0xCB,
-    /// Reserved for future use
-    Reserved0xCC = 0xCC,
-    /// Reserved for future use
-    Reserved0xCD = 0xCD,
-    /// Reserved for future use
-    Reserved0xCE = 0xCE,
-    /// Reserved for future use
-    Reserved0xCF = 0xCF,
-    /// Reserved for future use
-    Reserved0xD0 = 0xD0,
-    /// Reserved for future use
-    Reserved0xD1 = 0xD1,
-    /// Reserved for future use
-    Reserved0xD2 = 0xD2,
-    /// Reserved for future use
-    Reserved0xD3 = 0xD3,
-    /// Reserved for future use
-    Reserved0xD4 = 0xD4,
-    /// Reserved for future use
-    Reserved0xD5 = 0xD5,
-    /// Reserved for future use
-    Reserved0xD6 = 0xD6,
-    /// Reserved for future use
-    Reserved0xD7 = 0xD7,
-    /// Reserved for future use
-    Reserved0xD8 = 0xD8,
-    /// Reserved for future use
-    Reserved0xD9 = 0xD9,
-    /// Reserved for future use
-    Reserved0xDA = 0xDA,
-    /// Reserved for future use
-    Reserved0xDB = 0xDB,
-    /// Reserved for future use
-    Reserved0xDC = 0xDC,
-    /// Reserved for future use
-    Reserved0xDD = 0xDD,
-    /// Reserved for future use
-    Reserved0xDE = 0xDE,
-    /// Reserved for future use
-    Reserved0xDF = 0xDF,
-    /// Reserved for future use
-    Reserved0xE0 = 0xE0,
-    /// Reserved for future use
-    Reserved0xE1 = 0xE1,
-    /// Reserved for future use
-    Reserved0xE2 = 0xE2,
-    /// Reserved for future use
-    Reserved0xE3 = 0xE3,
-    /// Reserved for future use
-    Reserved0xE4 = 0xE4,
-    /// Reserved for future use
-    Reserved0xE5 = 0xE5,
-    /// Reserved for future use
-    Reserved0xE6 = 0xE6,
-    /// Reserved for future use
-    Reserved0xE7 = 0xE7,
-    /// Reserved for future use
-    Reserved0xE8 = 0xE8,
-    /// Reserved for future use
-    Reserved0xE9 = 0xE9,
-    /// Reserved for future use
-    Reserved0xEA = 0xEA,
-    /// Reserved for future use
-    Reserved0xEB = 0xEB,
-    /// Reserved for future use
-    Reserved0xEC = 0xEC,
-    /// Reserved for future use
-    Reserved0xED = 0xED,
-    /// Reserved for future use
-    Reserved0xEE = 0xEE,
-    /// Reserved for future use
-    Reserved0xEF = 0xEF,
-    /// Reserved for future use
-    Reserved0xF0 = 0xF0,
-    /// Reserved for future use
-    Reserved0xF1 = 0xF1,
-    /// Reserved for future use
-    Reserved0xF2 = 0xF2,
-    /// Reserved for future use
-    Reserved0xF3 = 0xF3,
-    /// Reserved for future use
-    Reserved0xF4 = 0xF4,
-    /// Reserved for future use
-    Reserved0xF5 = 0xF5,
-    /// Reserved for future use
-    Reserved0xF6 = 0xF6,
-    /// Reserved for future use
-    Reserved0xF7 = 0xF7,
-    /// Reserved for future use
-    Reserved0xF8 = 0xF8,
-    /// Reserved for future use
-    Reserved0xF9 = 0xF9,
-    /// Reserved for future use
-    Reserved0xFA = 0xFA,
-    /// Reserved for future use
-    Reserved0xFB = 0xFB,
     /// The requested write operation cannot be fulfilled for reasons other than permissions.
     WriteRequestRejected = 0xFC,
     /// A Client Characteristic Configuration descriptor is not configured according to the
@@ -2848,11 +2448,66 @@ pub enum AttError {
     OutOfRange = 0xFF,
 }
 
-impl From<u8> for AttError {
-    fn from(value: u8) -> AttError {
-        // All possible values of u8 are defined for AttError, so we can safely transmute from u8 to
-        // AttError
-        unsafe { mem::transmute(value) }
+impl TryFrom<u8> for AttError {
+    type Error = u8;
+
+    fn try_from(value: u8) -> Result<AttError, Self::Error> {
+        match value {
+            0x01 => Ok(AttError::InvalidHandle),
+            0x02 => Ok(AttError::ReadNotPermitted),
+            0x03 => Ok(AttError::WriteNotPermitted),
+            0x04 => Ok(AttError::InvalidPdu),
+            0x05 => Ok(AttError::InsufficientAuthentication),
+            0x06 => Ok(AttError::RequestNotSupported),
+            0x07 => Ok(AttError::InvalidOffset),
+            0x08 => Ok(AttError::InsufficientAuthorization),
+            0x09 => Ok(AttError::PrepareQueueFull),
+            0x0A => Ok(AttError::AttributeNotFound),
+            0x0B => Ok(AttError::AttributeNotLong),
+            0x0C => Ok(AttError::InsufficientEncryptionKeySize),
+            0x0D => Ok(AttError::InvalidAttributeValueLength),
+            0x0E => Ok(AttError::UnlikelyError),
+            0x0F => Ok(AttError::InsufficientEncryption),
+            0x10 => Ok(AttError::UnsupportedGroupType),
+            0x11 => Ok(AttError::InsufficientResources),
+            0x80 => Ok(AttError::ApplicationError0x80),
+            0x81 => Ok(AttError::ApplicationError0x81),
+            0x82 => Ok(AttError::ApplicationError0x82),
+            0x83 => Ok(AttError::ApplicationError0x83),
+            0x84 => Ok(AttError::ApplicationError0x84),
+            0x85 => Ok(AttError::ApplicationError0x85),
+            0x86 => Ok(AttError::ApplicationError0x86),
+            0x87 => Ok(AttError::ApplicationError0x87),
+            0x88 => Ok(AttError::ApplicationError0x88),
+            0x89 => Ok(AttError::ApplicationError0x89),
+            0x8A => Ok(AttError::ApplicationError0x8A),
+            0x8B => Ok(AttError::ApplicationError0x8B),
+            0x8C => Ok(AttError::ApplicationError0x8C),
+            0x8D => Ok(AttError::ApplicationError0x8D),
+            0x8E => Ok(AttError::ApplicationError0x8E),
+            0x8F => Ok(AttError::ApplicationError0x8F),
+            0x90 => Ok(AttError::ApplicationError0x90),
+            0x91 => Ok(AttError::ApplicationError0x91),
+            0x92 => Ok(AttError::ApplicationError0x92),
+            0x93 => Ok(AttError::ApplicationError0x93),
+            0x94 => Ok(AttError::ApplicationError0x94),
+            0x95 => Ok(AttError::ApplicationError0x95),
+            0x96 => Ok(AttError::ApplicationError0x96),
+            0x97 => Ok(AttError::ApplicationError0x97),
+            0x98 => Ok(AttError::ApplicationError0x98),
+            0x99 => Ok(AttError::ApplicationError0x99),
+            0x9A => Ok(AttError::ApplicationError0x9A),
+            0x9B => Ok(AttError::ApplicationError0x9B),
+            0x9C => Ok(AttError::ApplicationError0x9C),
+            0x9D => Ok(AttError::ApplicationError0x9D),
+            0x9E => Ok(AttError::ApplicationError0x9E),
+            0x9F => Ok(AttError::ApplicationError0x9F),
+            0xFC => Ok(AttError::WriteRequestRejected),
+            0xFD => Ok(AttError::ClientCharacteristicConfigurationDescriptorImproperlyConfigured),
+            0xFE => Ok(AttError::ProcedureAlreadyInProgress),
+            0xFF => Ok(AttError::OutOfRange),
+            _ => Err(value),
+        }
     }
 }
 
@@ -2965,7 +2620,10 @@ fn to_att_error_response(
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         request: buffer[5].try_into().map_err(hci::event::Error::Vendor)?,
         attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[6..])),
-        error: buffer[8].into(),
+        error: buffer[8]
+            .try_into()
+            .map_err(|e| BlueNRGError::BadAttError(e))
+            .map_err(hci::event::Error::Vendor)?,
     })
 }
 

@@ -1425,6 +1425,17 @@ fn att_error_response_failed_bad_request_opcode() {
 }
 
 #[test]
+fn att_error_response_failed_bad_error_code() {
+    let buffer = [0x11, 0x0C, 0x01, 0x02, 4, 0x03, 0x04, 0x05, 0x12];
+    match BlueNRGEvent::new(&buffer) {
+        Err(HciError::Vendor(BlueNRGError::BadAttError(code))) => {
+            assert_eq!(code, 0x12);
+        }
+        other => panic!("Did not get bad ATT error code: {:?}", other),
+    }
+}
+
+#[test]
 fn gatt_discover_or_read_characteristic_by_uuid_response() {
     let buffer = [
         0x12, 0x0C, 0x01, 0x02, 6, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
