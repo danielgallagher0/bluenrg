@@ -1,21 +1,24 @@
 //! Bluetooth HCI for STMicro's BlueNRG-MS Bluetooth controllers.
 //!
-//! *Note*: This crate does not provide support for the BlueNRG-1 or BlueNRG-2 SoCs!
+//! *Note*: This crate does not provide support for the BlueNRG-1 or BlueNRG-2 SoCs.
 //!
 //! # Design
 //!
 //! The BlueNRG-MS is an external Bluetooth Radio Controller that communicates with the application
-//! processor over SPI and two dedicated pins: (1) a SPI chip select pin, and (2) a data ready
-//! signal. This crate defines a public struct, [`BlueNRG`] that owns the chip select and data ready
+//! processor over SPI and two dedicated pins:
+//!  1. A SPI chip select pin, and
+//!  2. A data ready signal.
+//!
+//! This crate defines a public struct, [`BlueNRG`] that owns the chip select and data ready
 //! pins, and a receive buffer for the data that comes from the controller. It also defines a
 //! private struct, [`ActiveBlueNRG`] that borrows a handle to the SPI bus. `ActiveBlueNRG`
 //! implements [`bluetooth_hci::Controller`], which provides access to the full Bluetooth HCI.
 //!
-//! BlueNRG-MS implements parts of version 4.1 of the Bluetooth [`specification`].
+//! BlueNRG-MS implements parts of version 4.1 of the Bluetooth [specification].
 //!
-//! The fundamental way to use the `BlueNRG` is its [`with_spi`] function, which invokes its closure
-//! on at `ActiveBlueNRG`, so sending HCI commands and reading HCI events can only be done from
-//! within that closure.
+//! The fundamental way to use the [`BlueNRG`] is its [`with_spi`](BlueNRG::with_spi) function,
+//! which invokes its closure on at [`ActiveBlueNRG`], so sending HCI commands and reading HCI
+//! events can only be done from within that closure.
 //!
 //! # Vendor-Specific Commands
 //!
@@ -32,8 +35,7 @@
 //!
 //! TODO
 //!
-//! [`bluetooth_hci::Controller`]: https://docs.rs/bluetooth-hci/
-//! [`specification`]: https://www.bluetooth.com/specifications/bluetooth-core-specification
+//! [specification]: https://www.bluetooth.com/specifications/bluetooth-core-specification
 
 #![no_std]
 #![feature(const_fn)]
@@ -441,7 +443,7 @@ where
         body(&mut active)
     }
 
-    /// Resets the BlueNRG Controller. Uses the given timer to delay 1 cycle at |freq| Hz after
+    /// Resets the BlueNRG Controller. Uses the given timer to delay 1 cycle at `freq` Hz after
     /// toggling the reset pin.
     pub fn reset<T, Time>(&mut self, timer: &mut T, freq: Time)
     where

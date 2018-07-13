@@ -10,8 +10,8 @@ use byteorder::{ByteOrder, LittleEndian};
 use core::convert::TryInto;
 
 /// Vendor-specific commands that may generate the [Command
-/// Complete](hci::event::Event::CommandComplete::Vendor) event. If the commands have defined return
-/// parameters, they are included in the enum.
+/// Complete](hci::event::command::ReturnParameters::Vendor) event. If the commands have defined
+/// return parameters, they are included in the enum.
 #[derive(Clone, Debug)]
 pub enum ReturnParameters {
     /// Status returned by the [L2CAP Connection Parameter Update

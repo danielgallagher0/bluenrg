@@ -99,10 +99,10 @@ impl L2CapConnectionParameterUpdateResponse {
     ///
     /// # Errors
     ///
-    /// - [`BadConnectionInterval`](BlueNRGError::BadConnectionInterval) if
+    /// - [`BadConnectionInterval`](::BlueNRGError::BadConnectionInterval) if
     ///   [`interval`](L2CapConnectionParameterUpdateResponse::interval) is inverted; that is, if
     ///   the minimum is greater than the maximum.
-    /// - [`BadConnectionLengthRange`](BlueNRGError::BadConnectionLengthRange) if
+    /// - [`BadConnectionLengthRange`](::BlueNRGError::BadConnectionLengthRange) if
     ///   [`expected_connection_length_range`](L2CapConnectionParameterUpdateResponse::expected_connection_length_range)
     ///   is inverted; that is, if the minimum is greater than the maximum.
     pub fn validate(&self) -> Result<(), ::BlueNRGError> {
@@ -196,16 +196,16 @@ impl<'a, 'b> GapLimitedDiscoverableParameters<'a, 'b> {
     ///
     /// # Errors
     ///
-    /// - [`BadAdvertisingType`](BlueNRGError::BadAdvertisingType) if
+    /// - [`BadAdvertisingType`](::BlueNRGError::BadAdvertisingType) if
     ///   [`advertising_type`](GapLimitedDiscoverableParameters::advertising_type) is one of the
     ///   disallowed types:
     ///   [ConnectableDirectedHighDutyCycle](bluetooth_hci::host::AdvertisingType::ConnectableDirectedHighDutyCycle)
     ///   or
     ///   [ConnectableDirectedLowDutyCycle](bluetooth_hci::host::AdvertisingType::ConnectableDirectedLowDutyCycle).
-    /// - [`BadAdvertisingInterval`](BlueNRGError::BadAdvertisingInterval) if
+    /// - [`BadAdvertisingInterval`](::BlueNRGError::BadAdvertisingInterval) if
     ///   [`advertising_interval`](GapLimitedDiscoverableParameters::advertising_interval) is
     ///   inverted. That is, if the min is greater than the max.
-    /// - [`BadConnectionInterval`](BlueNRGError::BadConnectionInterval) if
+    /// - [`BadConnectionInterval`](::BlueNRGError::BadConnectionInterval) if
     /// [`conn_interval`](GapLimitedDiscoverableParameters::conn_interval) is inverted. That is,
     /// both the min and max are provided, and the min is greater than the max.
     pub fn validate(&self) -> Result<(), ::BlueNRGError> {
