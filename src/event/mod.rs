@@ -305,20 +305,20 @@ pub enum BlueNRGError {
 
     /// For the [L2CAP Connection Update Request](BlueNRGEvent::L2CapConnectionUpdateRequest) event:
     /// The provided interval is invalid. Potential errors:
-    /// - Either the minimum or maximum is out of range. The minimum value for either is 6, and the
-    ///   maximum is 3200.
+    /// - Either the minimum or maximum is out of range. The minimum value for either is 7.5 ms, and
+    ///   the maximum is 4 s.
     /// - The min is greater than the max
     ///
     /// See the Bluetooth specification, Vol 3, Part A, Section 4.20. Versions 4.1, 4.2 and 5.0.
     ///
     /// Inclues the provided minimum and maximum, respectively.
-    BadL2CapConnectionUpdateRequestInterval(u16, u16),
+    BadL2CapConnectionUpdateRequestInterval(Duration, Duration),
 
     /// For the [L2CAP Connection Update Request](BlueNRGEvent::L2CapConnectionUpdateRequest) event:
     /// The provided connection latency is invalid. The maximum value for connection latency is
     /// defined in terms of the timeout and maximum connection interval.
-    /// - `connIntervalMax = Interval Max * 1.25 ms`
-    /// - `connSupervisionTimeout = Timeout Multiplier * 10 ms`
+    /// - `connIntervalMax = Interval Max`
+    /// - `connSupervisionTimeout = Timeout`
     /// - `maxConnLatency = min(500, ((connSupervisionTimeout / (2 * connIntervalMax)) - 1))`
     ///
     /// See the Bluetooth specification, Vol 3, Part A, Section 4.20. Versions 4.1, 4.2 and 5.0.
@@ -327,13 +327,13 @@ pub enum BlueNRGError {
     BadL2CapConnectionUpdateRequestLatency(u16, u16),
 
     /// For the [L2CAP Connection Update Request](BlueNRGEvent::L2CapConnectionUpdateRequest) event:
-    /// The provided timeout multiplier is invalid. The timeout multiplier field shall have a value
-    /// in the range of 10 to 3200 (inclusive).
+    /// The provided timeout is invalid. The timeout field shall have a value in the range of 100 ms
+    /// to 32 seconds (inclusive).
     ///
     /// See the Bluetooth specification, Vol 3, Part A, Section 4.20. Versions 4.1, 4.2 and 5.0.
     ///
     /// Inclues the provided value.
-    BadL2CapConnectionUpdateRequestTimeoutMult(u16),
+    BadL2CapConnectionUpdateRequestTimeout(Duration),
 
     /// For the [ATT Find Information Response](BlueNRGEvent::AttFindInformationResponse) event: The
     /// format code is invalid. Includes the unrecognized byte.
@@ -1067,17 +1067,12 @@ pub struct L2CapConnectionUpdateRequest {
     /// [`l2cap_connection_parameter_update_response`](::ActiveBlueNRG::l2cap_connection_parameter_update_response).
     pub identifier: u8,
 
-    /// Defines minimum value for the connection interval in the following manner: `connIntervalMin
-    /// = Interval Min * 1.25 ms`. Interval Min range: 6 to 3200 frames where 1 frame is 1.25 ms and
-    /// equivalent to 2 BR/EDR slots. Values outside the range are reserved for future use. Interval
-    /// Min shall be less than or equal to Interval Max.
-    pub interval_min: u16,
-
-    /// Defines maximum value for the connection interval in the following manner:
-    /// `connIntervalMax = Interval Max * 1.25 ms`. Interval Max range: 6 to 3200 frames. Values
-    /// outside the range are reserved for future use. Interval Max shall be equal to or greater
-    /// than the Interval Min.
-    pub interval_max: u16,
+    /// Defines the range of the connection interval. The first value is the minimum, which must be
+    /// less than or equal to the second value, which is the maximum.
+    ///
+    /// The range of the interval is 7.5 ms to 4 seconds. Values outside the range are reserved for
+    /// future use.
+    pub interval: (Duration, Duration),
 
     /// Defines the connection latency parameter.
     ///
@@ -1085,14 +1080,20 @@ pub struct L2CapConnectionUpdateRequest {
     /// (connIntervalMax*2)) - 1)`. The connection latency field shall be less than 500.
     pub conn_latency: u16,
 
-    /// Defines connection timeout parameter in the following manner: `connSupervisionTimeout =
-    /// Timeout Multiplier * 10 ms`. The Timeout Multiplier field shall have a value in the range of
-    /// 10 to 3200.
-    pub timeout_mult: u16,
+    /// Defines the connection supervision timeout.
+    ///
+    /// The range is 100 ms to 32 seconds.
+    pub timeout: Duration,
 }
 
 fn outside_interval_range(value: u16) -> bool {
     value < 6 || value > 3200
+}
+
+fn from_conn_interval_value(interval: u16) -> Duration {
+    // Connection interval value: T = N * 1.25 ms
+    //   = 1250 * N us
+    Duration::from_micros(1250 * interval as u64)
 }
 
 fn to_l2cap_connection_update_request(
@@ -1109,14 +1110,19 @@ fn to_l2cap_connection_update_request(
         || interval_min > interval_max
     {
         return Err(hci::event::Error::Vendor(
-            BlueNRGError::BadL2CapConnectionUpdateRequestInterval(interval_min, interval_max),
+            BlueNRGError::BadL2CapConnectionUpdateRequestInterval(
+                from_conn_interval_value(interval_min),
+                from_conn_interval_value(interval_max),
+            ),
         ));
     }
 
     let timeout_mult = LittleEndian::read_u16(&buffer[14..]);
     if timeout_mult < 10 || timeout_mult > 3200 {
         return Err(hci::event::Error::Vendor(
-            BlueNRGError::BadL2CapConnectionUpdateRequestTimeoutMult(timeout_mult),
+            BlueNRGError::BadL2CapConnectionUpdateRequestTimeout(Duration::from_millis(
+                10 * timeout_mult as u64,
+            )),
         ));
     }
 
@@ -1138,10 +1144,12 @@ fn to_l2cap_connection_update_request(
     Ok(L2CapConnectionUpdateRequest {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         identifier: buffer[5],
-        interval_min: interval_min,
-        interval_max: interval_max,
+        interval: (
+            from_conn_interval_value(interval_min),
+            from_conn_interval_value(interval_max),
+        ),
         conn_latency: conn_latency,
-        timeout_mult: timeout_mult,
+        timeout: Duration::from_millis(10 * timeout_mult as u64),
     })
 }
 
