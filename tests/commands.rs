@@ -240,7 +240,7 @@ fn gap_set_limited_discoverable() {
     let mut fixture = Fixture::new();
     fixture
         .act(|controller| {
-            controller.gap_set_limited_discoverable(&GapLimitedDiscoverableParameters {
+            controller.gap_set_limited_discoverable(&GapDiscoverableParameters {
                 advertising_type: AdvertisingType::ConnectableUndirected,
                 advertising_interval: Some((
                     Duration::from_millis(1280),
@@ -269,7 +269,7 @@ fn gap_set_limited_discoverable_bad_adv_type() {
     let mut fixture = Fixture::new();
     let err = fixture
         .act(|controller| {
-            controller.gap_set_limited_discoverable(&GapLimitedDiscoverableParameters {
+            controller.gap_set_limited_discoverable(&GapDiscoverableParameters {
                 advertising_type: AdvertisingType::ConnectableDirectedHighDutyCycle,
                 advertising_interval: Some((
                     Duration::from_millis(1280),
@@ -300,7 +300,7 @@ fn gap_set_limited_discoverable_bad_adv_interval() {
     let mut fixture = Fixture::new();
     let err = fixture
         .act(|controller| {
-            controller.gap_set_limited_discoverable(&GapLimitedDiscoverableParameters {
+            controller.gap_set_limited_discoverable(&GapDiscoverableParameters {
                 advertising_type: AdvertisingType::ConnectableUndirected,
                 advertising_interval: Some((
                     Duration::from_millis(1280),
@@ -334,7 +334,138 @@ fn gap_set_limited_discoverable_bad_conn_interval() {
     let mut fixture = Fixture::new();
     let err = fixture
         .act(|controller| {
-            controller.gap_set_limited_discoverable(&GapLimitedDiscoverableParameters {
+            controller.gap_set_limited_discoverable(&GapDiscoverableParameters {
+                advertising_type: AdvertisingType::ConnectableUndirected,
+                advertising_interval: Some((
+                    Duration::from_millis(1280),
+                    Duration::from_millis(1280),
+                )),
+                address_type: OwnAddressType::Public,
+                filter_policy: AdvertisingFilterPolicy::AllowConnectionAndScan,
+                local_name: Some(LocalName::Shortened(b"testdev")),
+                advertising_data: &[0x01, 0x02, 0x03, 0x04],
+                conn_interval: (
+                    Some(Duration::from_millis(5000)),
+                    Some(Duration::from_millis(4999)),
+                ),
+            })
+        })
+        .err()
+        .unwrap();
+    assert_eq!(
+        err,
+        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+            BlueNRGError::BadConnectionInterval(
+                Duration::from_millis(5000),
+                Duration::from_millis(4999)
+            )
+        )))
+    );
+
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+}
+
+#[test]
+fn gap_set_discoverable() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_set_discoverable(&GapDiscoverableParameters {
+                advertising_type: AdvertisingType::ConnectableUndirected,
+                advertising_interval: Some((
+                    Duration::from_millis(1280),
+                    Duration::from_millis(2560),
+                )),
+                address_type: OwnAddressType::Public,
+                filter_policy: AdvertisingFilterPolicy::AllowConnectionAndScan,
+                local_name: Some(LocalName::Shortened(b"testdev")),
+                advertising_data: &[0x01, 0x02, 0x03, 0x04],
+                conn_interval: (Some(Duration::from_millis(5000)), None),
+            })
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [
+            1, 0x83, 0xFC, 25, 0x00, 0x00, 0x08, 0x00, 0x10, 0x00, 0x00, 8, 0x08, 0x74, 0x65, 0x73,
+            0x74, 0x64, 0x65, 0x76, 4, 0x01, 0x02, 0x03, 0x04, 0xA0, 0x0F, 0xFF, 0xFF
+        ]
+    );
+}
+
+#[test]
+fn gap_set_discoverable_bad_adv_type() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.gap_set_discoverable(&GapDiscoverableParameters {
+                advertising_type: AdvertisingType::ConnectableDirectedHighDutyCycle,
+                advertising_interval: Some((
+                    Duration::from_millis(1280),
+                    Duration::from_millis(2560),
+                )),
+                address_type: OwnAddressType::Public,
+                filter_policy: AdvertisingFilterPolicy::AllowConnectionAndScan,
+                local_name: Some(LocalName::Shortened(b"testdev")),
+                advertising_data: &[0x01, 0x02, 0x03, 0x04],
+                conn_interval: (Some(Duration::from_millis(5000)), None),
+            })
+        })
+        .err()
+        .unwrap();
+    assert_eq!(
+        err,
+        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+            BlueNRGError::BadAdvertisingType(AdvertisingType::ConnectableDirectedHighDutyCycle)
+        )))
+    );
+
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+}
+
+#[test]
+fn gap_set_discoverable_bad_adv_interval() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.gap_set_discoverable(&GapDiscoverableParameters {
+                advertising_type: AdvertisingType::ConnectableUndirected,
+                advertising_interval: Some((
+                    Duration::from_millis(1280),
+                    Duration::from_millis(1279),
+                )),
+                address_type: OwnAddressType::Public,
+                filter_policy: AdvertisingFilterPolicy::AllowConnectionAndScan,
+                local_name: Some(LocalName::Shortened(b"testdev")),
+                advertising_data: &[0x01, 0x02, 0x03, 0x04],
+                conn_interval: (Some(Duration::from_millis(5000)), None),
+            })
+        })
+        .err()
+        .unwrap();
+    assert_eq!(
+        err,
+        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+            BlueNRGError::BadAdvertisingInterval(
+                Duration::from_millis(1280),
+                Duration::from_millis(1279)
+            )
+        )))
+    );
+
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+}
+
+#[test]
+fn gap_set_discoverable_bad_conn_interval() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.gap_set_discoverable(&GapDiscoverableParameters {
                 advertising_type: AdvertisingType::ConnectableUndirected,
                 advertising_interval: Some((
                     Duration::from_millis(1280),

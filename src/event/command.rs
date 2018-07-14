@@ -29,6 +29,10 @@ pub enum ReturnParameters {
     /// Status returned by the [GAP Set Limited
     /// Discoverable](::ActiveBlueNRG::gap_set_limited_discoverable) command.
     GapSetLimitedDiscoverable(hci::Status),
+
+    /// Status returned by the [GAP Set Discoverable](::ActiveBlueNRG::gap_set_discoverable)
+    /// command.
+    GapSetDiscoverable(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -50,6 +54,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_SET_LIMITED_DISCOVERABLE => Ok(
                 ReturnParameters::GapSetLimitedDiscoverable(to_status(&bytes[3..])?),
             ),
+            ::opcode::GAP_SET_DISCOVERABLE => Ok(ReturnParameters::GapSetDiscoverable(to_status(
+                &bytes[3..],
+            )?)),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }

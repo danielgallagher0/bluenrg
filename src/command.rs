@@ -46,7 +46,7 @@ pub struct L2CapConnectionParameterUpdateResponse {
     /// [`L2CapConnectionUpdateRequest`](::event::BlueNRGEvent::L2CapConnectionUpdateRequest) event.
     pub conn_handle: hci::ConnectionHandle,
 
-    /// [Connection interval](::event::L2CapConnectionUpdateRequest::interval_min) received in the
+    /// [Connection interval](::event::L2CapConnectionUpdateRequest::interval) received in the
     /// [`L2CapConnectionUpdateRequest`](::event::BlueNRGEvent::L2CapConnectionUpdateRequest) event.
     pub interval: (Duration, Duration),
 
@@ -54,7 +54,7 @@ pub struct L2CapConnectionParameterUpdateResponse {
     /// [`L2CapConnectionUpdateRequest`](::event::BlueNRGEvent::L2CapConnectionUpdateRequest) event.
     pub conn_latency: u16,
 
-    /// [Timeout](::event::L2CapConnectionUpdateRequest::timeout_mult) received in the
+    /// [Timeout](::event::L2CapConnectionUpdateRequest::timeout) received in the
     /// [`L2CapConnectionUpdateRequest`](::event::BlueNRGEvent::L2CapConnectionUpdateRequest) event.
     pub timeout: Duration,
 
@@ -151,8 +151,9 @@ fn to_connection_length_value(d: Duration) -> u16 {
 }
 
 /// Parameters for the
-/// [`gap_set_limited_discoverable`](::ActiveBlueNRG::gap_set_limited_discoverable) command.
-pub struct GapLimitedDiscoverableParameters<'a, 'b> {
+/// [`gap_set_limited_discoverable`](::ActiveBlueNRG::gap_set_limited_discoverable) and
+/// [`gap_set_discoverable`](::ActiveBlueNRG::gap_set_discoverable) commands.
+pub struct GapDiscoverableParameters<'a, 'b> {
     /// Advertising method for the device.
     ///
     /// Must be
@@ -187,7 +188,7 @@ pub struct GapLimitedDiscoverableParameters<'a, 'b> {
     pub conn_interval: (Option<Duration>, Option<Duration>),
 }
 
-impl<'a, 'b> GapLimitedDiscoverableParameters<'a, 'b> {
+impl<'a, 'b> GapDiscoverableParameters<'a, 'b> {
     /// Maximum required length for a buffer that will be used to hold serialized parameters.
     // 14 fixed-size parameters, one parameter of up to 31 bytes, and one of up to 248 bytes.
     pub const MAX_LENGTH: usize = 14 + 31 + 248;
@@ -197,17 +198,17 @@ impl<'a, 'b> GapLimitedDiscoverableParameters<'a, 'b> {
     /// # Errors
     ///
     /// - [`BadAdvertisingType`](::BlueNRGError::BadAdvertisingType) if
-    ///   [`advertising_type`](GapLimitedDiscoverableParameters::advertising_type) is one of the
-    ///   disallowed types:
+    ///   [`advertising_type`](GapDiscoverableParameters::advertising_type) is one of the disallowed
+    ///   types:
     ///   [ConnectableDirectedHighDutyCycle](bluetooth_hci::host::AdvertisingType::ConnectableDirectedHighDutyCycle)
     ///   or
     ///   [ConnectableDirectedLowDutyCycle](bluetooth_hci::host::AdvertisingType::ConnectableDirectedLowDutyCycle).
     /// - [`BadAdvertisingInterval`](::BlueNRGError::BadAdvertisingInterval) if
-    ///   [`advertising_interval`](GapLimitedDiscoverableParameters::advertising_interval) is
+    ///   [`advertising_interval`](GapDiscoverableParameters::advertising_interval) is
     ///   inverted. That is, if the min is greater than the max.
     /// - [`BadConnectionInterval`](::BlueNRGError::BadConnectionInterval) if
-    /// [`conn_interval`](GapLimitedDiscoverableParameters::conn_interval) is inverted. That is,
-    /// both the min and max are provided, and the min is greater than the max.
+    ///   [`conn_interval`](GapDiscoverableParameters::conn_interval) is inverted. That is, both the
+    ///   min and max are provided, and the min is greater than the max.
     pub fn validate(&self) -> Result<(), ::BlueNRGError> {
         match self.advertising_type {
             AdvertisingType::ConnectableUndirected

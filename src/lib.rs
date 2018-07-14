@@ -324,16 +324,36 @@ where
     /// [`gap_set_nondiscoverable`](ActiveBlueNRG::gap_set_nondiscoverable) command.
     pub fn gap_set_limited_discoverable<'a, 'b>(
         &mut self,
-        params: &GapLimitedDiscoverableParameters<'a, 'b>,
+        params: &GapDiscoverableParameters<'a, 'b>,
     ) -> nb::Result<(), UartError<E, BlueNRGError>> {
         params
             .validate()
             .map_err(|e| nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(e))))?;
 
-        let mut bytes = [0; GapLimitedDiscoverableParameters::MAX_LENGTH];
+        let mut bytes = [0; GapDiscoverableParameters::MAX_LENGTH];
         let len = params.into_bytes(&mut bytes);
 
         self.write_command(opcode::GAP_SET_LIMITED_DISCOVERABLE, &bytes[..len])
+    }
+
+    /// Set the device in discoverable mode.
+    ///
+    /// Limited discoverability is defined in in GAP specification volume 3, section 9.2.4. The
+    /// device will be discoverable for maximum period of TGAP (lim_adv_timeout) = 180 seconds (from
+    /// errata). The advertising can be disabled at any time by issuing a
+    /// [`gap_set_nondiscoverable`](ActiveBlueNRG::gap_set_nondiscoverable) command.
+    pub fn gap_set_discoverable<'a, 'b>(
+        &mut self,
+        params: &GapDiscoverableParameters<'a, 'b>,
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        params
+            .validate()
+            .map_err(|e| nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(e))))?;
+
+        let mut bytes = [0; GapDiscoverableParameters::MAX_LENGTH];
+        let len = params.into_bytes(&mut bytes);
+
+        self.write_command(opcode::GAP_SET_DISCOVERABLE, &bytes[..len])
     }
 }
 
