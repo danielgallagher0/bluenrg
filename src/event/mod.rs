@@ -396,14 +396,15 @@ pub enum BlueNRGError {
     /// min). Includes the provided range.
     BadAdvertisingInterval(Duration, Duration),
 
-    /// For the [GAP Set Authentication Requirement](::ActiveBlueNRG::gap_set_auth_requirement)
-    /// command, the encryption key size range is inverted (the max is less than the min). Includes
-    /// the provided range.
+    /// For the [GAP Set Authentication
+    /// Requirement](::ActiveBlueNRG::gap_set_authentication_requirement) command, the encryption
+    /// key size range is inverted (the max is less than the min). Includes the provided range.
     BadEncryptionKeySizeRange(u8, u8),
 
-    /// For the [GAP Set Authentication Requirement](::ActiveBlueNRG::gap_set_auth_requirement)
-    /// command, the provided fixed pin is out of range (must be less than or equal to 999999).
-    /// Includes the provided PIN.
+    /// For the [GAP Set Authentication
+    /// Requirement](::ActiveBlueNRG::gap_set_authentication_requirement) command, the provided
+    /// fixed pin is out of range (must be less than or equal to 999999).  Includes the provided
+    /// PIN.
     BadFixedPin(u32),
 }
 

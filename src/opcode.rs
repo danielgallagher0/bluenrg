@@ -30,7 +30,8 @@ opcodes! {
         pub const GAP_SET_DISCOVERABLE = 0x03;
         pub const GAP_SET_DIRECT_CONNECTABLE = 0x04;
         pub const GAP_SET_IO_CAPABILITY = 0x05;
-        pub const GAP_SET_AUTH_REQUIREMENT = 0x06;
+        pub const GAP_SET_AUTHENTICATION_REQUIREMENT = 0x06;
+        pub const GAP_SET_AUTHORIZATION_REQUIREMENT = 0x07;
     }
     // Gatt = 0x2;
     L2Cap = 0x3;

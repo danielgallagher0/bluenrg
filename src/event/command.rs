@@ -42,9 +42,13 @@ pub enum ReturnParameters {
     /// command.
     GapSetIoCapability(hci::Status),
 
-    /// Status returned by the [GAP Set Auth Requirement](::ActiveBlueNRG::gap_set_auth_requirement)
-    /// command.
-    GapSetAuthRequirement(hci::Status),
+    /// Status returned by the [GAP Set Authentication
+    /// Requirement](::ActiveBlueNRG::gap_set_authentication_requirement) command.
+    GapSetAuthenticationRequirement(hci::Status),
+
+    /// Status returned by the [GAP Set Authorization
+    /// Requirement](::ActiveBlueNRG::gap_set_authorization_requirement) command.
+    GapSetAuthorizationRequirement(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -75,9 +79,12 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_SET_IO_CAPABILITY => Ok(ReturnParameters::GapSetIoCapability(to_status(
                 &bytes[3..],
             )?)),
-            ::opcode::GAP_SET_AUTH_REQUIREMENT => Ok(ReturnParameters::GapSetAuthRequirement(
-                to_status(&bytes[3..])?,
-            )),
+            ::opcode::GAP_SET_AUTHENTICATION_REQUIREMENT => Ok(
+                ReturnParameters::GapSetAuthenticationRequirement(to_status(&bytes[3..])?),
+            ),
+            ::opcode::GAP_SET_AUTHORIZATION_REQUIREMENT => Ok(
+                ReturnParameters::GapSetAuthorizationRequirement(to_status(&bytes[3..])?),
+            ),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }

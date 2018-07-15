@@ -442,8 +442,8 @@ pub enum IoCapability {
     KeyboardDisplay = 0x04,
 }
 
-/// Parameters for the [GAP Set Auth Requirement](::ActiveBlueNRG::gap_set_auth_requirement)
-/// command.
+/// Parameters for the [GAP Set Authentication
+/// Requirement](::ActiveBlueNRG::gap_set_authentication_requirement) command.
 pub struct AuthenticationRequirements {
     /// Is MITM (man-in-the-middle) protection required?
     pub mitm_protection_required: bool,

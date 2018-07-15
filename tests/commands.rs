@@ -608,11 +608,11 @@ fn gap_set_io_capability() {
 }
 
 #[test]
-fn gap_set_auth_requirement() {
+fn gap_set_authentication_requirement() {
     let mut fixture = Fixture::new();
     fixture
         .act(|controller| {
-            controller.gap_set_auth_requirement(&AuthenticationRequirements {
+            controller.gap_set_authentication_requirement(&AuthenticationRequirements {
                 mitm_protection_required: true,
                 out_of_band_auth: OutOfBandAuthentication::Enabled([
                     0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF,
@@ -634,11 +634,11 @@ fn gap_set_auth_requirement() {
 }
 
 #[test]
-fn gap_set_auth_requirement_2() {
+fn gap_set_authentication_requirement_2() {
     let mut fixture = Fixture::new();
     fixture
         .act(|controller| {
-            controller.gap_set_auth_requirement(&AuthenticationRequirements {
+            controller.gap_set_authentication_requirement(&AuthenticationRequirements {
                 mitm_protection_required: false,
                 out_of_band_auth: OutOfBandAuthentication::Disabled,
                 encryption_key_size_range: (1, 255),
@@ -658,11 +658,11 @@ fn gap_set_auth_requirement_2() {
 }
 
 #[test]
-fn gap_set_auth_requirement_bad_key_size_range() {
+fn gap_set_authentication_requirement_bad_key_size_range() {
     let mut fixture = Fixture::new();
     let err = fixture
         .act(|controller| {
-            controller.gap_set_auth_requirement(&AuthenticationRequirements {
+            controller.gap_set_authentication_requirement(&AuthenticationRequirements {
                 mitm_protection_required: false,
                 out_of_band_auth: OutOfBandAuthentication::Disabled,
                 encryption_key_size_range: (255, 1),
@@ -683,11 +683,11 @@ fn gap_set_auth_requirement_bad_key_size_range() {
 }
 
 #[test]
-fn gap_set_auth_requirement_bad_pin() {
+fn gap_set_authentication_requirement_bad_pin() {
     let mut fixture = Fixture::new();
     let err = fixture
         .act(|controller| {
-            controller.gap_set_auth_requirement(&AuthenticationRequirements {
+            controller.gap_set_authentication_requirement(&AuthenticationRequirements {
                 mitm_protection_required: false,
                 out_of_band_auth: OutOfBandAuthentication::Disabled,
                 encryption_key_size_range: (1, 255),
@@ -705,4 +705,19 @@ fn gap_set_auth_requirement_bad_pin() {
     );
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
+}
+
+#[test]
+fn gap_set_authorization_requirement() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_set_authorization_requirement(hci::ConnectionHandle(0x0201), true)
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [1, 0x87, 0xFC, 3, 0x01, 0x02, 0x01]
+    );
 }

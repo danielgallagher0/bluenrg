@@ -446,9 +446,11 @@ where
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](event::command::ReturnParameters::GapSetAuthRequirement) event is
-    /// generated.
-    pub fn gap_set_auth_requirement(
+    /// - A [Command Complete](event::command::ReturnParameters::GapSetAuthenticationRequirement)
+    ///   event is generated.
+    /// - If [`fixed_pin`](AuthenticationRequirements::fixed_pin) is [Request](Pin::Requested), then
+    ///   a [GAP Pass Key](BlueNRGEvent::GapPassKeyRequest) event is generated.
+    pub fn gap_set_authentication_requirement(
         &mut self,
         requirements: &AuthenticationRequirements,
     ) -> nb::Result<(), UartError<E, BlueNRGError>> {
@@ -472,7 +474,34 @@ where
         let mut bytes = [0; AuthenticationRequirements::LENGTH];
         requirements.into_bytes(&mut bytes);
 
-        self.write_command(opcode::GAP_SET_AUTH_REQUIREMENT, &bytes)
+        self.write_command(opcode::GAP_SET_AUTHENTICATION_REQUIREMENT, &bytes)
+    }
+
+    /// Set the authorization requirements of the device.
+    ///
+    /// This command has to be given when connected to a device if authorization is required to
+    /// access services which require authorization.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// - A [Command Complete](event::command::ReturnParameters::GapSetAuthorizationRequirement)
+    ///   event is generated.
+    /// - If authorization is required, then a [GAP Authorization
+    ///   Request](BlueNRGEvent::GapAuthorizationRequest) event is generated.
+    pub fn gap_set_authorization_requirement(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        authorization_required: bool,
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        let mut bytes = [0; 3];
+        LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
+        bytes[2] = authorization_required as u8;
+
+        self.write_command(opcode::GAP_SET_AUTHORIZATION_REQUIREMENT, &bytes)
     }
 }
 

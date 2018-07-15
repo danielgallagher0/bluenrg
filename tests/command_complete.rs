@@ -51,5 +51,6 @@ status_only! {
     gap_set_discoverable(0x83, 0xFC, BNRGParams::GapSetDiscoverable);
     gap_set_direct_connectable(0x84, 0xFC, BNRGParams::GapSetDirectConnectable);
     gap_set_io_capability(0x85, 0xFC, BNRGParams::GapSetIoCapability);
-    gap_set_auth_requirement(0x86, 0xFC, BNRGParams::GapSetAuthRequirement);
+    gap_set_authentication_requirement(0x86, 0xFC, BNRGParams::GapSetAuthenticationRequirement);
+    gap_set_authorization_requirement(0x87, 0xFC, BNRGParams::GapSetAuthorizationRequirement);
 }
