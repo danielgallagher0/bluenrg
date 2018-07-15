@@ -14,6 +14,7 @@ use core::fmt::{Debug, Formatter, Result as FmtResult};
 use core::mem;
 use core::time::Duration;
 
+pub use self::command::{CharacteristicHandle, ServiceHandle};
 pub use hci::{BdAddr, BdAddrType, ConnectionHandle};
 
 /// Vendor-specific events for the BlueNRG-MS controllers.

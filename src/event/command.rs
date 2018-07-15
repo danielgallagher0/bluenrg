@@ -57,6 +57,9 @@ pub enum ReturnParameters {
     /// Status returned by the [GAP Authorization
     /// Response](::ActiveBlueNRG::gap_authorization_response) command.
     GapAuthorizationResponse(hci::Status),
+
+    /// Parameters returned by the [GAP Init](::ActiveBlueNRG::gap_init) command.
+    GapInit(GapInit),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -99,6 +102,7 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_AUTHORIZATION_RESPONSE => Ok(ReturnParameters::GapAuthorizationResponse(
                 to_status(&bytes[3..])?,
             )),
+            ::opcode::GAP_INIT => Ok(ReturnParameters::GapInit(to_gap_init(&bytes[3..])?)),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }
@@ -116,5 +120,45 @@ fn check_len_at_least(
 }
 
 fn to_status(bytes: &[u8]) -> Result<hci::Status, hci::event::Error<super::BlueNRGError>> {
+    require_len_at_least!(bytes, 1);
     bytes[0].try_into().map_err(hci::event::rewrap_bad_status)
+}
+
+/// Parameters returned by the [GAP Init](::ActiveBlueNRG::gap_init) command.
+#[derive(Copy, Clone, Debug)]
+pub struct GapInit {
+    /// Did the command fail, and if so, how?
+    ///
+    /// Should be one of:
+    /// - [Success](hci::Status::Success)
+    /// - [InvalidParameters](hci::Status::InvalidParameters)
+    pub status: hci::Status,
+
+    /// Handle for the GAP service
+    pub service_handle: ServiceHandle,
+
+    /// Handle for the device name characteristic added to the GAP service.
+    pub dev_name_handle: CharacteristicHandle,
+
+    /// Handle for the appearance characteristic added to the GAP service.
+    pub appearance_handle: CharacteristicHandle,
+}
+
+/// Handle for GAP Services.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct ServiceHandle(pub u16);
+
+/// Handle for GAP characteristics.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct CharacteristicHandle(pub u16);
+
+fn to_gap_init(bytes: &[u8]) -> Result<GapInit, hci::event::Error<super::BlueNRGError>> {
+    require_len!(bytes, 7);
+
+    Ok(GapInit {
+        status: to_status(bytes)?,
+        service_handle: ServiceHandle(LittleEndian::read_u16(&bytes[1..])),
+        dev_name_handle: CharacteristicHandle(LittleEndian::read_u16(&bytes[3..])),
+        appearance_handle: CharacteristicHandle(LittleEndian::read_u16(&bytes[5..])),
+    })
 }

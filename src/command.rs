@@ -525,3 +525,17 @@ pub enum Authorization {
     /// Reject the connection.
     Rejected = 0x02,
 }
+
+bitflags!{
+    /// Roles for a [GAP service](::ActiveBlueNRG::gap_init).
+    pub struct GapRole: u8 {
+        /// Peripheral
+        const PERIPHERAL = 0x01;
+        /// Broadcaster
+        const BROADCASTER = 0x02;
+        /// Central Device
+        const CENTRAL = 0x04;
+        /// Observer
+        const OBSERVER = 0x08;
+    }
+}

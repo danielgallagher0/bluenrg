@@ -56,3 +56,25 @@ status_only! {
     gap_pass_key_response(0x88, 0xFC, BNRGParams::GapPassKeyResponse);
     gap_authorization_response(0x89, 0xFC, BNRGParams::GapAuthorizationResponse);
 }
+
+#[test]
+fn gap_init() {
+    let buffer = [
+        0x0E, 10, 8, 0x8A, 0xFC, 0, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+    ];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 8);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::GapInit(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(params.service_handle, ServiceHandle(0x0201));
+                    assert_eq!(params.dev_name_handle, CharacteristicHandle(0x0403));
+                    assert_eq!(params.appearance_handle, CharacteristicHandle(0x0605));
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}

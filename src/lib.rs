@@ -42,9 +42,9 @@
 #![feature(try_from)]
 #![deny(missing_docs)]
 
-#[cfg(feature = "ms")]
 #[macro_use]
 extern crate bitflags;
+#[macro_use]
 extern crate bluetooth_hci as hci;
 extern crate byteorder;
 extern crate embedded_hal as hal;
@@ -559,6 +559,50 @@ where
         bytes[2] = authorization as u8;
 
         self.write_command(opcode::GAP_AUTHORIZATION_RESPONSE, &bytes)
+    }
+
+    #[cfg(not(feature = "ms"))]
+    /// Register the GAP service with the GATT.
+    ///
+    /// The device name characteristic and appearance characteristic are added by default and the
+    /// handles of these characteristics are returned in the [event data](event::command::GapInit).
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapInit) event is generated.
+    pub fn gap_init(&mut self, role: GapRole) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        self.write_command(opcode::GAP_INIT, &[role.bits()])
+    }
+
+    #[cfg(feature = "ms")]
+    /// Register the GAP service with the GATT.
+    ///
+    /// The device name characteristic and appearance characteristic are added by default and the
+    /// handles of these characteristics are returned in the [event data](event::command::GapInit).
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapInit) event is generated.
+    pub fn gap_init(
+        &mut self,
+        role: GapRole,
+        privacy_enabled: bool,
+        dev_name_characteristic_len: usize,
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        let mut bytes = [0; 3];
+        bytes[0] = role.bits();
+        bytes[1] = privacy_enabled as u8;
+        bytes[2] = dev_name_characteristic_len as u8;
+
+        self.write_command(opcode::GAP_INIT, &bytes)
     }
 }
 

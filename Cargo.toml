@@ -13,12 +13,12 @@ readme = "README.md"
 default = ["ms"]
 
 # The chip implements the newer BlueNRG-MS version of the HCI.
-ms = ["bitflags"]
+ms = []
 
 [dependencies]
 nb = "0.1.1"
 bluetooth-hci = { git = "https://github.com/danielgallagher0/bluetooth-hci" }
-bitflags = { version = "1.0", optional = true }
+bitflags = { version = "1.0" }
 
 [dependencies.embedded-hal]
 version = "0.1.0"

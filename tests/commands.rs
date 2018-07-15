@@ -769,3 +769,28 @@ fn gap_authorization_response() {
         [1, 0x89, 0xFC, 3, 0x01, 0x02, 0x01]
     );
 }
+
+#[cfg(not(feature = "ms"))]
+#[test]
+fn gap_init() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_init(GapRole::PERIPHERAL | GapRole::BROADCASTER))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x8A, 0xFC, 1, 0x03]);
+}
+
+#[cfg(feature = "ms")]
+#[test]
+fn gap_init() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_init(GapRole::PERIPHERAL | GapRole::BROADCASTER, true, 3))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [1, 0x8A, 0xFC, 3, 0x03, 0x01, 0x03]
+    );
+}

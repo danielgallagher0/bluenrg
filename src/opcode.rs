@@ -34,6 +34,7 @@ opcodes! {
         pub const GAP_SET_AUTHORIZATION_REQUIREMENT = 0x07;
         pub const GAP_PASS_KEY_RESPONSE = 0x08;
         pub const GAP_AUTHORIZATION_RESPONSE = 0x09;
+        pub const GAP_INIT = 0x0A;
     }
     // Gatt = 0x2;
     L2Cap = 0x3;
