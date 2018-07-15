@@ -53,6 +53,10 @@ pub enum ReturnParameters {
     /// Status returned by the [GAP Pass Key Response](::ActiveBlueNRG::gap_pass_key_response)
     /// command.
     GapPassKeyResponse(hci::Status),
+
+    /// Status returned by the [GAP Authorization
+    /// Response](::ActiveBlueNRG::gap_authorization_response) command.
+    GapAuthorizationResponse(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -92,6 +96,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_PASS_KEY_RESPONSE => Ok(ReturnParameters::GapPassKeyResponse(to_status(
                 &bytes[3..],
             )?)),
+            ::opcode::GAP_AUTHORIZATION_RESPONSE => Ok(ReturnParameters::GapAuthorizationResponse(
+                to_status(&bytes[3..])?,
+            )),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }

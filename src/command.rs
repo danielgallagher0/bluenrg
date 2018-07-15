@@ -516,3 +516,12 @@ pub enum Pin {
     /// less.
     Fixed(u32),
 }
+
+/// Options for the [GAP Authorization Response](::ActiveBlueNRG::gap_authorization_response).
+#[repr(u8)]
+pub enum Authorization {
+    /// Accept the connection.
+    Authorized = 0x01,
+    /// Reject the connection.
+    Rejected = 0x02,
+}

@@ -537,6 +537,29 @@ where
 
         self.write_command(opcode::GAP_PASS_KEY_RESPONSE, &bytes)
     }
+
+    /// This command should be send by the host in response to the [GAP Authorization
+    /// Request](BlueNRGEvent::GapAuthorizationRequest) event.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapAuthorizationResponse) event is
+    /// generated.
+    pub fn gap_authorization_response(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        authorization: Authorization,
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        let mut bytes = [0; 3];
+        LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
+        bytes[2] = authorization as u8;
+
+        self.write_command(opcode::GAP_AUTHORIZATION_RESPONSE, &bytes)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

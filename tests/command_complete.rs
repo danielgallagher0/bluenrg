@@ -54,4 +54,5 @@ status_only! {
     gap_set_authentication_requirement(0x86, 0xFC, BNRGParams::GapSetAuthenticationRequirement);
     gap_set_authorization_requirement(0x87, 0xFC, BNRGParams::GapSetAuthorizationRequirement);
     gap_pass_key_response(0x88, 0xFC, BNRGParams::GapPassKeyResponse);
+    gap_authorization_response(0x89, 0xFC, BNRGParams::GapAuthorizationResponse);
 }

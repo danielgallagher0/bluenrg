@@ -751,3 +751,21 @@ fn gap_pass_key_response_bad_pin() {
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
 }
+
+#[test]
+fn gap_authorization_response() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_authorization_response(
+                hci::ConnectionHandle(0x0201),
+                Authorization::Authorized,
+            )
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [1, 0x89, 0xFC, 3, 0x01, 0x02, 0x01]
+    );
+}
