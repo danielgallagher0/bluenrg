@@ -410,6 +410,25 @@ where
 
         self.write_command(opcode::GAP_SET_DIRECT_CONNECTABLE, &bytes)
     }
+
+    /// Set the IO capabilities of the device.
+    ///
+    /// This command has to be given only when the device is not in a connected state.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapSetIoCapability) event is
+    /// generated.
+    pub fn gap_set_io_capability(
+        &mut self,
+        capability: IoCapability,
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        self.write_command(opcode::GAP_SET_IO_CAPABILITY, &[capability as u8])
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

@@ -424,3 +424,20 @@ impl GapDirectConnectableParameters {
         }
     }
 }
+
+/// I/O capabilities available for the [GAP Set I/O
+/// Capability](::ActiveBlueNRG::gap_set_io_capability) command.
+#[repr(u8)]
+#[derive(Copy, Clone, Debug)]
+pub enum IoCapability {
+    /// Display Only
+    Display = 0x00,
+    /// Display yes/no
+    DisplayConfirm = 0x01,
+    /// Keyboard Only
+    Keyboard = 0x02,
+    /// No Input, no output
+    None = 0x03,
+    /// Keyboard display
+    KeyboardDisplay = 0x04,
+}

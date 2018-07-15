@@ -29,6 +29,7 @@ opcodes! {
         pub const GAP_SET_LIMITED_DISCOVERABLE = 0x02;
         pub const GAP_SET_DISCOVERABLE = 0x03;
         pub const GAP_SET_DIRECT_CONNECTABLE = 0x04;
+        pub const GAP_SET_IO_CAPABILITY = 0x05;
     }
     // Gatt = 0x2;
     L2Cap = 0x3;

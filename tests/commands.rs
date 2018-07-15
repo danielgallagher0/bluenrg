@@ -596,3 +596,13 @@ fn gap_set_direct_connectable_bad_adv_interval() {
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
 }
+
+#[test]
+fn gap_set_io_capability() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_set_io_capability(IoCapability::None))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x85, 0xFC, 1, 0x03]);
+}
