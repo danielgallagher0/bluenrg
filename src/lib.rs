@@ -429,6 +429,51 @@ where
     ) -> nb::Result<(), UartError<E, BlueNRGError>> {
         self.write_command(opcode::GAP_SET_IO_CAPABILITY, &[capability as u8])
     }
+
+    /// Set the authentication requirements for the device.
+    ///
+    /// This command has to be given only when the device is not in a connected state.
+    ///
+    /// # Errors
+    ///
+    /// - [BadEncryptionKeySizeRange](BlueNRGError::BadEncryptionKeySizeRange) if the
+    ///   [`encryption_key_size_range`](AuthenticationRequirements::encryption_key_size_range) min
+    ///   is greater than the max.
+    /// - [BadFixedPin](BlueNRGError::BadFixedPin) if the
+    ///   [`fixed_pin`](AuthenticationRequirements::fixed_pin) is [Fixed](Pin::Fixed) with a value
+    ///   greater than 999999.
+    /// - Underlying communication errors.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapSetAuthRequirement) event is
+    /// generated.
+    pub fn gap_set_auth_requirement(
+        &mut self,
+        requirements: &AuthenticationRequirements,
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        if requirements.encryption_key_size_range.0 > requirements.encryption_key_size_range.1 {
+            return Err(nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+                BlueNRGError::BadEncryptionKeySizeRange(
+                    requirements.encryption_key_size_range.0,
+                    requirements.encryption_key_size_range.1,
+                ),
+            ))));
+        }
+
+        if let Pin::Fixed(pin) = requirements.fixed_pin {
+            if pin > 999999 {
+                return Err(nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+                    BlueNRGError::BadFixedPin(pin),
+                ))));
+            }
+        }
+
+        let mut bytes = [0; AuthenticationRequirements::LENGTH];
+        requirements.into_bytes(&mut bytes);
+
+        self.write_command(opcode::GAP_SET_AUTH_REQUIREMENT, &bytes)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

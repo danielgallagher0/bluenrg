@@ -441,3 +441,78 @@ pub enum IoCapability {
     /// Keyboard display
     KeyboardDisplay = 0x04,
 }
+
+/// Parameters for the [GAP Set Auth Requirement](::ActiveBlueNRG::gap_set_auth_requirement)
+/// command.
+pub struct AuthenticationRequirements {
+    /// Is MITM (man-in-the-middle) protection required?
+    pub mitm_protection_required: bool,
+
+    /// Out-of-band authentication data.
+    pub out_of_band_auth: OutOfBandAuthentication,
+
+    /// Minimum and maximum size of the encryption key.
+    pub encryption_key_size_range: (u8, u8),
+
+    /// Pin to use during the pairing process.
+    pub fixed_pin: Pin,
+
+    /// Is bonding required?
+    pub bonding_required: bool,
+}
+
+impl AuthenticationRequirements {
+    /// Length of the serialized command.
+    pub const LENGTH: usize = 26;
+
+    /// Serialize the parameters into the given buffer.
+    pub fn into_bytes(&self, bytes: &mut [u8]) {
+        assert_eq!(bytes.len(), Self::LENGTH);
+
+        bytes[0] = self.mitm_protection_required as u8;
+        match self.out_of_band_auth {
+            OutOfBandAuthentication::Disabled => {
+                bytes[1..18].copy_from_slice(&[0; 17]);
+            }
+            OutOfBandAuthentication::Enabled(data) => {
+                bytes[1] = 1;
+                bytes[2..18].copy_from_slice(&data);
+            }
+        }
+
+        bytes[18] = self.encryption_key_size_range.0;
+        bytes[19] = self.encryption_key_size_range.1;
+
+        match self.fixed_pin {
+            Pin::Requested => {
+                bytes[20] = 1;
+                bytes[21..25].copy_from_slice(&[0; 4]);
+            }
+            Pin::Fixed(pin) => {
+                bytes[20] = 0;
+                LittleEndian::write_u32(&mut bytes[21..25], pin);
+            }
+        }
+
+        bytes[25] = self.bonding_required as u8;
+    }
+}
+
+/// Options for [`out_of_band_auth`](AuthenticationRequirements::out_of_band_auth).
+pub enum OutOfBandAuthentication {
+    /// Out Of Band authentication not enabled
+    Disabled,
+    /// Out Of Band authentication enabled; includes the OOB data.
+    Enabled([u8; 16]),
+}
+
+/// Options for [`fixed_pin`](AuthenticationRequirements::fixed_pin).
+pub enum Pin {
+    /// Do not use fixed pin during the pairing process.  In this case, GAP will generate a [GAP
+    /// Pass Key Request](::event::BlueNRGEvent::GapPassKeyRequest) event to the host.
+    Requested,
+
+    /// Use a fixed pin during pairing. The provided value is used as the PIN, and must be 999999 or
+    /// less.
+    Fixed(u32),
+}
