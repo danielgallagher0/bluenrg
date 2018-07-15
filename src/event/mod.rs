@@ -402,9 +402,9 @@ pub enum BlueNRGError {
     BadEncryptionKeySizeRange(u8, u8),
 
     /// For the [GAP Set Authentication
-    /// Requirement](::ActiveBlueNRG::gap_set_authentication_requirement) command, the provided
-    /// fixed pin is out of range (must be less than or equal to 999999).  Includes the provided
-    /// PIN.
+    /// Requirement](::ActiveBlueNRG::gap_set_authentication_requirement) and [GAP Pass Key
+    /// Response](::ActiveBlueNRG::gap_pass_key_response) commands, the provided fixed pin is out of
+    /// range (must be less than or equal to 999999).  Includes the provided PIN.
     BadFixedPin(u32),
 }
 

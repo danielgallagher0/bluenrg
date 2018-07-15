@@ -721,3 +721,33 @@ fn gap_set_authorization_requirement() {
         [1, 0x87, 0xFC, 3, 0x01, 0x02, 0x01]
     );
 }
+
+#[test]
+fn gap_pass_key_response() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_pass_key_response(hci::ConnectionHandle(0x0201), 123456))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [1, 0x88, 0xFC, 6, 0x01, 0x02, 0x40, 0xe2, 0x01, 0x00]
+    );
+}
+
+#[test]
+fn gap_pass_key_response_bad_pin() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| controller.gap_pass_key_response(hci::ConnectionHandle(0x0201), 1000000))
+        .err()
+        .unwrap();
+    assert_eq!(
+        err,
+        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+            BlueNRGError::BadFixedPin(1000000)
+        )))
+    );
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+}

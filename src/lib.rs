@@ -503,6 +503,40 @@ where
 
         self.write_command(opcode::GAP_SET_AUTHORIZATION_REQUIREMENT, &bytes)
     }
+
+    /// This command should be send by the host in response to the [GAP Pass Key
+    /// Request](BlueNRGEvent::GapPassKeyRequest) event.
+    ///
+    /// `pin` contains the pass key which will be used during the pairing process.
+    ///
+    /// # Errors
+    ///
+    /// - [BadFixedPin](BlueNRGError::BadFixedPin) if the pin is greater than 999999.
+    /// - Underlying communication errors.
+    ///
+    /// # Generated events
+    ///
+    /// - A [Command Complete](event::command::ReturnParameters::GapPassKeyResponse) event is
+    ///   generated.
+    /// - When the pairing process completes, it will generate a
+    ///   [GapPairingComplete](BlueNRGEvent::GapPairingComplete) event.
+    pub fn gap_pass_key_response(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        pin: u32,
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        if pin > 999999 {
+            return Err(nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+                BlueNRGError::BadFixedPin(pin),
+            ))));
+        }
+
+        let mut bytes = [0; 6];
+        LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
+        LittleEndian::write_u32(&mut bytes[2..6], pin);
+
+        self.write_command(opcode::GAP_PASS_KEY_RESPONSE, &bytes)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

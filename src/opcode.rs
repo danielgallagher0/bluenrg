@@ -32,6 +32,7 @@ opcodes! {
         pub const GAP_SET_IO_CAPABILITY = 0x05;
         pub const GAP_SET_AUTHENTICATION_REQUIREMENT = 0x06;
         pub const GAP_SET_AUTHORIZATION_REQUIREMENT = 0x07;
+        pub const GAP_PASS_KEY_RESPONSE = 0x08;
     }
     // Gatt = 0x2;
     L2Cap = 0x3;
