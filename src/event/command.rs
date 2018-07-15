@@ -33,6 +33,10 @@ pub enum ReturnParameters {
     /// Status returned by the [GAP Set Discoverable](::ActiveBlueNRG::gap_set_discoverable)
     /// command.
     GapSetDiscoverable(hci::Status),
+
+    /// Status returned by the [GAP Set Direct
+    /// Connectable](::ActiveBlueNRG::gap_set_direct_connectable) command.
+    GapSetDirectConnectable(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -57,6 +61,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_SET_DISCOVERABLE => Ok(ReturnParameters::GapSetDiscoverable(to_status(
                 &bytes[3..],
             )?)),
+            ::opcode::GAP_SET_DIRECT_CONNECTABLE => Ok(ReturnParameters::GapSetDirectConnectable(
+                to_status(&bytes[3..])?,
+            )),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }

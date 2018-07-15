@@ -496,3 +496,103 @@ fn gap_set_discoverable_bad_conn_interval() {
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
 }
+
+#[cfg(not(feature = "ms"))]
+#[test]
+fn gap_set_direct_connectable() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_set_direct_connectable(&GapDirectConnectableParameters {
+                own_address_type: OwnAddressType::Public,
+                advertising_type: AdvertisingType::ConnectableDirectedHighDutyCycle,
+                initiator_address: BdAddrType::Public(BdAddr([1, 2, 3, 4, 5, 6])),
+            })
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [1, 0x84, 0xFC, 9, 0x00, 0x01, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06]
+    );
+}
+
+#[cfg(feature = "ms")]
+#[test]
+fn gap_set_direct_connectable() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_set_direct_connectable(&GapDirectConnectableParameters {
+                own_address_type: OwnAddressType::Public,
+                advertising_type: AdvertisingType::ConnectableDirectedHighDutyCycle,
+                initiator_address: BdAddrType::Public(BdAddr([1, 2, 3, 4, 5, 6])),
+                advertising_interval: (Duration::from_millis(20), Duration::from_millis(50)),
+            })
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [
+            1, 0x84, 0xFC, 13, 0x00, 0x01, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x20, 0x00,
+            0x50, 0x00
+        ]
+    );
+}
+
+#[cfg(not(feature = "ms"))]
+#[test]
+fn gap_set_direct_connectable_bad_adv_type() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.gap_set_direct_connectable(&GapDirectConnectableParameters {
+                own_address_type: OwnAddressType::Public,
+                advertising_type: AdvertisingType::ConnectableUndirected,
+                initiator_address: BdAddrType::Public(BdAddr([1, 2, 3, 4, 5, 6])),
+            })
+        })
+        .err()
+        .unwrap();
+    assert_eq!(
+        err,
+        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+            BlueNRGError::BadAdvertisingType(AdvertisingType::ConnectableUndirected)
+        )))
+    );
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+}
+
+#[cfg(feature = "ms")]
+#[test]
+fn gap_set_direct_connectable_bad_adv_interval() {
+    let mut fixture = Fixture::new();
+    for (min, max) in [
+        (Duration::from_millis(19), Duration::from_millis(50)),
+        (Duration::from_millis(20), Duration::from_millis(10241)),
+        (Duration::from_millis(500), Duration::from_millis(499)),
+    ].into_iter()
+    {
+        let err = fixture
+            .act(|controller| {
+                controller.gap_set_direct_connectable(&GapDirectConnectableParameters {
+                    own_address_type: OwnAddressType::Public,
+                    advertising_type: AdvertisingType::ConnectableDirectedHighDutyCycle,
+                    initiator_address: BdAddrType::Public(BdAddr([1, 2, 3, 4, 5, 6])),
+                    advertising_interval: (*min, *max),
+                })
+            })
+            .err()
+            .unwrap();
+        assert_eq!(
+            err,
+            nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+                BlueNRGError::BadAdvertisingInterval(*min, *max)
+            )))
+        );
+    }
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+}

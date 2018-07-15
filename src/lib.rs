@@ -322,6 +322,15 @@ where
     /// device will be discoverable for maximum period of TGAP (lim_adv_timeout) = 180 seconds (from
     /// errata). The advertising can be disabled at any time by issuing a
     /// [`gap_set_nondiscoverable`](ActiveBlueNRG::gap_set_nondiscoverable) command.
+    ///
+    /// # Errors
+    ///
+    /// See [GapDiscoverableParameters::validate].
+    ///
+    /// # Generated evenst
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapSetLimitedDiscoverable) event is
+    /// generated.
     pub fn gap_set_limited_discoverable<'a, 'b>(
         &mut self,
         params: &GapDiscoverableParameters<'a, 'b>,
@@ -342,6 +351,15 @@ where
     /// device will be discoverable for maximum period of TGAP (lim_adv_timeout) = 180 seconds (from
     /// errata). The advertising can be disabled at any time by issuing a
     /// [`gap_set_nondiscoverable`](ActiveBlueNRG::gap_set_nondiscoverable) command.
+    ///
+    /// # Errors
+    ///
+    /// See [GapDiscoverableParameters::validate].
+    ///
+    /// # Generated evenst
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapSetDiscoverable) event is
+    /// generated.
     pub fn gap_set_discoverable<'a, 'b>(
         &mut self,
         params: &GapDiscoverableParameters<'a, 'b>,
@@ -354,6 +372,43 @@ where
         let len = params.into_bytes(&mut bytes);
 
         self.write_command(opcode::GAP_SET_DISCOVERABLE, &bytes[..len])
+    }
+
+    /// Set the device in direct connectable mode.
+    ///
+    /// Direct connectable mode is defined in GAP specification Volume 3,
+    /// Section 9.3.3). Device uses direct connectable mode to advertise using either High Duty
+    /// cycle advertisement events or Low Duty cycle advertisement events and the address as
+    /// what is specified in the Own Address Type parameter. The Advertising Type parameter in
+    /// the command specifies the type of the advertising used.
+    ///
+    /// When the `ms` feature is _not_ enabled, the device will be in directed connectable mode only
+    /// for 1.28 seconds. If no connection is established within this duration, the device enters
+    /// non discoverable mode and advertising will have to be again enabled explicitly.
+    ///
+    /// When the `ms` feature _is_ enabled, the advertising interval is explicitly provided in the
+    /// [parameters][GapDirectConnectableParameters].
+    ///
+    /// # Errors
+    ///
+    /// See [GapDirectConnectableParameters::validate].
+    ///
+    /// # Generated evenst
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapSetDirectConnectable) event is
+    /// generated.
+    pub fn gap_set_direct_connectable(
+        &mut self,
+        params: &GapDirectConnectableParameters,
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        params
+            .validate()
+            .map_err(|e| nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(e))))?;
+
+        let mut bytes = [0; GapDirectConnectableParameters::LENGTH];
+        params.into_bytes(&mut bytes);
+
+        self.write_command(opcode::GAP_SET_DIRECT_CONNECTABLE, &bytes)
     }
 }
 

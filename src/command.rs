@@ -4,6 +4,7 @@ extern crate byteorder;
 use byteorder::{ByteOrder, LittleEndian};
 use core::time::Duration;
 pub use hci::host::{AdvertisingFilterPolicy, AdvertisingType, OwnAddressType};
+pub use hci::{BdAddr, BdAddrType};
 
 /// Parameters for the
 /// [`l2cap_connection_parameter_update_request`](::ActiveBlueNRG::l2cap_connection_parameter_update_request)
@@ -327,4 +328,99 @@ pub enum LocalName<'a> {
 
     /// The complete local name.
     Complete(&'a [u8]),
+}
+
+/// Parameters for the
+/// [`gap_set_direct_connectable`](::ActiveBlueNRG::gap_set_direct_connectable) command.
+pub struct GapDirectConnectableParameters {
+    /// Address type of this device.
+    pub own_address_type: OwnAddressType,
+
+    /// Advertising method for the device.
+    ///
+    /// Must be
+    /// [ConnectableDirectedHighDutyCycle](bluetooth_hci::host::AdvertisingType::ConnectableDirectedHighDutyCycle),
+    /// or
+    /// [ConnectableDirectedLowDutyCycle](bluetooth_hci::host::AdvertisingType::ConnectableDirectedLowDutyCycle).
+    pub advertising_type: AdvertisingType,
+
+    /// Initiator's Bluetooth address.
+    pub initiator_address: BdAddrType,
+
+    #[cfg(feature = "ms")]
+    /// Range of advertising interval for advertising.
+    ///
+    /// Range for both limits: 20 ms to 10.24 seconds.  The second value must be greater than or
+    /// equal to the first.
+    pub advertising_interval: (Duration, Duration),
+}
+
+impl GapDirectConnectableParameters {
+    #[cfg(not(feature = "ms"))]
+    /// Length, in bytes, of the serialized message
+    pub const LENGTH: usize = 9;
+
+    #[cfg(feature = "ms")]
+    /// Length, in bytes, of the serialized message
+    pub const LENGTH: usize = 13;
+
+    /// Returns an error if any of the constraits on the parameters are violated.
+    ///
+    /// # Errors
+    ///
+    /// - [`BadAdvertisingType`](::BlueNRGError::BadAdvertisingType) if
+    ///   [`advertising_type`](GapDiscoverableParameters::advertising_type) is one of the disallowed
+    ///   types:
+    ///   [ConnectableUndirected](bluetooth_hci::host::AdvertisingType::ConnectableUndirected),
+    ///   [ScannableUndirected](bluetooth_hci::host::AdvertisingType::ScannableUndirected), or
+    ///   [NonConnectableUndirected](bluetooth_hci::host::AdvertisingType::NonConnectableUndirected),
+    /// - (`ms` feature only) [`BadAdvertisingInterval`](::BlueNRGError::BadAdvertisingInterval) if
+    ///   [`advertising_interval`](GapDiscoverableParameters::advertising_interval) is
+    ///   out of range (20 ms to 10.24 s) or inverted (the min is greater than the max).
+    pub fn validate(&self) -> Result<(), ::BlueNRGError> {
+        match self.advertising_type {
+            AdvertisingType::ConnectableDirectedHighDutyCycle
+            | AdvertisingType::ConnectableDirectedLowDutyCycle => (),
+            _ => return Err(::BlueNRGError::BadAdvertisingType(self.advertising_type)),
+        }
+
+        #[cfg(feature = "ms")]
+        {
+            const MIN_DURATION: Duration = Duration::from_millis(20);
+            const MAX_DURATION: Duration = Duration::from_millis(10240);
+
+            if self.advertising_interval.0 < MIN_DURATION
+                || self.advertising_interval.1 > MAX_DURATION
+                || self.advertising_interval.0 > self.advertising_interval.1
+            {
+                return Err(::BlueNRGError::BadAdvertisingInterval(
+                    self.advertising_interval.0,
+                    self.advertising_interval.1,
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Serialize the parameters into the given buffer.
+    pub fn into_bytes(&self, bytes: &mut [u8]) {
+        assert_eq!(bytes.len(), Self::LENGTH);
+
+        bytes[0] = self.own_address_type as u8;
+        bytes[1] = self.advertising_type as u8;
+        self.initiator_address.into_bytes(&mut bytes[2..9]);
+
+        #[cfg(feature = "ms")]
+        {
+            LittleEndian::write_u16(
+                &mut bytes[9..],
+                to_connection_length_value(self.advertising_interval.0),
+            );
+            LittleEndian::write_u16(
+                &mut bytes[11..],
+                to_connection_length_value(self.advertising_interval.1),
+            );
+        }
+    }
 }
