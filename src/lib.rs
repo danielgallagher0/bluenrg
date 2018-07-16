@@ -640,11 +640,11 @@ where
     #[cfg(feature = "ms")]
     /// Put the device into non-connectable mode.
     ///
-    /// This mode does not support connection. The privacy setting done in the [gap_init] command
-    /// plays a role in deciding the valid parameters for this command. If privacy was not enabled,
-    /// `address_type` may be [Public](GapAddressType::Public) or [Random](GapAddressType::Random).
-    /// If privacy was enabled, `address_type` may be
-    /// [ResolvablePrivate](GapAddressType::ResolvablePrivate) or
+    /// This mode does not support connection. The privacy setting done in the
+    /// [`gap_init`](::ActiveBlueNRG::gap_init) command plays a role in deciding the valid
+    /// parameters for this command. If privacy was not enabled, `address_type` may be
+    /// [Public](GapAddressType::Public) or [Random](GapAddressType::Random).  If privacy was
+    /// enabled, `address_type` may be [ResolvablePrivate](GapAddressType::ResolvablePrivate) or
     /// [NonResolvablePrivate](GapAddressType::NonResolvablePrivate).
     ///
     /// # Errors
@@ -675,6 +675,44 @@ where
         self.write_command(
             opcode::GAP_SET_NONCONNECTABLE,
             &[advertising_type as u8, address_type as u8],
+        )
+    }
+
+    /// Put the device into undirected connectable mode.
+    ///
+    /// The privacy setting done in the [`gap_init`](ActiveBlueNRG::gap_init) command plays a role
+    /// in deciding the valid parameters for this command.
+    ///
+    /// # Errors
+    ///
+    /// - [BadAdvertisingFilterPolicy](BlueNRGError::BadAdvertisingFilterPolicy) if the filter is
+    ///   not one of the supported modes. It must be
+    ///   [AllowConnectionAndScan](AdvertisingFilterPolicy::AllowConnectionAndScan) or
+    ///   (WhiteListConnectionAllowScan)[AdvertisingFilterPolicy::WhiteListConnectionAllowScan).
+    /// - Underlying communication errors.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapSetUndirectedConnectable) event is
+    /// generated.
+    pub fn gap_set_undirected_connectable(
+        &mut self,
+        filter_policy: AdvertisingFilterPolicy,
+        address_type: GapAddressType,
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        match filter_policy {
+            AdvertisingFilterPolicy::AllowConnectionAndScan
+            | AdvertisingFilterPolicy::WhiteListConnectionAndScan => (),
+            _ => {
+                return Err(nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+                    BlueNRGError::BadAdvertisingFilterPolicy(filter_policy),
+                ))))
+            }
+        }
+
+        self.write_command(
+            opcode::GAP_SET_UNDIRECTED_CONNECTABLE,
+            &[filter_policy as u8, address_type as u8],
         )
     }
 }

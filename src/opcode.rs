@@ -36,6 +36,7 @@ opcodes! {
         pub const GAP_AUTHORIZATION_RESPONSE = 0x09;
         pub const GAP_INIT = 0x0A;
         pub const GAP_SET_NONCONNECTABLE = 0x0B;
+        pub const GAP_SET_UNDIRECTED_CONNECTABLE = 0x0C;
     }
     // Gatt = 0x2;
     L2Cap = 0x3;

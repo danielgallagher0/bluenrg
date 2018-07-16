@@ -864,3 +864,42 @@ fn gap_set_nonconnectable_bad_type() {
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
 }
+
+#[test]
+fn gap_set_undirected_connectable() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_set_undirected_connectable(
+                AdvertisingFilterPolicy::AllowConnectionAndScan,
+                GapAddressType::ResolvablePrivate,
+            )
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x8C, 0xFC, 2, 0x00, 0x02]);
+}
+
+#[test]
+fn gap_set_undirected_connectable_bad_advertising_filter_policy() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.gap_set_undirected_connectable(
+                AdvertisingFilterPolicy::WhiteListConnectionAllowScan,
+                GapAddressType::ResolvablePrivate,
+            )
+        })
+        .err()
+        .unwrap();
+    assert_eq!(
+        err,
+        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+            BlueNRGError::BadAdvertisingFilterPolicy(
+                AdvertisingFilterPolicy::WhiteListConnectionAllowScan
+            )
+        )))
+    );
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+}
