@@ -555,3 +555,17 @@ pub enum GapAddressType {
     /// list.
     NonResolvablePrivate = 0x03,
 }
+
+/// Parameters for the [GAP Peripheral Security
+/// Request](::ActiveBlueNRG::gap_peripheral_security_request) parameters.
+pub struct SecurityRequestParameters {
+    /// Handle of the connection on which the peripheral security request will
+    /// be sent (ignored in peripheral-only role).
+    pub conn_handle: hci::ConnectionHandle,
+
+    /// Is bonding required?
+    pub bonding: bool,
+
+    /// Is man-in-the-middle protection required?
+    pub mitm_protection: bool,
+}

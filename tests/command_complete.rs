@@ -57,6 +57,7 @@ status_only! {
     gap_authorization_response(0x89, 0xFC, BNRGParams::GapAuthorizationResponse);
     gap_set_nonconnectable(0x8B, 0xFC, BNRGParams::GapSetNonConnectable);
     gap_set_undirected_connectable(0x8C, 0xFC, BNRGParams::GapSetUndirectedConnectable);
+    gap_peripheral_security_request(0x8D, 0xFC, BNRGParams::GapPeripheralSecurityRequest);
 }
 
 #[test]

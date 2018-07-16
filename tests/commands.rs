@@ -903,3 +903,22 @@ fn gap_set_undirected_connectable_bad_advertising_filter_policy() {
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
 }
+
+#[test]
+fn gap_peripheral_security_request() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_peripheral_security_request(&SecurityRequestParameters {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                bonding: true,
+                mitm_protection: false,
+            })
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [1, 0x8D, 0xFC, 4, 0x01, 0x02, 0x01, 0x00]
+    );
+}

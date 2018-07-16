@@ -715,6 +715,29 @@ where
             &[filter_policy as u8, address_type as u8],
         )
     }
+
+    /// This command has to be issued to notify the central device of the security requirements of
+    /// the peripheral.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapPeripheralSecurityRequest) event
+    /// is generated.
+    pub fn gap_peripheral_security_request(
+        &mut self,
+        params: &SecurityRequestParameters,
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        let mut bytes = [0; 4];
+        LittleEndian::write_u16(&mut bytes[0..2], params.conn_handle.0);
+        bytes[2] = params.bonding as u8;
+        bytes[3] = params.mitm_protection as u8;
+
+        self.write_command(opcode::GAP_PERIPHERAL_SECURITY_REQUEST, &bytes)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

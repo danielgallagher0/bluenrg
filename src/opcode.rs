@@ -37,6 +37,7 @@ opcodes! {
         pub const GAP_INIT = 0x0A;
         pub const GAP_SET_NONCONNECTABLE = 0x0B;
         pub const GAP_SET_UNDIRECTED_CONNECTABLE = 0x0C;
+        pub const GAP_PERIPHERAL_SECURITY_REQUEST = 0x0D;
     }
     // Gatt = 0x2;
     L2Cap = 0x3;

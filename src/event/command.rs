@@ -68,6 +68,10 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GAP Set
     /// Undirected Connectable](::ActiveBlueNRG::gap_set_undirected_connectable) command.
     GapSetUndirectedConnectable(hci::Status),
+
+    /// Parameters returned by the [GAP Peripheral Security
+    /// Request](::ActiveBlueNRG::gap_peripheral_security_request) command.
+    GapPeripheralSecurityRequest(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -116,6 +120,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             )),
             ::opcode::GAP_SET_UNDIRECTED_CONNECTABLE => Ok(
                 ReturnParameters::GapSetUndirectedConnectable(to_status(&bytes[3..])?),
+            ),
+            ::opcode::GAP_PERIPHERAL_SECURITY_REQUEST => Ok(
+                ReturnParameters::GapPeripheralSecurityRequest(to_status(&bytes[3..])?),
             ),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
