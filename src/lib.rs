@@ -604,6 +604,79 @@ where
 
         self.write_command(opcode::GAP_INIT, &bytes)
     }
+
+    #[cfg(not(feature = "ms"))]
+    /// Put the device into non-connectable mode.
+    ///
+    /// This mode does not support connection.
+    ///
+    /// # Errors
+    ///
+    /// - [BadAdvertisingType](BlueNRGError::BadAdvertisingType) if the advertising type is not one
+    ///   of the supported modes. It must be
+    ///   [ScannableUndirected](AdvertisingType::ScannableUndirected) or
+    ///   (NonConnectableUndirected)[AdvertisingType::NonConnectableUndirected).
+    /// - Underlying communication errors.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapInit) event is generated.
+    pub fn gap_set_nonconnectable(
+        &mut self,
+        advertising_type: AdvertisingType,
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        match advertising_type {
+            AdvertisingType::ScannableUndirected | AdvertisingType::NonConnectableUndirected => (),
+            _ => {
+                return Err(nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+                    BlueNRGError::BadAdvertisingType(advertising_type),
+                ))))
+            }
+        }
+
+        self.write_command(opcode::GAP_SET_NONCONNECTABLE, &[advertising_type as u8])
+    }
+
+    #[cfg(feature = "ms")]
+    /// Put the device into non-connectable mode.
+    ///
+    /// This mode does not support connection. The privacy setting done in the [gap_init] command
+    /// plays a role in deciding the valid parameters for this command. If privacy was not enabled,
+    /// `address_type` may be [Public](GapAddressType::Public) or [Random](GapAddressType::Random).
+    /// If privacy was enabled, `address_type` may be
+    /// [ResolvablePrivate](GapAddressType::ResolvablePrivate) or
+    /// [NonResolvablePrivate](GapAddressType::NonResolvablePrivate).
+    ///
+    /// # Errors
+    ///
+    /// - [BadAdvertisingType](BlueNRGError::BadAdvertisingType) if the advertising type is not one
+    ///   of the supported modes. It must be
+    ///   [ScannableUndirected](AdvertisingType::ScannableUndirected) or
+    ///   (NonConnectableUndirected)[AdvertisingType::NonConnectableUndirected).
+    /// - Underlying communication errors.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapInit) event is generated.
+    pub fn gap_set_nonconnectable(
+        &mut self,
+        advertising_type: AdvertisingType,
+        address_type: GapAddressType,
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        match advertising_type {
+            AdvertisingType::ScannableUndirected | AdvertisingType::NonConnectableUndirected => (),
+            _ => {
+                return Err(nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+                    BlueNRGError::BadAdvertisingType(advertising_type),
+                ))))
+            }
+        }
+
+        self.write_command(
+            opcode::GAP_SET_NONCONNECTABLE,
+            &[advertising_type as u8, address_type as u8],
+        )
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

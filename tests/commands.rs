@@ -794,3 +794,73 @@ fn gap_init() {
         [1, 0x8A, 0xFC, 3, 0x03, 0x01, 0x03]
     );
 }
+
+#[cfg(not(feature = "ms"))]
+#[test]
+fn gap_set_nonconnectable() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_set_nonconnectable(AdvertisingType::ScannableUndirected))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x8B, 0xFC, 1, 0x02]);
+}
+
+#[cfg(not(feature = "ms"))]
+#[test]
+fn gap_set_nonconnectable_bad_type() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.gap_set_nonconnectable(AdvertisingType::ConnectableDirectedHighDutyCycle)
+        })
+        .err()
+        .unwrap();
+    assert_eq!(
+        err,
+        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+            BlueNRGError::BadAdvertisingType(AdvertisingType::ConnectableDirectedHighDutyCycle)
+        )))
+    );
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+}
+
+#[cfg(feature = "ms")]
+#[test]
+fn gap_set_nonconnectable() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_set_nonconnectable(
+                AdvertisingType::ScannableUndirected,
+                GapAddressType::ResolvablePrivate,
+            )
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x8B, 0xFC, 2, 0x02, 0x02]);
+}
+
+#[cfg(feature = "ms")]
+#[test]
+fn gap_set_nonconnectable_bad_type() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.gap_set_nonconnectable(
+                AdvertisingType::ConnectableDirectedHighDutyCycle,
+                GapAddressType::ResolvablePrivate,
+            )
+        })
+        .err()
+        .unwrap();
+    assert_eq!(
+        err,
+        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+            BlueNRGError::BadAdvertisingType(AdvertisingType::ConnectableDirectedHighDutyCycle)
+        )))
+    );
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+}

@@ -539,3 +539,19 @@ bitflags!{
         const OBSERVER = 0x08;
     }
 }
+
+/// Indicates the type of address being used in the advertising packets, for the
+/// [`gap_set_nonconnectable`](::ActiveBlueNRG::gap_set_nonconnectable).
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum GapAddressType {
+    /// Public device address.
+    Public = 0x00,
+    /// Static random device address.
+    Random = 0x01,
+    /// Controller generates Resolvable Private Address.
+    ResolvablePrivate = 0x02,
+    /// Controller generates Resolvable Private Address. based on the local IRK from resolving
+    /// list.
+    NonResolvablePrivate = 0x03,
+}

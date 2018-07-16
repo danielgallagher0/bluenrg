@@ -60,6 +60,10 @@ pub enum ReturnParameters {
 
     /// Parameters returned by the [GAP Init](::ActiveBlueNRG::gap_init) command.
     GapInit(GapInit),
+
+    /// Parameters returned by the [GAP Set
+    /// Non-Connectable](::ActiveBlueNRG::gap_set_nonconnectable) command.
+    GapSetNonConnectable(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -103,6 +107,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                 to_status(&bytes[3..])?,
             )),
             ::opcode::GAP_INIT => Ok(ReturnParameters::GapInit(to_gap_init(&bytes[3..])?)),
+            ::opcode::GAP_SET_NONCONNECTABLE => Ok(ReturnParameters::GapSetNonConnectable(
+                to_status(&bytes[3..])?,
+            )),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }
