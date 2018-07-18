@@ -738,6 +738,40 @@ where
 
         self.write_command(opcode::GAP_PERIPHERAL_SECURITY_REQUEST, &bytes)
     }
+
+    /// This command can be used to update the advertising data for a particular AD type. If the AD
+    /// type specified does not exist, then it is added to the advertising data. If the overall
+    /// advertising data length is more than 31 octets after the update, then the command is
+    /// rejected and the old data is retained.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapUpdateAdvertisingData) event is
+    /// generated.
+    pub fn gap_update_advertising_data(
+        &mut self,
+        data: &[u8],
+    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+        const MAX_LENGTH: usize = 31;
+        if data.len() > MAX_LENGTH {
+            return Err(nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+                BlueNRGError::BadAdvertisingDataLength(data.len()),
+            ))));
+        }
+
+        let mut bytes = [0; 1 + MAX_LENGTH];
+        bytes[0] = data.len() as u8;
+        bytes[1..=data.len()].copy_from_slice(data);
+
+        self.write_command(
+            opcode::GAP_UPDATE_ADVERTISING_DATA,
+            &bytes[0..1 + data.len()],
+        )
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

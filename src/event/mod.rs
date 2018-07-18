@@ -414,6 +414,11 @@ pub enum BlueNRGError {
     /// [WhiteListConnectionAndScan](::AdvertisingFilterPolicy::WhiteListConnectionAndScan) are
     /// allowed.
     BadAdvertisingFilterPolicy(::AdvertisingFilterPolicy),
+
+    /// For the [GAP Update Advertising Data](::ActiveBlueNRG::gap_update_advertising_data) command,
+    /// the advertising data is too long. It must be 31 bytes or less. The length of the provided
+    /// data is returned.
+    BadAdvertisingDataLength(usize),
 }
 
 macro_rules! require_len {

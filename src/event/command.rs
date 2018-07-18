@@ -72,6 +72,10 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GAP Peripheral Security
     /// Request](::ActiveBlueNRG::gap_peripheral_security_request) command.
     GapPeripheralSecurityRequest(hci::Status),
+
+    /// Parameters returned by the [GAP Update Advertising
+    /// Data](::ActiveBlueNRG::gap_update_advertising_data) command.
+    GapUpdateAdvertisingData(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -123,6 +127,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ),
             ::opcode::GAP_PERIPHERAL_SECURITY_REQUEST => Ok(
                 ReturnParameters::GapPeripheralSecurityRequest(to_status(&bytes[3..])?),
+            ),
+            ::opcode::GAP_UPDATE_ADVERTISING_DATA => Ok(
+                ReturnParameters::GapUpdateAdvertisingData(to_status(&bytes[3..])?),
             ),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }

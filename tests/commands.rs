@@ -922,3 +922,30 @@ fn gap_peripheral_security_request() {
         [1, 0x8D, 0xFC, 4, 0x01, 0x02, 0x01, 0x00]
     );
 }
+
+#[test]
+fn gap_update_advertising_data() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_update_advertising_data(&[1, 2, 3]))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x8E, 0xFC, 4, 3, 1, 2, 3]);
+}
+
+#[test]
+fn gap_update_advertising_data_too_long() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| controller.gap_update_advertising_data(&[0; 32]))
+        .err()
+        .unwrap();
+    assert_eq!(
+        err,
+        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
+            BlueNRGError::BadAdvertisingDataLength(32)
+        )))
+    );
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+}
