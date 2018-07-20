@@ -55,7 +55,6 @@ use byteorder::{ByteOrder, LittleEndian};
 use core::cmp::min;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
-use hci::host::uart::Error as UartError;
 use hci::host::HciHeader;
 use hci::Controller;
 
@@ -65,8 +64,6 @@ pub mod event;
 mod opcode;
 
 pub use command::*;
-pub use event::BlueNRGError;
-pub use event::BlueNRGEvent;
 pub use hci::host::{AdvertisingFilterPolicy, AdvertisingType, OwnAddressType};
 
 /// Handle for interfacing with the BlueNRG-MS.
@@ -120,9 +117,7 @@ pub struct ActiveBlueNRG<
 ///
 /// - Returns nb::Error::WouldBlock if the first byte indicates that the controller is not yet
 ///   ready.
-fn parse_spi_header<E>(
-    header: &[u8; 5],
-) -> Result<(u16, u16), nb::Error<UartError<E, BlueNRGError>>> {
+fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<E>> {
     const BNRG_READY: u8 = 0x02;
     if header[0] != BNRG_READY {
         Err(nb::Error::WouldBlock)
@@ -131,6 +126,13 @@ fn parse_spi_header<E>(
             LittleEndian::read_u16(&header[1..]),
             LittleEndian::read_u16(&header[3..]),
         ))
+    }
+}
+
+fn rewrap_error<E>(e: nb::Error<E>) -> nb::Error<Error<E>> {
+    match e {
+        nb::Error::WouldBlock => nb::Error::WouldBlock,
+        nb::Error::Other(c) => nb::Error::Other(Error::Comm(c)),
     }
 }
 
@@ -157,15 +159,11 @@ where
     ///   reports that it does not have enough space to accept the combined header and payload.
     ///
     /// - Returns a communication error if there is an error communicating over the SPI bus.
-    fn try_write(
-        &mut self,
-        header: &[u8],
-        payload: &[u8],
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    fn try_write(&mut self, header: &[u8], payload: &[u8]) -> nb::Result<(), E> {
         let mut write_header = [0x0a, 0x00, 0x00, 0x00, 0x00];
         self.spi
             .transfer(&mut write_header)
-            .map_err(|e| nb::Error::Other(UartError::Comm(e)))?;
+            .map_err(nb::Error::Other)?;
 
         let (write_len, _read_len) = parse_spi_header(&write_header)?;
         if (write_len as usize) < header.len() + payload.len() {
@@ -173,14 +171,10 @@ where
         }
 
         if header.len() > 0 {
-            self.spi
-                .write(header)
-                .map_err(|e| nb::Error::Other(UartError::Comm(e)))?;
+            self.spi.write(header).map_err(nb::Error::Other)?;
         }
         if payload.len() > 0 {
-            self.spi
-                .write(payload)
-                .map_err(|e| nb::Error::Other(UartError::Comm(e)))?;
+            self.spi.write(payload).map_err(nb::Error::Other)?;
         }
 
         Ok(())
@@ -201,7 +195,7 @@ where
     /// - Returns nb::Error::WouldBlock if the controller is not ready.
     ///
     /// - Returns a communication error if there is an error communicating over the SPI bus.
-    fn read_available_data(&mut self) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    fn read_available_data(&mut self) -> nb::Result<(), E> {
         if !self.d.data_ready() {
             return Err(nb::Error::WouldBlock);
         }
@@ -209,7 +203,7 @@ where
         let mut read_header = [0x0b, 0x00, 0x00, 0x00, 0x00];
         self.spi
             .transfer(&mut read_header)
-            .map_err(|e| nb::Error::Other(UartError::Comm(e)))?;
+            .map_err(nb::Error::Other)?;
 
         let (_write_len, read_len) = parse_spi_header(&read_header)?;
         let mut bytes_available = read_len as usize;
@@ -223,9 +217,7 @@ where
                 for i in 0..rx.len() {
                     rx[i] = 0;
                 }
-                self.spi
-                    .transfer(rx)
-                    .map_err(|e| nb::Error::Other(UartError::Comm(e)))?;
+                self.spi.transfer(rx).map_err(nb::Error::Other)?;
             }
             bytes_available -= transfer_count;
         }
@@ -233,11 +225,7 @@ where
         Ok(())
     }
 
-    fn write_command(
-        &mut self,
-        opcode: opcode::Opcode,
-        params: &[u8],
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    fn write_command(&mut self, opcode: opcode::Opcode, params: &[u8]) -> nb::Result<(), E> {
         const HEADER_LEN: usize = 4;
         let mut header = [0; HEADER_LEN];
         hci::host::uart::CommandHeader::new(opcode, params.len()).into_bytes(&mut header);
@@ -260,7 +248,7 @@ where
     pub fn l2cap_connection_parameter_update_request(
         &mut self,
         params: &L2CapConnectionParameterUpdateRequest,
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    ) -> nb::Result<(), E> {
         let mut bytes = [0; L2CapConnectionParameterUpdateRequest::LENGTH];
         params.into_bytes(&mut bytes);
 
@@ -274,10 +262,10 @@ where
     ///
     /// # Errors
     ///
-    /// - [`BadConnectionInterval`](BlueNRGError::BadConnectionInterval) if
+    /// - [`BadConnectionInterval`](Error::BadConnectionInterval) if
     ///   [`interval`](L2CapConnectionParameterUpdateResponse::interval) is inverted; that is, if
     ///   the minimum is greater than the maximum.
-    /// - [`BadConnectionLengthRange`](BlueNRGError::BadConnectionLengthRange) if
+    /// - [`BadConnectionLengthRange`](Error::BadConnectionLengthRange) if
     ///   [`expected_connection_length_range`](L2CapConnectionParameterUpdateResponse::expected_connection_length_range)
     ///   is inverted; that is, if the minimum is greater than the maximum.
     /// - Underlying communication errors.
@@ -290,15 +278,14 @@ where
     pub fn l2cap_connection_parameter_update_response(
         &mut self,
         params: &L2CapConnectionParameterUpdateResponse,
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
-        params
-            .validate()
-            .map_err(|e| nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(e))))?;
+    ) -> nb::Result<(), Error<E>> {
+        params.validate().map_err(nb::Error::Other)?;
 
         let mut bytes = [0; L2CapConnectionParameterUpdateResponse::LENGTH];
         params.into_bytes(&mut bytes);
 
         self.write_command(opcode::L2CAP_CONN_PARAM_UPDATE_RESP, &bytes)
+            .map_err(rewrap_error)
     }
 
     /// Set the device in non-discoverable mode. This command will disable the LL advertising and
@@ -312,7 +299,7 @@ where
     ///
     /// A [Command Complete](event::command::ReturnParameters::GapSetNondiscoverable) event is
     /// generated.
-    pub fn gap_set_nondiscoverable(&mut self) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    pub fn gap_set_nondiscoverable(&mut self) -> nb::Result<(), E> {
         self.write_command(opcode::GAP_SET_NONDISCOVERABLE, &[])
     }
 
@@ -334,15 +321,14 @@ where
     pub fn gap_set_limited_discoverable<'a, 'b>(
         &mut self,
         params: &GapDiscoverableParameters<'a, 'b>,
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
-        params
-            .validate()
-            .map_err(|e| nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(e))))?;
+    ) -> nb::Result<(), Error<E>> {
+        params.validate().map_err(nb::Error::Other)?;
 
         let mut bytes = [0; GapDiscoverableParameters::MAX_LENGTH];
         let len = params.into_bytes(&mut bytes);
 
         self.write_command(opcode::GAP_SET_LIMITED_DISCOVERABLE, &bytes[..len])
+            .map_err(rewrap_error)
     }
 
     /// Set the device in discoverable mode.
@@ -363,15 +349,14 @@ where
     pub fn gap_set_discoverable<'a, 'b>(
         &mut self,
         params: &GapDiscoverableParameters<'a, 'b>,
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
-        params
-            .validate()
-            .map_err(|e| nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(e))))?;
+    ) -> nb::Result<(), Error<E>> {
+        params.validate().map_err(nb::Error::Other)?;
 
         let mut bytes = [0; GapDiscoverableParameters::MAX_LENGTH];
         let len = params.into_bytes(&mut bytes);
 
         self.write_command(opcode::GAP_SET_DISCOVERABLE, &bytes[..len])
+            .map_err(rewrap_error)
     }
 
     /// Set the device in direct connectable mode.
@@ -400,15 +385,14 @@ where
     pub fn gap_set_direct_connectable(
         &mut self,
         params: &GapDirectConnectableParameters,
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
-        params
-            .validate()
-            .map_err(|e| nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(e))))?;
+    ) -> nb::Result<(), Error<E>> {
+        params.validate().map_err(nb::Error::Other)?;
 
         let mut bytes = [0; GapDirectConnectableParameters::LENGTH];
         params.into_bytes(&mut bytes);
 
         self.write_command(opcode::GAP_SET_DIRECT_CONNECTABLE, &bytes)
+            .map_err(rewrap_error)
     }
 
     /// Set the IO capabilities of the device.
@@ -423,10 +407,7 @@ where
     ///
     /// A [Command Complete](event::command::ReturnParameters::GapSetIoCapability) event is
     /// generated.
-    pub fn gap_set_io_capability(
-        &mut self,
-        capability: IoCapability,
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    pub fn gap_set_io_capability(&mut self, capability: IoCapability) -> nb::Result<(), E> {
         self.write_command(opcode::GAP_SET_IO_CAPABILITY, &[capability as u8])
     }
 
@@ -436,10 +417,10 @@ where
     ///
     /// # Errors
     ///
-    /// - [BadEncryptionKeySizeRange](BlueNRGError::BadEncryptionKeySizeRange) if the
+    /// - [BadEncryptionKeySizeRange](Error::BadEncryptionKeySizeRange) if the
     ///   [`encryption_key_size_range`](AuthenticationRequirements::encryption_key_size_range) min
     ///   is greater than the max.
-    /// - [BadFixedPin](BlueNRGError::BadFixedPin) if the
+    /// - [BadFixedPin](Error::BadFixedPin) if the
     ///   [`fixed_pin`](AuthenticationRequirements::fixed_pin) is [Fixed](Pin::Fixed) with a value
     ///   greater than 999999.
     /// - Underlying communication errors.
@@ -449,25 +430,21 @@ where
     /// - A [Command Complete](event::command::ReturnParameters::GapSetAuthenticationRequirement)
     ///   event is generated.
     /// - If [`fixed_pin`](AuthenticationRequirements::fixed_pin) is [Request](Pin::Requested), then
-    ///   a [GAP Pass Key](BlueNRGEvent::GapPassKeyRequest) event is generated.
+    ///   a [GAP Pass Key](event::BlueNRGEvent::GapPassKeyRequest) event is generated.
     pub fn gap_set_authentication_requirement(
         &mut self,
         requirements: &AuthenticationRequirements,
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    ) -> nb::Result<(), Error<E>> {
         if requirements.encryption_key_size_range.0 > requirements.encryption_key_size_range.1 {
-            return Err(nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-                BlueNRGError::BadEncryptionKeySizeRange(
-                    requirements.encryption_key_size_range.0,
-                    requirements.encryption_key_size_range.1,
-                ),
-            ))));
+            return Err(nb::Error::Other(Error::BadEncryptionKeySizeRange(
+                requirements.encryption_key_size_range.0,
+                requirements.encryption_key_size_range.1,
+            )));
         }
 
         if let Pin::Fixed(pin) = requirements.fixed_pin {
             if pin > 999999 {
-                return Err(nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-                    BlueNRGError::BadFixedPin(pin),
-                ))));
+                return Err(nb::Error::Other(Error::BadFixedPin(pin)));
             }
         }
 
@@ -475,6 +452,7 @@ where
         requirements.into_bytes(&mut bytes);
 
         self.write_command(opcode::GAP_SET_AUTHENTICATION_REQUIREMENT, &bytes)
+            .map_err(rewrap_error)
     }
 
     /// Set the authorization requirements of the device.
@@ -491,12 +469,12 @@ where
     /// - A [Command Complete](event::command::ReturnParameters::GapSetAuthorizationRequirement)
     ///   event is generated.
     /// - If authorization is required, then a [GAP Authorization
-    ///   Request](BlueNRGEvent::GapAuthorizationRequest) event is generated.
+    ///   Request](event::BlueNRGEvent::GapAuthorizationRequest) event is generated.
     pub fn gap_set_authorization_requirement(
         &mut self,
         conn_handle: hci::ConnectionHandle,
         authorization_required: bool,
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    ) -> nb::Result<(), E> {
         let mut bytes = [0; 3];
         LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
         bytes[2] = authorization_required as u8;
@@ -505,13 +483,13 @@ where
     }
 
     /// This command should be send by the host in response to the [GAP Pass Key
-    /// Request](BlueNRGEvent::GapPassKeyRequest) event.
+    /// Request](event::BlueNRGEvent::GapPassKeyRequest) event.
     ///
     /// `pin` contains the pass key which will be used during the pairing process.
     ///
     /// # Errors
     ///
-    /// - [BadFixedPin](BlueNRGError::BadFixedPin) if the pin is greater than 999999.
+    /// - [BadFixedPin](Error::BadFixedPin) if the pin is greater than 999999.
     /// - Underlying communication errors.
     ///
     /// # Generated events
@@ -519,16 +497,14 @@ where
     /// - A [Command Complete](event::command::ReturnParameters::GapPassKeyResponse) event is
     ///   generated.
     /// - When the pairing process completes, it will generate a
-    ///   [GapPairingComplete](BlueNRGEvent::GapPairingComplete) event.
+    ///   [GapPairingComplete](event::BlueNRGEvent::GapPairingComplete) event.
     pub fn gap_pass_key_response(
         &mut self,
         conn_handle: hci::ConnectionHandle,
         pin: u32,
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    ) -> nb::Result<(), Error<E>> {
         if pin > 999999 {
-            return Err(nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-                BlueNRGError::BadFixedPin(pin),
-            ))));
+            return Err(nb::Error::Other(Error::BadFixedPin(pin)));
         }
 
         let mut bytes = [0; 6];
@@ -536,10 +512,11 @@ where
         LittleEndian::write_u32(&mut bytes[2..6], pin);
 
         self.write_command(opcode::GAP_PASS_KEY_RESPONSE, &bytes)
+            .map_err(rewrap_error)
     }
 
     /// This command should be send by the host in response to the [GAP Authorization
-    /// Request](BlueNRGEvent::GapAuthorizationRequest) event.
+    /// Request](event::BlueNRGEvent::GapAuthorizationRequest) event.
     ///
     /// # Errors
     ///
@@ -553,7 +530,7 @@ where
         &mut self,
         conn_handle: hci::ConnectionHandle,
         authorization: Authorization,
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    ) -> nb::Result<(), E> {
         let mut bytes = [0; 3];
         LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
         bytes[2] = authorization as u8;
@@ -574,7 +551,7 @@ where
     /// # Generated events
     ///
     /// A [Command Complete](event::command::ReturnParameters::GapInit) event is generated.
-    pub fn gap_init(&mut self, role: GapRole) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    pub fn gap_init(&mut self, role: GapRole) -> nb::Result<(), E> {
         self.write_command(opcode::GAP_INIT, &[role.bits()])
     }
 
@@ -596,7 +573,7 @@ where
         role: GapRole,
         privacy_enabled: bool,
         dev_name_characteristic_len: usize,
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    ) -> nb::Result<(), E> {
         let mut bytes = [0; 3];
         bytes[0] = role.bits();
         bytes[1] = privacy_enabled as u8;
@@ -612,7 +589,7 @@ where
     ///
     /// # Errors
     ///
-    /// - [BadAdvertisingType](BlueNRGError::BadAdvertisingType) if the advertising type is not one
+    /// - [BadAdvertisingType](Error::BadAdvertisingType) if the advertising type is not one
     ///   of the supported modes. It must be
     ///   [ScannableUndirected](AdvertisingType::ScannableUndirected) or
     ///   (NonConnectableUndirected)[AdvertisingType::NonConnectableUndirected).
@@ -624,17 +601,18 @@ where
     pub fn gap_set_nonconnectable(
         &mut self,
         advertising_type: AdvertisingType,
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    ) -> nb::Result<(), Error<E>> {
         match advertising_type {
             AdvertisingType::ScannableUndirected | AdvertisingType::NonConnectableUndirected => (),
             _ => {
-                return Err(nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-                    BlueNRGError::BadAdvertisingType(advertising_type),
-                ))))
+                return Err(nb::Error::Other(Error::BadAdvertisingType(
+                    advertising_type,
+                )))
             }
         }
 
         self.write_command(opcode::GAP_SET_NONCONNECTABLE, &[advertising_type as u8])
+            .map_err(rewrap_error)
     }
 
     #[cfg(feature = "ms")]
@@ -649,7 +627,7 @@ where
     ///
     /// # Errors
     ///
-    /// - [BadAdvertisingType](BlueNRGError::BadAdvertisingType) if the advertising type is not one
+    /// - [BadAdvertisingType](Error::BadAdvertisingType) if the advertising type is not one
     ///   of the supported modes. It must be
     ///   [ScannableUndirected](AdvertisingType::ScannableUndirected) or
     ///   (NonConnectableUndirected)[AdvertisingType::NonConnectableUndirected).
@@ -662,20 +640,20 @@ where
         &mut self,
         advertising_type: AdvertisingType,
         address_type: GapAddressType,
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    ) -> nb::Result<(), Error<E>> {
         match advertising_type {
             AdvertisingType::ScannableUndirected | AdvertisingType::NonConnectableUndirected => (),
             _ => {
-                return Err(nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-                    BlueNRGError::BadAdvertisingType(advertising_type),
-                ))))
+                return Err(nb::Error::Other(Error::BadAdvertisingType(
+                    advertising_type,
+                )))
             }
         }
 
         self.write_command(
             opcode::GAP_SET_NONCONNECTABLE,
             &[advertising_type as u8, address_type as u8],
-        )
+        ).map_err(rewrap_error)
     }
 
     /// Put the device into undirected connectable mode.
@@ -685,7 +663,7 @@ where
     ///
     /// # Errors
     ///
-    /// - [BadAdvertisingFilterPolicy](BlueNRGError::BadAdvertisingFilterPolicy) if the filter is
+    /// - [BadAdvertisingFilterPolicy](Error::BadAdvertisingFilterPolicy) if the filter is
     ///   not one of the supported modes. It must be
     ///   [AllowConnectionAndScan](AdvertisingFilterPolicy::AllowConnectionAndScan) or
     ///   (WhiteListConnectionAllowScan)[AdvertisingFilterPolicy::WhiteListConnectionAllowScan).
@@ -699,21 +677,21 @@ where
         &mut self,
         filter_policy: AdvertisingFilterPolicy,
         address_type: GapAddressType,
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    ) -> nb::Result<(), Error<E>> {
         match filter_policy {
             AdvertisingFilterPolicy::AllowConnectionAndScan
             | AdvertisingFilterPolicy::WhiteListConnectionAndScan => (),
             _ => {
-                return Err(nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-                    BlueNRGError::BadAdvertisingFilterPolicy(filter_policy),
-                ))))
+                return Err(nb::Error::Other(Error::BadAdvertisingFilterPolicy(
+                    filter_policy,
+                )))
             }
         }
 
         self.write_command(
             opcode::GAP_SET_UNDIRECTED_CONNECTABLE,
             &[filter_policy as u8, address_type as u8],
-        )
+        ).map_err(rewrap_error)
     }
 
     /// This command has to be issued to notify the central device of the security requirements of
@@ -730,7 +708,7 @@ where
     pub fn gap_peripheral_security_request(
         &mut self,
         params: &SecurityRequestParameters,
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    ) -> nb::Result<(), E> {
         let mut bytes = [0; 4];
         LittleEndian::write_u16(&mut bytes[0..2], params.conn_handle.0);
         bytes[2] = params.bonding as u8;
@@ -746,21 +724,20 @@ where
     ///
     /// # Errors
     ///
-    /// Only underlying communication errors are reported.
+    /// - [BadAdvertisingDataLength](Error::BadAdvertisingDataLength) if the provided data is longer
+    ///   than 31 bytes.
+    /// - Underlying communication errors.
     ///
     /// # Generated events
     ///
     /// A [Command Complete](event::command::ReturnParameters::GapUpdateAdvertisingData) event is
     /// generated.
-    pub fn gap_update_advertising_data(
-        &mut self,
-        data: &[u8],
-    ) -> nb::Result<(), UartError<E, BlueNRGError>> {
+    pub fn gap_update_advertising_data(&mut self, data: &[u8]) -> nb::Result<(), Error<E>> {
         const MAX_LENGTH: usize = 31;
         if data.len() > MAX_LENGTH {
-            return Err(nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-                BlueNRGError::BadAdvertisingDataLength(data.len()),
-            ))));
+            return Err(nb::Error::Other(Error::BadAdvertisingDataLength(
+                data.len(),
+            )));
         }
 
         let mut bytes = [0; 1 + MAX_LENGTH];
@@ -770,7 +747,7 @@ where
         self.write_command(
             opcode::GAP_UPDATE_ADVERTISING_DATA,
             &bytes[0..1 + data.len()],
-        )
+        ).map_err(rewrap_error)
     }
 }
 
@@ -782,7 +759,8 @@ where
     OutputPin2: hal::digital::OutputPin,
     InputPin: hal::digital::InputPin,
 {
-    type Error = UartError<E, BlueNRGError>;
+    // type Error = Error<E>;
+    type Error = E;
 
     fn write(&mut self, header: &[u8], payload: &[u8]) -> nb::Result<(), Self::Error> {
         self.d.chip_select.set_low();

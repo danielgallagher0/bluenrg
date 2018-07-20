@@ -6,6 +6,61 @@ use core::time::Duration;
 pub use hci::host::{AdvertisingFilterPolicy, AdvertisingType, OwnAddressType};
 pub use hci::{BdAddr, BdAddrType};
 
+/// Potential errors from parameter validation.
+///
+/// Before some commands are sent to the controller, the parameters are validated. This type
+/// enumerates the potential validation errors. Must be specialized on the types of communication
+/// errors.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum Error<E> {
+    /// For the [L2CAP Connection Parameter Update
+    /// Response](::ActiveBlueNRG::l2cap_connection_parameter_update_response), the connection
+    /// interval is inverted (the min is greater than the max).  Return the provided min as the
+    /// first element, max as the second.
+    BadConnectionInterval(Duration, Duration),
+
+    /// For the [L2CAP Connection Parameter Update
+    /// Response](::ActiveBlueNRG::l2cap_connection_parameter_update_response), the expected
+    /// connection length range is inverted (the min is greater than the max).  Return the provided
+    /// min as the first element, max as the second.
+    BadConnectionLengthRange(Duration, Duration),
+
+    /// For the [GAP Set Limited Discoverable](::ActiveBlueNRG::gap_set_limited_discoverable)
+    /// command, the advertising type is disallowed.  Returns the invalid advertising type.
+    BadAdvertisingType(::AdvertisingType),
+
+    /// For the [GAP Set Limited Discoverable](::ActiveBlueNRG::gap_set_limited_discoverable)
+    /// command, the advertising interval is inverted (that is, the max is less than the
+    /// min). Includes the provided range.
+    BadAdvertisingInterval(Duration, Duration),
+
+    /// For the [GAP Set Authentication
+    /// Requirement](::ActiveBlueNRG::gap_set_authentication_requirement) command, the encryption
+    /// key size range is inverted (the max is less than the min). Includes the provided range.
+    BadEncryptionKeySizeRange(u8, u8),
+
+    /// For the [GAP Set Authentication
+    /// Requirement](::ActiveBlueNRG::gap_set_authentication_requirement) and [GAP Pass Key
+    /// Response](::ActiveBlueNRG::gap_pass_key_response) commands, the provided fixed pin is out of
+    /// range (must be less than or equal to 999999).  Includes the provided PIN.
+    BadFixedPin(u32),
+
+    /// For the [GAP Set Undirected Connectable](::ActiveBlueNRG::gap_set_undirected_connectable)
+    /// command, the advertising filter policy is not one of the allowed values. Only
+    /// [AllowConnectionAndScan](::AdvertisingFilterPolicy::AllowConnectionAndScan) and
+    /// [WhiteListConnectionAndScan](::AdvertisingFilterPolicy::WhiteListConnectionAndScan) are
+    /// allowed.
+    BadAdvertisingFilterPolicy(::AdvertisingFilterPolicy),
+
+    /// For the [GAP Update Advertising Data](::ActiveBlueNRG::gap_update_advertising_data) command,
+    /// the advertising data is too long. It must be 31 bytes or less. The length of the provided
+    /// data is returned.
+    BadAdvertisingDataLength(usize),
+
+    /// Underlying communication error.
+    Comm(E),
+}
+
 /// Parameters for the
 /// [`l2cap_connection_parameter_update_request`](::ActiveBlueNRG::l2cap_connection_parameter_update_request)
 /// command.
@@ -100,22 +155,22 @@ impl L2CapConnectionParameterUpdateResponse {
     ///
     /// # Errors
     ///
-    /// - [`BadConnectionInterval`](::BlueNRGError::BadConnectionInterval) if
+    /// - [`BadConnectionInterval`](Error::BadConnectionInterval) if
     ///   [`interval`](L2CapConnectionParameterUpdateResponse::interval) is inverted; that is, if
     ///   the minimum is greater than the maximum.
-    /// - [`BadConnectionLengthRange`](::BlueNRGError::BadConnectionLengthRange) if
+    /// - [`BadConnectionLengthRange`](Error::BadConnectionLengthRange) if
     ///   [`expected_connection_length_range`](L2CapConnectionParameterUpdateResponse::expected_connection_length_range)
     ///   is inverted; that is, if the minimum is greater than the maximum.
-    pub fn validate(&self) -> Result<(), ::BlueNRGError> {
+    pub fn validate<E>(&self) -> Result<(), Error<E>> {
         if self.interval.0 > self.interval.1 {
-            return Err(::BlueNRGError::BadConnectionInterval(
+            return Err(Error::BadConnectionInterval(
                 self.interval.0,
                 self.interval.1,
             ));
         }
 
         if self.expected_connection_length_range.0 > self.expected_connection_length_range.1 {
-            return Err(::BlueNRGError::BadConnectionLengthRange(
+            return Err(Error::BadConnectionLengthRange(
                 self.expected_connection_length_range.0,
                 self.expected_connection_length_range.1,
             ));
@@ -198,38 +253,37 @@ impl<'a, 'b> GapDiscoverableParameters<'a, 'b> {
     ///
     /// # Errors
     ///
-    /// - [`BadAdvertisingType`](::BlueNRGError::BadAdvertisingType) if
+    /// - [`BadAdvertisingType`](Error::BadAdvertisingType) if
     ///   [`advertising_type`](GapDiscoverableParameters::advertising_type) is one of the disallowed
     ///   types:
     ///   [ConnectableDirectedHighDutyCycle](bluetooth_hci::host::AdvertisingType::ConnectableDirectedHighDutyCycle)
     ///   or
     ///   [ConnectableDirectedLowDutyCycle](bluetooth_hci::host::AdvertisingType::ConnectableDirectedLowDutyCycle).
-    /// - [`BadAdvertisingInterval`](::BlueNRGError::BadAdvertisingInterval) if
-    ///   [`advertising_interval`](GapDiscoverableParameters::advertising_interval) is
-    ///   inverted. That is, if the min is greater than the max.
-    /// - [`BadConnectionInterval`](::BlueNRGError::BadConnectionInterval) if
+
+    /// - [`BadAdvertisingInterval`](Error::BadAdvertisingInterval) if
+    ///   [`advertising_interval`](GapDiscoverableParameters::advertising_interval) is inverted.
+    ///   That is, if the min is greater than the max.
+    /// - [`BadConnectionInterval`](Error::BadConnectionInterval) if
     ///   [`conn_interval`](GapDiscoverableParameters::conn_interval) is inverted. That is, both the
     ///   min and max are provided, and the min is greater than the max.
-    pub fn validate(&self) -> Result<(), ::BlueNRGError> {
+    pub fn validate<E>(&self) -> Result<(), Error<E>> {
         match self.advertising_type {
             AdvertisingType::ConnectableUndirected
             | AdvertisingType::ScannableUndirected
             | AdvertisingType::NonConnectableUndirected => (),
-            _ => return Err(::BlueNRGError::BadAdvertisingType(self.advertising_type)),
+            _ => return Err(Error::BadAdvertisingType(self.advertising_type)),
         }
 
         if let Some(interval) = self.advertising_interval {
             if interval.0 > interval.1 {
-                return Err(::BlueNRGError::BadAdvertisingInterval(
-                    interval.0, interval.1,
-                ));
+                return Err(Error::BadAdvertisingInterval(interval.0, interval.1));
             }
         }
 
         match self.conn_interval {
             (Some(min), Some(max)) => {
                 if min > max {
-                    return Err(::BlueNRGError::BadConnectionInterval(min, max));
+                    return Err(Error::BadConnectionInterval(min, max));
                 }
             }
             _ => (),
@@ -368,20 +422,20 @@ impl GapDirectConnectableParameters {
     ///
     /// # Errors
     ///
-    /// - [`BadAdvertisingType`](::BlueNRGError::BadAdvertisingType) if
+    /// - [`BadAdvertisingType`](Error::BadAdvertisingType) if
     ///   [`advertising_type`](GapDiscoverableParameters::advertising_type) is one of the disallowed
     ///   types:
     ///   [ConnectableUndirected](bluetooth_hci::host::AdvertisingType::ConnectableUndirected),
     ///   [ScannableUndirected](bluetooth_hci::host::AdvertisingType::ScannableUndirected), or
     ///   [NonConnectableUndirected](bluetooth_hci::host::AdvertisingType::NonConnectableUndirected),
-    /// - (`ms` feature only) [`BadAdvertisingInterval`](::BlueNRGError::BadAdvertisingInterval) if
+    /// - (`ms` feature only) [`BadAdvertisingInterval`](Error::BadAdvertisingInterval) if
     ///   [`advertising_interval`](GapDiscoverableParameters::advertising_interval) is
     ///   out of range (20 ms to 10.24 s) or inverted (the min is greater than the max).
-    pub fn validate(&self) -> Result<(), ::BlueNRGError> {
+    pub fn validate<E>(&self) -> Result<(), Error<E>> {
         match self.advertising_type {
             AdvertisingType::ConnectableDirectedHighDutyCycle
             | AdvertisingType::ConnectableDirectedLowDutyCycle => (),
-            _ => return Err(::BlueNRGError::BadAdvertisingType(self.advertising_type)),
+            _ => return Err(Error::BadAdvertisingType(self.advertising_type)),
         }
 
         #[cfg(feature = "ms")]
@@ -393,7 +447,7 @@ impl GapDirectConnectableParameters {
                 || self.advertising_interval.1 > MAX_DURATION
                 || self.advertising_interval.0 > self.advertising_interval.1
             {
-                return Err(::BlueNRGError::BadAdvertisingInterval(
+                return Err(Error::BadAdvertisingInterval(
                     self.advertising_interval.0,
                     self.advertising_interval.1,
                 ));

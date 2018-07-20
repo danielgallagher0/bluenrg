@@ -4,7 +4,6 @@ extern crate embedded_hal as hal;
 extern crate nb;
 
 use bluenrg::*;
-use hci::host::uart::Error as UartError;
 use std::time::Duration;
 
 static mut DUMMY_RX_BUFFER: [u8; 8] = [0; 8];
@@ -179,12 +178,10 @@ fn l2cap_connection_parameter_update_response_bad_connection_interval() {
         .unwrap();
     assert_eq!(
         err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadConnectionInterval(
-                Duration::from_millis(500),
-                Duration::from_millis(499)
-            )
-        )))
+        nb::Error::Other(Error::BadConnectionInterval(
+            Duration::from_millis(500),
+            Duration::from_millis(499)
+        ))
     );
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
@@ -214,12 +211,10 @@ fn l2cap_connection_parameter_update_response_bad_expected_connection_length_ran
         .unwrap();
     assert_eq!(
         err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadConnectionLengthRange(
-                Duration::from_millis(9),
-                Duration::from_millis(8)
-            )
-        )))
+        nb::Error::Other(Error::BadConnectionLengthRange(
+            Duration::from_millis(9),
+            Duration::from_millis(8)
+        ))
     );
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
@@ -286,9 +281,9 @@ fn gap_set_limited_discoverable_bad_adv_type() {
         .unwrap();
     assert_eq!(
         err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadAdvertisingType(AdvertisingType::ConnectableDirectedHighDutyCycle)
-        )))
+        nb::Error::Other(Error::BadAdvertisingType(
+            AdvertisingType::ConnectableDirectedHighDutyCycle
+        ))
     );
 
     assert!(!fixture.wrote_header());
@@ -317,12 +312,10 @@ fn gap_set_limited_discoverable_bad_adv_interval() {
         .unwrap();
     assert_eq!(
         err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadAdvertisingInterval(
-                Duration::from_millis(1280),
-                Duration::from_millis(1279)
-            )
-        )))
+        nb::Error::Other(Error::BadAdvertisingInterval(
+            Duration::from_millis(1280),
+            Duration::from_millis(1279)
+        ))
     );
 
     assert!(!fixture.wrote_header());
@@ -354,12 +347,10 @@ fn gap_set_limited_discoverable_bad_conn_interval() {
         .unwrap();
     assert_eq!(
         err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadConnectionInterval(
-                Duration::from_millis(5000),
-                Duration::from_millis(4999)
-            )
-        )))
+        nb::Error::Other(Error::BadConnectionInterval(
+            Duration::from_millis(5000),
+            Duration::from_millis(4999)
+        ))
     );
 
     assert!(!fixture.wrote_header());
@@ -417,9 +408,9 @@ fn gap_set_discoverable_bad_adv_type() {
         .unwrap();
     assert_eq!(
         err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadAdvertisingType(AdvertisingType::ConnectableDirectedHighDutyCycle)
-        )))
+        nb::Error::Other(Error::BadAdvertisingType(
+            AdvertisingType::ConnectableDirectedHighDutyCycle
+        ))
     );
 
     assert!(!fixture.wrote_header());
@@ -448,12 +439,10 @@ fn gap_set_discoverable_bad_adv_interval() {
         .unwrap();
     assert_eq!(
         err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadAdvertisingInterval(
-                Duration::from_millis(1280),
-                Duration::from_millis(1279)
-            )
-        )))
+        nb::Error::Other(Error::BadAdvertisingInterval(
+            Duration::from_millis(1280),
+            Duration::from_millis(1279)
+        ))
     );
 
     assert!(!fixture.wrote_header());
@@ -485,12 +474,10 @@ fn gap_set_discoverable_bad_conn_interval() {
         .unwrap();
     assert_eq!(
         err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadConnectionInterval(
-                Duration::from_millis(5000),
-                Duration::from_millis(4999)
-            )
-        )))
+        nb::Error::Other(Error::BadConnectionInterval(
+            Duration::from_millis(5000),
+            Duration::from_millis(4999)
+        ))
     );
 
     assert!(!fixture.wrote_header());
@@ -557,9 +544,9 @@ fn gap_set_direct_connectable_bad_adv_type() {
         .unwrap();
     assert_eq!(
         err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadAdvertisingType(AdvertisingType::ConnectableUndirected)
-        )))
+        nb::Error::Other(Error::BadAdvertisingType(
+            AdvertisingType::ConnectableUndirected
+        ))
     );
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
@@ -588,9 +575,7 @@ fn gap_set_direct_connectable_bad_adv_interval() {
             .unwrap();
         assert_eq!(
             err,
-            nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-                BlueNRGError::BadAdvertisingInterval(*min, *max)
-            )))
+            nb::Error::Other(Error::BadAdvertisingInterval(*min, *max))
         );
     }
     assert!(!fixture.wrote_header());
@@ -674,9 +659,7 @@ fn gap_set_authentication_requirement_bad_key_size_range() {
         .unwrap();
     assert_eq!(
         err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadEncryptionKeySizeRange(255, 1)
-        )))
+        nb::Error::Other(Error::BadEncryptionKeySizeRange(255, 1))
     );
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
@@ -697,12 +680,7 @@ fn gap_set_authentication_requirement_bad_pin() {
         })
         .err()
         .unwrap();
-    assert_eq!(
-        err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadFixedPin(1000000)
-        )))
-    );
+    assert_eq!(err, nb::Error::Other(Error::BadFixedPin(1000000)));
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
 }
@@ -742,12 +720,7 @@ fn gap_pass_key_response_bad_pin() {
         .act(|controller| controller.gap_pass_key_response(hci::ConnectionHandle(0x0201), 1000000))
         .err()
         .unwrap();
-    assert_eq!(
-        err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadFixedPin(1000000)
-        )))
-    );
+    assert_eq!(err, nb::Error::Other(Error::BadFixedPin(1000000)));
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
 }
@@ -818,9 +791,9 @@ fn gap_set_nonconnectable_bad_type() {
         .unwrap();
     assert_eq!(
         err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadAdvertisingType(AdvertisingType::ConnectableDirectedHighDutyCycle)
-        )))
+        nb::Error::Other(Error::BadAdvertisingType(
+            AdvertisingType::ConnectableDirectedHighDutyCycle
+        ))
     );
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
@@ -857,9 +830,9 @@ fn gap_set_nonconnectable_bad_type() {
         .unwrap();
     assert_eq!(
         err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadAdvertisingType(AdvertisingType::ConnectableDirectedHighDutyCycle)
-        )))
+        nb::Error::Other(Error::BadAdvertisingType(
+            AdvertisingType::ConnectableDirectedHighDutyCycle
+        ))
     );
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
@@ -894,11 +867,9 @@ fn gap_set_undirected_connectable_bad_advertising_filter_policy() {
         .unwrap();
     assert_eq!(
         err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadAdvertisingFilterPolicy(
-                AdvertisingFilterPolicy::WhiteListConnectionAllowScan
-            )
-        )))
+        nb::Error::Other(Error::BadAdvertisingFilterPolicy(
+            AdvertisingFilterPolicy::WhiteListConnectionAllowScan
+        ))
     );
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
@@ -940,12 +911,7 @@ fn gap_update_advertising_data_too_long() {
         .act(|controller| controller.gap_update_advertising_data(&[0; 32]))
         .err()
         .unwrap();
-    assert_eq!(
-        err,
-        nb::Error::Other(UartError::BLE(hci::event::Error::Vendor(
-            BlueNRGError::BadAdvertisingDataLength(32)
-        )))
-    );
+    assert_eq!(err, nb::Error::Other(Error::BadAdvertisingDataLength(32)));
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
 }

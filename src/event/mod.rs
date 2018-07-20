@@ -375,50 +375,6 @@ pub enum BlueNRGError {
     /// For the [ATT Read Multiple Permit Request](BlueNRGEvent::AttReadMultiplePermitRequest)
     /// event: The packet ends with a partial attribute handle.
     AttReadMultiplePermitRequestPartial,
-
-    /// For the [L2CAP Connection Parameter Update
-    /// Response](::ActiveBlueNRG::l2cap_connection_parameter_update_response), the connection
-    /// interval is inverted (the min is greater than the max).  Return the provided min as the
-    /// first element, max as the second.
-    BadConnectionInterval(Duration, Duration),
-
-    /// For the [L2CAP Connection Parameter Update
-    /// Response](::ActiveBlueNRG::l2cap_connection_parameter_update_response), the expected
-    /// connection length range is inverted (the min is greater than the max).  Return the provided
-    /// min as the first element, max as the second.
-    BadConnectionLengthRange(Duration, Duration),
-
-    /// For the [GAP Set Limited Discoverable](::ActiveBlueNRG::gap_set_limited_discoverable)
-    /// command, the advertising type is disallowed.  Returns the invalid advertising type.
-    BadAdvertisingType(::AdvertisingType),
-
-    /// For the [GAP Set Limited Discoverable](::ActiveBlueNRG::gap_set_limited_discoverable)
-    /// command, the advertising interval is inverted (that is, the max is less than the
-    /// min). Includes the provided range.
-    BadAdvertisingInterval(Duration, Duration),
-
-    /// For the [GAP Set Authentication
-    /// Requirement](::ActiveBlueNRG::gap_set_authentication_requirement) command, the encryption
-    /// key size range is inverted (the max is less than the min). Includes the provided range.
-    BadEncryptionKeySizeRange(u8, u8),
-
-    /// For the [GAP Set Authentication
-    /// Requirement](::ActiveBlueNRG::gap_set_authentication_requirement) and [GAP Pass Key
-    /// Response](::ActiveBlueNRG::gap_pass_key_response) commands, the provided fixed pin is out of
-    /// range (must be less than or equal to 999999).  Includes the provided PIN.
-    BadFixedPin(u32),
-
-    /// For the [GAP Set Undirected Connectable](::ActiveBlueNRG::gap_set_undirected_connectable)
-    /// command, the advertising filter policy is not one of the allowed values. Only
-    /// [AllowConnectionAndScan](::AdvertisingFilterPolicy::AllowConnectionAndScan) and
-    /// [WhiteListConnectionAndScan](::AdvertisingFilterPolicy::WhiteListConnectionAndScan) are
-    /// allowed.
-    BadAdvertisingFilterPolicy(::AdvertisingFilterPolicy),
-
-    /// For the [GAP Update Advertising Data](::ActiveBlueNRG::gap_update_advertising_data) command,
-    /// the advertising data is too long. It must be 31 bytes or less. The length of the provided
-    /// data is returned.
-    BadAdvertisingDataLength(usize),
 }
 
 macro_rules! require_len {
