@@ -925,3 +925,17 @@ fn gap_delete_ad_type() {
     assert!(fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, [1, 0x8F, 0xFC, 1, 0x0A]);
 }
+
+#[test]
+fn gap_set_event_mask() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_set_event_mask(
+                GapEventFlags::LIMITED_DISCOVERABLE | GapEventFlags::PAIRING_COMPLETE,
+            )
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x91, 0xFC, 2, 0x03, 0x00]);
+}

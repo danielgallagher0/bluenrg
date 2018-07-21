@@ -662,3 +662,21 @@ pub enum AdvertisingDataType {
     /// Manufacturer-specific data
     ManufacturerSpecificData = 0xFF,
 }
+
+bitflags!{
+    /// Event types for [GAP Set Event Mask](::ActiveBlueNRG::gap_set_event_mask).
+    pub struct GapEventFlags: u16 {
+        /// [Limited Discoverable](::event::BlueNRGEvent::GapLimitedDiscoverable)
+        const LIMITED_DISCOVERABLE = 0x0001;
+        /// [Pairing Complete](::event::BlueNRGEvent::GapPairingComplete)
+        const PAIRING_COMPLETE = 0x0002;
+        /// [Pass Key Request](::event::BlueNRGEvent::GapPassKeyRequest)
+        const PASS_KEY_REQUEST = 0x0004;
+        /// [Authorization Request](::event::BlueNRGEvent::GapAuthorizationRequest)
+        const AUTHORIZATION_REQUEST = 0x0008;
+        /// [Peripheral Security Initiated](::event::BlueNRGEvent::GapPeripheralSecurityInitiated).
+        const PERIPHERAL_SECURITY_INITIATED = 0x0010;
+        /// [Bond Lost](::event::BlueNRGEvent::GapBondLost)
+        const BOND_LOST = 0x0020;
+    }
+}

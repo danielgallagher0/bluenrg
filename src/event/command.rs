@@ -80,6 +80,10 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GAP Delete AD Type](::ActiveBlueNRG::gap_delete_ad_type)
     /// command.
     GapDeleteAdType(hci::Status),
+
+    /// Parameters returned by the [GAP Set Event Mask](::ActiveBlueNRG::gap_set_event_mask)
+    /// command.
+    GapSetEventMask(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -137,6 +141,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ),
             ::opcode::GAP_DELETE_AD_TYPE => {
                 Ok(ReturnParameters::GapDeleteAdType(to_status(&bytes[3..])?))
+            }
+            ::opcode::GAP_SET_EVENT_MASK => {
+                Ok(ReturnParameters::GapSetEventMask(to_status(&bytes[3..])?))
             }
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
