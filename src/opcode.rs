@@ -46,6 +46,7 @@ opcodes! {
         pub const GAP_TERMINATE = 0x13;
         pub const GAP_CLEAR_SECURITY_DATABASE = 0x14;
         pub const GAP_ALLOW_REBOND = 0x15;
+        pub const GAP_START_LIMITED_DISCOVERY_PROCEDURE = 0x16;
     }
     // Gatt = 0x2;
     L2Cap = 0x3;

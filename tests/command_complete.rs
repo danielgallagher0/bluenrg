@@ -66,6 +66,7 @@ status_only! {
     gap_terminate(0x93, 0xFC, BNRGParams::GapTerminate);
     gap_clear_security_database(0x94, 0xFC, BNRGParams::GapClearSecurityDatabase);
     gap_allow_rebond(0x95, 0xFC, BNRGParams::GapAllowRebond);
+    gap_start_limited_discovery_procedure(0x96, 0xFC, BNRGParams::GapStartLimitedDiscoveryProceure);
 }
 
 #[test]

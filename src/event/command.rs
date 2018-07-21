@@ -102,6 +102,10 @@ pub enum ReturnParameters {
 
     /// Parameters returned by the [GAP Allow Rebond](::ActiveBlueNRG::gap_allow_rebond) command.
     GapAllowRebond(hci::Status),
+
+    /// Parameters returned by the [GAP Start Limited Discoverable
+    /// Procedure](::ActiveBlueNRG::gap_start_limited_discovery_procedure) command.
+    GapStartLimitedDiscoveryProceure(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -176,6 +180,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_ALLOW_REBOND => {
                 Ok(ReturnParameters::GapAllowRebond(to_status(&bytes[3..])?))
             }
+            ::opcode::GAP_START_LIMITED_DISCOVERY_PROCEDURE => Ok(
+                ReturnParameters::GapStartLimitedDiscoveryProceure(to_status(&bytes[3..])?),
+            ),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }

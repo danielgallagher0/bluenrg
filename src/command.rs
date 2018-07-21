@@ -61,6 +61,13 @@ pub enum Error<E> {
     /// not one of the allowed reason. The reason is returned.
     BadTerminationReason(hci::Status),
 
+    /// For the [GAP Start Limited Discovery
+    /// Procedure](::ActiveBlueNRG::gap_start_limited_discovery_procedure), the [scan
+    /// interval](GapLimitedDiscoveryProcedureParameters::scan_interval) is longer that the [scan
+    /// window](GapLimitedDiscoveryProcedureParameters::scan_window]. The first value is the
+    /// interval; the second is the window.
+    BadScanInterval(Duration, Duration),
+
     /// Underlying communication error.
     Comm(E),
 }
@@ -208,6 +215,10 @@ fn to_connection_length_value(d: Duration) -> u16 {
     //   = T / 625 us
     // 1600 = 1_000_000 / 625
     (1600 * d.as_secs() as u32 + (d.subsec_micros() / 625)) as u16
+}
+
+fn to_scan_interval_value(d: Duration) -> u16 {
+    to_connection_length_value(d)
 }
 
 /// Parameters for the
@@ -682,5 +693,64 @@ bitflags!{
         const PERIPHERAL_SECURITY_INITIATED = 0x0010;
         /// [Bond Lost](::event::BlueNRGEvent::GapBondLost)
         const BOND_LOST = 0x0020;
+    }
+}
+
+/// Parameters for the [GAP Limited
+/// Discovery](::ActiveBlueNRG::gap_start_limited_discovery_procedure) procedure.
+pub struct GapLimitedDiscoveryProcedureParameters {
+    /// Time interval from when the controller started its last LE scan until it begins the
+    /// subsequent LE scan.
+    ///
+    /// Range: 2.5 ms to 10.24 s.
+    pub scan_interval: Duration,
+
+    /// Amount of time for the duration of the LE scan. `scan_window` shall be less than or equal to
+    /// [`scan_interval`](GapLimitedDiscoveryProcedureParameters::scan_interval).
+    ///
+    /// Range: 2.5 ms to 10.24 s.
+    pub scan_window: Duration,
+
+    /// Address type of this device.
+    pub own_address_type: hci::host::OwnAddressType,
+
+    /// If true, duplicate devices are filtered out.
+    pub filter_duplicates: bool,
+}
+
+impl GapLimitedDiscoveryProcedureParameters {
+    /// Number of bytes these parameters take when serialized.
+    pub const LENGTH: usize = 6;
+
+    /// Ensure the parameters are valid.
+    ///
+    /// # Errors
+    ///
+    /// - [BadScanWindow](Error::BadScanWindow) if the
+    ///   [`scan_interval`](GapLimitedDiscoveryProcedureParameters::scan_interval) is greater than
+    ///   the [`scan_window`](GapLimitedDiscoveryProcedureParameters::scan_window), or if either
+    ///   parameter is out of the allowed range (2.5 ms to 10.24 s).
+    pub fn validate<E>(&self) -> Result<(), Error<E>> {
+        const MIN_INTERVAL: Duration = Duration::from_micros(2500);
+        const MAX_INTERVAL: Duration = Duration::from_millis(10240);
+        if self.scan_interval < self.scan_window
+            || self.scan_window < MIN_INTERVAL
+            || self.scan_interval > MAX_INTERVAL
+        {
+            return Err(Error::BadScanInterval(self.scan_interval, self.scan_window));
+        }
+
+        Ok(())
+    }
+
+    /// Serializes the parameters into the given byte buffer. The buffer must be the correct size
+    /// ([`LENGTH`] bytes).
+    pub fn into_bytes(&self, bytes: &mut [u8]) {
+        assert_eq!(bytes.len(), Self::LENGTH);
+
+        LittleEndian::write_u16(&mut bytes[0..2], to_scan_interval_value(self.scan_interval));
+        LittleEndian::write_u16(&mut bytes[2..4], to_scan_interval_value(self.scan_window));
+        bytes[4] = self.own_address_type as u8;
+        bytes[5] = self.filter_duplicates as u8;
     }
 }

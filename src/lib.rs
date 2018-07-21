@@ -887,6 +887,48 @@ where
         LittleEndian::write_u16(&mut bytes, conn_handle.0);
         self.write_command(opcode::GAP_ALLOW_REBOND, &bytes)
     }
+
+    /// Start the limited discovery procedure.
+    ///
+    /// The controller is commanded to start active scanning.  When this procedure is started, only
+    /// the devices in limited discoverable mode are returned to the upper layers.
+    ///
+    /// # Errors
+    ///
+    /// - [BadScanWindow](Error::BadScanWindow) if the
+    ///   [`scan_interval`](GapLimitedDiscoveryProcedureParameters::scan_interval) is greater than
+    ///   the [`scan_window`](GapLimitedDiscoveryProcedureParameters::scan_window), or if either
+    ///   parameter is out of the allowed range (2.5 ms to 10.24 s).
+    /// - Underlying communication errors.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::BlueNRGEvent::CommandStatus) event is generated as soon as
+    /// the command is given.
+    ///
+    /// If [Success](hci::Status::Success) is returned in the command status, the procedure is
+    /// terminated when either the upper layers issue a command to terminate the procedure by
+    /// issuing the command [`gap_terminate_procedure`](::ActiveBlueNRG::gap_terminate_procedure)
+    /// with the procedure code set to [LimitedDiscovery](GapProcedure::LimitedDiscovery) or a
+    /// [timeout](event::BlueNRGEvent::GapLimitedDiscoverableTimeout) happens. When the procedure is
+    /// terminated due to any of the above reasons, a
+    /// [GapProcedureComplete](event::BlueNRGEvent::GapProcedureComplete) event is returned with the
+    /// procedure code set to [LimitedDiscovery](GapProcedure::LimitedDiscovery).
+    ///
+    /// The device found when the procedure is ongoing is returned to the upper layers through the
+    /// [LeAdvertisingReport](hci::event::Event::LeAdvertisingReport) event.
+    pub fn gap_start_limited_discovery_procedure(
+        &mut self,
+        params: &GapLimitedDiscoveryProcedureParameters,
+    ) -> nb::Result<(), Error<E>> {
+        params.validate().map_err(nb::Error::Other)?;
+
+        let mut bytes = [0; GapLimitedDiscoveryProcedureParameters::LENGTH];
+        params.into_bytes(&mut bytes);
+
+        self.write_command(opcode::GAP_START_LIMITED_DISCOVERY_PROCEDURE, &bytes)
+            .map_err(rewrap_error)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

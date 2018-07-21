@@ -942,7 +942,7 @@ fn gap_set_event_mask() {
     fixture
         .act(|controller| {
             controller.gap_set_event_mask(
-                GapEventFlags::LIMITED_DISCOVERABLE | GapEventFlags::PAIRING_COMPLETE,
+                GapEventFlags::LIMITED_DISCOVERABLE_TIMEOUT | GapEventFlags::PAIRING_COMPLETE,
             )
         })
         .unwrap();
@@ -1013,4 +1013,60 @@ fn gap_allow_rebond() {
         .unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, [1, 0x95, 0xFC, 2, 0x01, 0x02]);
+}
+
+#[test]
+fn gap_start_limited_discovery_procedure() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_start_limited_discovery_procedure(
+                &GapLimitedDiscoveryProcedureParameters {
+                    scan_interval: Duration::from_micros(2500),
+                    scan_window: Duration::from_micros(2500),
+                    own_address_type: hci::host::OwnAddressType::Random,
+                    filter_duplicates: true,
+                },
+            )
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [1, 0x96, 0xFC, 6, 0x04, 0x00, 0x04, 0x00, 0x01, 0x01]
+    );
+}
+
+#[test]
+fn gap_start_limited_discovery_procedure_bad_window() {
+    let mut fixture = Fixture::new();
+    for (interval, window) in [
+        (Duration::from_millis(19), Duration::from_millis(20)),
+        (Duration::from_millis(2), Duration::from_millis(1)),
+        (Duration::from_millis(12), Duration::from_millis(2)),
+        (Duration::from_millis(10241), Duration::from_millis(100)),
+        (Duration::from_millis(102), Duration::from_millis(10241)),
+    ].iter()
+    {
+        let err = fixture
+            .act(|controller| {
+                controller.gap_start_limited_discovery_procedure(
+                    &GapLimitedDiscoveryProcedureParameters {
+                        scan_interval: *interval,
+                        scan_window: *window,
+                        own_address_type: hci::host::OwnAddressType::Public,
+                        filter_duplicates: true,
+                    },
+                )
+            })
+            .err()
+            .unwrap();
+
+        assert_eq!(
+            err,
+            nb::Error::Other(Error::BadScanInterval(*interval, *window))
+        );
+    }
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
 }
