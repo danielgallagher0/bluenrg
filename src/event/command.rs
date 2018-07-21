@@ -95,6 +95,10 @@ pub enum ReturnParameters {
 
     /// Parameters returned by the [GAP Terminate](::ActiveBlueNRG::gap_terminate) command.
     GapTerminate(hci::Status),
+
+    /// Parameters returned by the [GAP Clear Security
+    /// Database](::ActiveBlueNRG::gap_clear_security_database) command.
+    GapClearSecurityDatabase(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -163,6 +167,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                 to_status(&bytes[3..])?,
             )),
             ::opcode::GAP_TERMINATE => Ok(ReturnParameters::GapTerminate(to_status(&bytes[3..])?)),
+            ::opcode::GAP_CLEAR_SECURITY_DATABASE => Ok(
+                ReturnParameters::GapClearSecurityDatabase(to_status(&bytes[3..])?),
+            ),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }

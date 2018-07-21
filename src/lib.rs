@@ -853,6 +853,20 @@ where
         self.write_command(opcode::GAP_TERMINATE, &bytes)
             .map_err(rewrap_error)
     }
+
+    /// Clear the security database. All the devices in the security database will be removed.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapClearSecurityDatabase) event is
+    /// generated.
+    pub fn gap_clear_security_database(&mut self) -> nb::Result<(), E> {
+        self.write_command(opcode::GAP_CLEAR_SECURITY_DATABASE, &[])
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

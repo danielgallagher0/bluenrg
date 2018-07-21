@@ -994,3 +994,13 @@ fn gap_terminate_bad_disconnection_reason() {
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
 }
+
+#[test]
+fn gap_clear_security_database() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_clear_security_database())
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x94, 0xFC, 0]);
+}

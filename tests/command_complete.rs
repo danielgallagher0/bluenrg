@@ -64,6 +64,7 @@ status_only! {
     gap_set_event_mask(0x91, 0xFC, BNRGParams::GapSetEventMask);
     gap_configure_white_list(0x92, 0xFC, BNRGParams::GapConfigureWhiteList);
     gap_terminate(0x93, 0xFC, BNRGParams::GapTerminate);
+    gap_clear_security_database(0x94, 0xFC, BNRGParams::GapClearSecurityDatabase);
 }
 
 #[test]
