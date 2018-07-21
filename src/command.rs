@@ -623,3 +623,42 @@ pub struct SecurityRequestParameters {
     /// Is man-in-the-middle protection required?
     pub mitm_protection: bool,
 }
+
+/// Available types of advertising data.
+#[repr(u8)]
+pub enum AdvertisingDataType {
+    /// Flags
+    Flags = 0x01,
+    /// 16-bit service UUID
+    Uuid16 = 0x02,
+    /// Complete list of 16-bit service UUIDs
+    UuidCompleteList16 = 0x03,
+    /// 32-bit service UUID
+    Uuid32 = 0x04,
+    /// Complete list of 32-bit service UUIDs
+    UuidCompleteList32 = 0x05,
+    /// 128-bit service UUID
+    Uuid128 = 0x06,
+    /// Complete list of 128-bit service UUIDs.
+    UuidCompleteList128 = 0x07,
+    /// Shortened local name
+    ShortenedLocalName = 0x08,
+    /// Complete local name
+    CompleteLocalName = 0x09,
+    /// Transmitter power level
+    TxPowerLevel = 0x0A,
+    /// Serurity Manager TK Value
+    SecurityManagerTkValue = 0x10,
+    /// Serurity Manager out-of-band flags
+    SecurityManagerOutOfBandFlags = 0x11,
+    /// Connection interval
+    PeripheralConnectionInterval = 0x12,
+    /// Service solicitation list, 16-bit UUIDs
+    SolicitUuidList16 = 0x14,
+    /// Service solicitation list, 32-bit UUIDs
+    SolicitUuidList32 = 0x15,
+    /// Service data
+    ServiceData = 0x16,
+    /// Manufacturer-specific data
+    ManufacturerSpecificData = 0xFF,
+}

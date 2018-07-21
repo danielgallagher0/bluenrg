@@ -915,3 +915,13 @@ fn gap_update_advertising_data_too_long() {
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
 }
+
+#[test]
+fn gap_delete_ad_type() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_delete_ad_type(AdvertisingDataType::TxPowerLevel))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x8F, 0xFC, 1, 0x0A]);
+}

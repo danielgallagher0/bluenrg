@@ -749,6 +749,21 @@ where
             &bytes[0..1 + data.len()],
         ).map_err(rewrap_error)
     }
+
+    /// This command can be used to delete the specified AD type from the advertisement data if
+    /// present.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapDeleteAdType) event is
+    /// generated.
+    pub fn gap_delete_ad_type(&mut self, ad_type: AdvertisingDataType) -> nb::Result<(), E> {
+        self.write_command(opcode::GAP_DELETE_AD_TYPE, &[ad_type as u8])
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

@@ -39,6 +39,7 @@ opcodes! {
         pub const GAP_SET_UNDIRECTED_CONNECTABLE = 0x0C;
         pub const GAP_PERIPHERAL_SECURITY_REQUEST = 0x0D;
         pub const GAP_UPDATE_ADVERTISING_DATA = 0x0E;
+        pub const GAP_DELETE_AD_TYPE = 0x0F;
     }
     // Gatt = 0x2;
     L2Cap = 0x3;
