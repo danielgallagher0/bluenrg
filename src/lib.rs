@@ -765,6 +765,20 @@ where
         self.write_command(opcode::GAP_DELETE_AD_TYPE, &[ad_type as u8])
     }
 
+    /// This command can be used to get the current security settings of the device.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapGetSecurityLevel) event is
+    /// generated.
+    pub fn gap_get_security_level(&mut self) -> nb::Result<(), E> {
+        self.write_command(opcode::GAP_GET_SECURITY_LEVEL, &[])
+    }
+
     /// Allows masking events from the GAP.
     ///
     /// The default configuration is all the events masked.

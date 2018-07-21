@@ -927,6 +927,16 @@ fn gap_delete_ad_type() {
 }
 
 #[test]
+fn gap_get_security_level() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_get_security_level())
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x90, 0xFC, 0]);
+}
+
+#[test]
 fn gap_set_event_mask() {
     let mut fixture = Fixture::new();
     fixture

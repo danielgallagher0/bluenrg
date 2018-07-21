@@ -2,9 +2,10 @@ extern crate bluenrg;
 extern crate bluetooth_hci as hci;
 
 use bluenrg::event::command::ReturnParameters as BNRGParams;
+use bluenrg::event::command::*;
 use bluenrg::event::*;
 use hci::event::command::ReturnParameters as HciParams;
-use hci::event::{Event as HciEvent, Packet};
+use hci::event::{Error as HciError, Event as HciEvent, Packet};
 
 type Event = HciEvent<BlueNRGEvent>;
 
@@ -82,5 +83,48 @@ fn gap_init() {
             }
         }
         other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_get_security_level() {
+    let buffer = [0x0E, 8, 1, 0x90, 0xFC, 0, 0, 1, 0, 2];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 1);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::GapGetSecurityLevel(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(params.mitm_protection_required, false);
+                    assert_eq!(params.bonding_required, true);
+                    assert_eq!(params.out_of_band_data_present, false);
+                    assert_eq!(params.pass_key_required, PassKeyRequirement::Generated);
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_get_security_level_bad_bool() {
+    let buffer = [0x0E, 8, 1, 0x90, 0xFC, 0, 2, 1, 0, 2];
+    match Event::new(Packet(&buffer)) {
+        Err(HciError::Vendor(BlueNRGError::BadBooleanValue(value))) => {
+            assert_eq!(value, 2);
+        }
+        other => panic!("Did not get bad boolean: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_get_security_level_bad_pass_key_requirement() {
+    let buffer = [0x0E, 8, 1, 0x90, 0xFC, 0, 0, 1, 0, 3];
+    match Event::new(Packet(&buffer)) {
+        Err(HciError::Vendor(BlueNRGError::BadPassKeyRequirement(value))) => {
+            assert_eq!(value, 3);
+        }
+        other => panic!("Did not get bad pass key requirement: {:?}", other),
     }
 }

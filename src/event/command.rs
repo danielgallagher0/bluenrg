@@ -7,7 +7,7 @@
 extern crate bluetooth_hci as hci;
 
 use byteorder::{ByteOrder, LittleEndian};
-use core::convert::TryInto;
+use core::convert::{TryFrom, TryInto};
 
 /// Vendor-specific commands that may generate the [Command
 /// Complete](hci::event::command::ReturnParameters::Vendor) event. If the commands have defined
@@ -81,6 +81,10 @@ pub enum ReturnParameters {
     /// command.
     GapDeleteAdType(hci::Status),
 
+    /// Parameters returned by the [GAP Get Security Level](::ActiveBlueNRG::gap_get_security_level)
+    /// command.
+    GapGetSecurityLevel(GapSecurityLevel),
+
     /// Parameters returned by the [GAP Set Event Mask](::ActiveBlueNRG::gap_set_event_mask)
     /// command.
     GapSetEventMask(hci::Status),
@@ -142,6 +146,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_DELETE_AD_TYPE => {
                 Ok(ReturnParameters::GapDeleteAdType(to_status(&bytes[3..])?))
             }
+            ::opcode::GAP_GET_SECURITY_LEVEL => Ok(ReturnParameters::GapGetSecurityLevel(
+                to_gap_security_level(&bytes[3..])?,
+            )),
             ::opcode::GAP_SET_EVENT_MASK => {
                 Ok(ReturnParameters::GapSetEventMask(to_status(&bytes[3..])?))
             }
@@ -202,5 +209,71 @@ fn to_gap_init(bytes: &[u8]) -> Result<GapInit, hci::event::Error<super::BlueNRG
         service_handle: ServiceHandle(LittleEndian::read_u16(&bytes[1..])),
         dev_name_handle: CharacteristicHandle(LittleEndian::read_u16(&bytes[3..])),
         appearance_handle: CharacteristicHandle(LittleEndian::read_u16(&bytes[5..])),
+    })
+}
+
+/// Parameters returned by the [GAP Get Security Level](::ActiveBlueNRG::gap_get_security_level)
+/// command.
+#[derive(Copy, Clone, Debug)]
+pub struct GapSecurityLevel {
+    /// Did the command fail, and if so, how?
+    pub status: hci::Status,
+
+    /// Is MITM (man-in-the-middle) protection required?
+    pub mitm_protection_required: bool,
+
+    /// Is bonding required?
+    pub bonding_required: bool,
+
+    /// Is out-of-band data present?
+    pub out_of_band_data_present: bool,
+
+    /// Is a pass key required, and if so, how is it generated?
+    pub pass_key_required: PassKeyRequirement,
+}
+
+/// Options for pass key generation.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum PassKeyRequirement {
+    /// A pass key is not required.
+    NotRequired,
+    /// A fixed pin is present which is being used.
+    FixedPin,
+    /// Pass key required for pairing. An event will be generated when required.
+    Generated,
+}
+
+impl TryFrom<u8> for PassKeyRequirement {
+    type Error = super::BlueNRGError;
+
+    fn try_from(value: u8) -> Result<PassKeyRequirement, Self::Error> {
+        match value {
+            0x00 => Ok(PassKeyRequirement::NotRequired),
+            0x01 => Ok(PassKeyRequirement::FixedPin),
+            0x02 => Ok(PassKeyRequirement::Generated),
+            _ => Err(super::BlueNRGError::BadPassKeyRequirement(value)),
+        }
+    }
+}
+
+fn to_boolean(value: u8) -> Result<bool, super::BlueNRGError> {
+    match value {
+        0 => Ok(false),
+        1 => Ok(true),
+        _ => Err(super::BlueNRGError::BadBooleanValue(value)),
+    }
+}
+
+fn to_gap_security_level(
+    bytes: &[u8],
+) -> Result<GapSecurityLevel, hci::event::Error<super::BlueNRGError>> {
+    require_len!(bytes, 5);
+
+    Ok(GapSecurityLevel {
+        status: to_status(&bytes[0..])?,
+        mitm_protection_required: to_boolean(bytes[1]).map_err(hci::event::Error::Vendor)?,
+        bonding_required: to_boolean(bytes[2]).map_err(hci::event::Error::Vendor)?,
+        out_of_band_data_present: to_boolean(bytes[3]).map_err(hci::event::Error::Vendor)?,
+        pass_key_required: bytes[4].try_into().map_err(hci::event::Error::Vendor)?,
     })
 }

@@ -40,6 +40,7 @@ opcodes! {
         pub const GAP_PERIPHERAL_SECURITY_REQUEST = 0x0D;
         pub const GAP_UPDATE_ADVERTISING_DATA = 0x0E;
         pub const GAP_DELETE_AD_TYPE = 0x0F;
+        pub const GAP_GET_SECURITY_LEVEL = 0x10;
         pub const GAP_SET_EVENT_MASK = 0x11;
     }
     // Gatt = 0x2;

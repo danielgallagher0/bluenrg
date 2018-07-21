@@ -375,6 +375,19 @@ pub enum BlueNRGError {
     /// For the [ATT Read Multiple Permit Request](BlueNRGEvent::AttReadMultiplePermitRequest)
     /// event: The packet ends with a partial attribute handle.
     AttReadMultiplePermitRequestPartial,
+
+    /// For the [GAP Get Security Level](::ActiveBlueNRG::gap_get_security_level) command complete
+    /// [event](command::ReturnParameters::GapGetSecurityLevel): One of the boolean values
+    /// ([`mitm_protection`](command::ReturnParameters::GapGetSecurityLevel::mitm_protection),
+    /// [`bonding_required`](command::ReturnParameters::GapGetSecurityLevel::bonding_required), or
+    /// [`oob_data_present`](command::ReturnParameters::GapGetSecurityLevel::oob_data_present)) was
+    /// neither 0 nor 1. The unknown value is provided.
+    BadBooleanValue(u8),
+
+    /// For the [GAP Get Security Level](::ActiveBlueNRG::gap_get_security_level) command complete
+    /// [event](command::ReturnParameters::GapGetSecurityLevel): the pass key requirement field was
+    /// an invalid value. The unknown byte is provided.
+    BadPassKeyRequirement(u8),
 }
 
 macro_rules! require_len {
