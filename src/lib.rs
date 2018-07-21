@@ -796,6 +796,21 @@ where
 
         self.write_command(opcode::GAP_SET_EVENT_MASK, &bytes)
     }
+
+    /// Configure the controller's white list with devices that are present in the security
+    /// database.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapConfigureWhiteList) event is
+    /// generated.
+    pub fn gap_configure_white_list(&mut self) -> nb::Result<(), E> {
+        self.write_command(opcode::GAP_CONFIGURE_WHITE_LIST, &[])
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

@@ -949,3 +949,13 @@ fn gap_set_event_mask() {
     assert!(fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, [1, 0x91, 0xFC, 2, 0x03, 0x00]);
 }
+
+#[test]
+fn gap_configure_white_list() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_configure_white_list())
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x92, 0xFC, 0]);
+}
