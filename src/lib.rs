@@ -867,6 +867,26 @@ where
     pub fn gap_clear_security_database(&mut self) -> nb::Result<(), E> {
         self.write_command(opcode::GAP_CLEAR_SECURITY_DATABASE, &[])
     }
+
+    /// This command should be given by the application when it receives the
+    /// [GAP Bond Lost](event::BlueNRGEvent::GapBondLost) event if it wants the re-bonding to happen
+    /// successfully. If this command is not given on receiving the event, the bonding procedure
+    /// will timeout.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapAllowRebond) event is
+    /// generated. Even if the command is given when it is not valid, success will be returned but
+    /// internally it will have no effect.
+    pub fn gap_allow_rebond(&mut self, conn_handle: hci::ConnectionHandle) -> nb::Result<(), E> {
+        let mut bytes = [0; 2];
+        LittleEndian::write_u16(&mut bytes, conn_handle.0);
+        self.write_command(opcode::GAP_ALLOW_REBOND, &bytes)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

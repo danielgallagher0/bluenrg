@@ -1004,3 +1004,13 @@ fn gap_clear_security_database() {
     assert!(fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, [1, 0x94, 0xFC, 0]);
 }
+
+#[test]
+fn gap_allow_rebond() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_allow_rebond(hci::ConnectionHandle(0x0201)))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x95, 0xFC, 2, 0x01, 0x02]);
+}

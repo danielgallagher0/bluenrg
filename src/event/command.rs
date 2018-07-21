@@ -99,6 +99,9 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GAP Clear Security
     /// Database](::ActiveBlueNRG::gap_clear_security_database) command.
     GapClearSecurityDatabase(hci::Status),
+
+    /// Parameters returned by the [GAP Allow Rebond](::ActiveBlueNRG::gap_allow_rebond) command.
+    GapAllowRebond(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -170,6 +173,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_CLEAR_SECURITY_DATABASE => Ok(
                 ReturnParameters::GapClearSecurityDatabase(to_status(&bytes[3..])?),
             ),
+            ::opcode::GAP_ALLOW_REBOND => {
+                Ok(ReturnParameters::GapAllowRebond(to_status(&bytes[3..])?))
+            }
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }
