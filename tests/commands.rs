@@ -959,3 +959,38 @@ fn gap_configure_white_list() {
     assert!(fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, [1, 0x92, 0xFC, 0]);
 }
+
+#[test]
+fn gap_terminate() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_terminate(hci::ConnectionHandle(0x0201), hci::Status::AuthFailure)
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [1, 0x93, 0xFC, 3, 0x01, 0x02, 0x05]
+    );
+}
+
+#[test]
+fn gap_terminate_bad_disconnection_reason() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.gap_terminate(
+                hci::ConnectionHandle(0x0201),
+                hci::Status::CommandDisallowed,
+            )
+        })
+        .err()
+        .unwrap();
+    assert_eq!(
+        err,
+        nb::Error::Other(Error::BadTerminationReason(hci::Status::CommandDisallowed))
+    );
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+}

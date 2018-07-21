@@ -378,9 +378,9 @@ pub enum BlueNRGError {
 
     /// For the [GAP Get Security Level](::ActiveBlueNRG::gap_get_security_level) command complete
     /// [event](command::ReturnParameters::GapGetSecurityLevel): One of the boolean values
-    /// ([`mitm_protection`](command::ReturnParameters::GapGetSecurityLevel::mitm_protection),
-    /// [`bonding_required`](command::ReturnParameters::GapGetSecurityLevel::bonding_required), or
-    /// [`oob_data_present`](command::ReturnParameters::GapGetSecurityLevel::oob_data_present)) was
+    /// ([`mitm_protection_required`](command::GapSecurityLevel::mitm_protection_required),
+    /// [`bonding_required`](command::GapSecurityLevel::bonding_required), or
+    /// [`out_of_band_data_present`](command::GapSecurityLevel::out_of_band_data_present)) was
     /// neither 0 nor 1. The unknown value is provided.
     BadBooleanValue(u8),
 

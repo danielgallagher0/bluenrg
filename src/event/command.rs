@@ -92,6 +92,9 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GAP Configure
     /// White List](::ActiveBlueNRG::gap_configure_white_list) command.
     GapConfigureWhiteList(hci::Status),
+
+    /// Parameters returned by the [GAP Terminate](::ActiveBlueNRG::gap_terminate) command.
+    GapTerminate(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -159,6 +162,7 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_CONFIGURE_WHITE_LIST => Ok(ReturnParameters::GapConfigureWhiteList(
                 to_status(&bytes[3..])?,
             )),
+            ::opcode::GAP_TERMINATE => Ok(ReturnParameters::GapTerminate(to_status(&bytes[3..])?)),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }

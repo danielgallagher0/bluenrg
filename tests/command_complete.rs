@@ -63,6 +63,7 @@ status_only! {
     gap_delete_ad_type(0x8F, 0xFC, BNRGParams::GapDeleteAdType);
     gap_set_event_mask(0x91, 0xFC, BNRGParams::GapSetEventMask);
     gap_configure_white_list(0x92, 0xFC, BNRGParams::GapConfigureWhiteList);
+    gap_terminate(0x93, 0xFC, BNRGParams::GapTerminate);
 }
 
 #[test]

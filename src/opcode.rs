@@ -43,6 +43,7 @@ opcodes! {
         pub const GAP_GET_SECURITY_LEVEL = 0x10;
         pub const GAP_SET_EVENT_MASK = 0x11;
         pub const GAP_CONFIGURE_WHITE_LIST = 0x12;
+        pub const GAP_TERMINATE = 0x13;
     }
     // Gatt = 0x2;
     L2Cap = 0x3;

@@ -811,6 +811,48 @@ where
     pub fn gap_configure_white_list(&mut self) -> nb::Result<(), E> {
         self.write_command(opcode::GAP_CONFIGURE_WHITE_LIST, &[])
     }
+
+    /// Command the controller to terminate the connection.
+    ///
+    /// # Errors
+    ///
+    /// - [BadTerminationReason](Error::BadTerminationReason) if provided termination reason is
+    ///   invalid. Valid reasons are the same as HCI [disconnect](hci::host::Hci::disconnect):
+    ///   [`AuthFailure`](hci::Status::AuthFailure),
+    ///   [`RemoteTerminationByUser`](hci::Status::RemoteTerminationByUser),
+    ///   [`RemoteTerminationLowResources`](hci::Status::RemoteTerminationLowResources),
+    ///   [`RemoteTerminationPowerOff`](hci::Status::RemoteTerminationPowerOff),
+    ///   [`UnsupportedRemoteFeature`](hci::Status::UnsupportedRemoteFeature),
+    ///   [`PairingWithUnitKeyNotSupported`](hci::Status::PairingWithUnitKeyNotSupported), or
+    ///   [`UnacceptableConnectionParameters`](hci::Status::UnacceptableConnectionParameters).
+    /// - Underlying communication errors.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapTerminate) event is generated.
+    pub fn gap_terminate(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        reason: hci::Status,
+    ) -> nb::Result<(), Error<E>> {
+        match reason {
+            hci::Status::AuthFailure
+            | hci::Status::RemoteTerminationByUser
+            | hci::Status::RemoteTerminationLowResources
+            | hci::Status::RemoteTerminationPowerOff
+            | hci::Status::UnsupportedRemoteFeature
+            | hci::Status::PairingWithUnitKeyNotSupported
+            | hci::Status::UnacceptableConnectionParameters => (),
+            _ => return Err(nb::Error::Other(Error::BadTerminationReason(reason))),
+        }
+
+        let mut bytes = [0; 3];
+        LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
+        bytes[2] = reason as u8;
+
+        self.write_command(opcode::GAP_TERMINATE, &bytes)
+            .map_err(rewrap_error)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

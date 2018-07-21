@@ -57,6 +57,10 @@ pub enum Error<E> {
     /// data is returned.
     BadAdvertisingDataLength(usize),
 
+    /// For the [GAP Terminate](::ActiveBlueNRG::gap_terminate) command, the termination reason was
+    /// not one of the allowed reason. The reason is returned.
+    BadTerminationReason(hci::Status),
+
     /// Underlying communication error.
     Comm(E),
 }
