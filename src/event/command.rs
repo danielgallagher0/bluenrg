@@ -105,7 +105,11 @@ pub enum ReturnParameters {
 
     /// Parameters returned by the [GAP Start Limited Discoverable
     /// Procedure](::ActiveBlueNRG::gap_start_limited_discovery_procedure) command.
-    GapStartLimitedDiscoveryProceure(hci::Status),
+    GapStartLimitedDiscoveryProcedure(hci::Status),
+
+    /// Parameters returned by the [GAP Start General Discoverable
+    /// Procedure](::ActiveBlueNRG::gap_start_general_discovery_procedure) command.
+    GapStartGeneralDiscoveryProcedure(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -181,7 +185,10 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                 Ok(ReturnParameters::GapAllowRebond(to_status(&bytes[3..])?))
             }
             ::opcode::GAP_START_LIMITED_DISCOVERY_PROCEDURE => Ok(
-                ReturnParameters::GapStartLimitedDiscoveryProceure(to_status(&bytes[3..])?),
+                ReturnParameters::GapStartLimitedDiscoveryProcedure(to_status(&bytes[3..])?),
+            ),
+            ::opcode::GAP_START_GENERAL_DISCOVERY_PROCEDURE => Ok(
+                ReturnParameters::GapStartGeneralDiscoveryProcedure(to_status(&bytes[3..])?),
             ),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }

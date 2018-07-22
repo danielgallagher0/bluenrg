@@ -895,16 +895,16 @@ where
     ///
     /// # Errors
     ///
-    /// - [BadScanWindow](Error::BadScanWindow) if the
-    ///   [`scan_interval`](GapLimitedDiscoveryProcedureParameters::scan_interval) is greater than
-    ///   the [`scan_window`](GapLimitedDiscoveryProcedureParameters::scan_window), or if either
-    ///   parameter is out of the allowed range (2.5 ms to 10.24 s).
+    /// - [BadScanInterval](Error::BadScanInterval) if the
+    ///   [`scan_interval`](GapDiscoveryProcedureParameters::scan_interval) is greater than the
+    ///   [`scan_window`](GapDiscoveryProcedureParameters::scan_window), or if either parameter is
+    ///   out of the allowed range (2.5 ms to 10.24 s).
     /// - Underlying communication errors.
     ///
     /// # Generated events
     ///
-    /// A [command status](hci::event::BlueNRGEvent::CommandStatus) event is generated as soon as
-    /// the command is given.
+    /// A [command status](hci::event::Event::CommandStatus) event is generated as soon as the
+    /// command is given.
     ///
     /// If [Success](hci::Status::Success) is returned in the command status, the procedure is
     /// terminated when either the upper layers issue a command to terminate the procedure by
@@ -919,15 +919,54 @@ where
     /// [LeAdvertisingReport](hci::event::Event::LeAdvertisingReport) event.
     pub fn gap_start_limited_discovery_procedure(
         &mut self,
-        params: &GapLimitedDiscoveryProcedureParameters,
+        params: &GapDiscoveryProcedureParameters,
+    ) -> nb::Result<(), Error<E>> {
+        self.gap_start_discovery_procedure(params, opcode::GAP_START_LIMITED_DISCOVERY_PROCEDURE)
+    }
+
+    /// Start the general discovery procedure. The controller is commanded to start active scanning.
+    ///
+    /// # Errors
+    ///
+    /// - [BadScanInterval](Error::BadScanInterval) if the
+    ///   [`scan_interval`](GapDiscoveryProcedureParameters::scan_interval) is greater than the
+    ///   [`scan_window`](GapDiscoveryProcedureParameters::scan_window), or if either parameter is
+    ///   out of the allowed range (2.5 ms to 10.24 s).
+    /// - Underlying communication errors.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated as soon as the
+    /// command is given.
+    ///
+    /// If [Success](hci::Status::Success) is returned in the command status, the procedure is
+    /// terminated when either the upper layers issue a command to terminate the procedure by
+    /// issuing the command [`gap_terminate_procedure`](::ActiveBlueNRG::gap_terminate_procedure)
+    /// with the procedure code set to [GeneralDiscovery](GapProcedure::GeneralDiscovery) or a
+    /// timeout happens. When the procedure is terminated due to any of the above reasons, a
+    /// [GapProcedureComplete](event::BlueNRGEvent::GapProcedureComplete) event is returned with the
+    /// procedure code set to [GeneralDiscovery](GapProcedure::GeneralDiscovery).
+    ///
+    /// The device found when the procedure is ongoing is returned to the upper layers through the
+    /// [LeAdvertisingReport](hci::event::Event::LeAdvertisingReport) event.
+    pub fn gap_start_general_discovery_procedure(
+        &mut self,
+        params: &GapDiscoveryProcedureParameters,
+    ) -> nb::Result<(), Error<E>> {
+        self.gap_start_discovery_procedure(params, opcode::GAP_START_GENERAL_DISCOVERY_PROCEDURE)
+    }
+
+    fn gap_start_discovery_procedure(
+        &mut self,
+        params: &GapDiscoveryProcedureParameters,
+        opcode: hci::Opcode,
     ) -> nb::Result<(), Error<E>> {
         params.validate().map_err(nb::Error::Other)?;
 
-        let mut bytes = [0; GapLimitedDiscoveryProcedureParameters::LENGTH];
+        let mut bytes = [0; GapDiscoveryProcedureParameters::LENGTH];
         params.into_bytes(&mut bytes);
 
-        self.write_command(opcode::GAP_START_LIMITED_DISCOVERY_PROCEDURE, &bytes)
-            .map_err(rewrap_error)
+        self.write_command(opcode, &bytes).map_err(rewrap_error)
     }
 }
 

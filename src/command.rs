@@ -681,8 +681,8 @@ pub enum AdvertisingDataType {
 bitflags!{
     /// Event types for [GAP Set Event Mask](::ActiveBlueNRG::gap_set_event_mask).
     pub struct GapEventFlags: u16 {
-        /// [Limited Discoverable](::event::BlueNRGEvent::GapLimitedDiscoverable)
-        const LIMITED_DISCOVERABLE = 0x0001;
+        /// [Limited Discoverable](::event::BlueNRGEvent::GapLimitedDiscoverableTimeout)
+        const LIMITED_DISCOVERABLE_TIMEOUT = 0x0001;
         /// [Pairing Complete](::event::BlueNRGEvent::GapPairingComplete)
         const PAIRING_COMPLETE = 0x0002;
         /// [Pass Key Request](::event::BlueNRGEvent::GapPassKeyRequest)
@@ -697,8 +697,9 @@ bitflags!{
 }
 
 /// Parameters for the [GAP Limited
-/// Discovery](::ActiveBlueNRG::gap_start_limited_discovery_procedure) procedure.
-pub struct GapLimitedDiscoveryProcedureParameters {
+/// Discovery](::ActiveBlueNRG::gap_start_limited_discovery_procedure) and [GAP General
+/// Discovery](::ActiveBlueNRG::gap_start_general_discovery_procedure) procedures.
+pub struct GapDiscoveryProcedureParameters {
     /// Time interval from when the controller started its last LE scan until it begins the
     /// subsequent LE scan.
     ///
@@ -706,7 +707,7 @@ pub struct GapLimitedDiscoveryProcedureParameters {
     pub scan_interval: Duration,
 
     /// Amount of time for the duration of the LE scan. `scan_window` shall be less than or equal to
-    /// [`scan_interval`](GapLimitedDiscoveryProcedureParameters::scan_interval).
+    /// [`scan_interval`](GapDiscoveryProcedureParameters::scan_interval).
     ///
     /// Range: 2.5 ms to 10.24 s.
     pub scan_window: Duration,
@@ -718,7 +719,7 @@ pub struct GapLimitedDiscoveryProcedureParameters {
     pub filter_duplicates: bool,
 }
 
-impl GapLimitedDiscoveryProcedureParameters {
+impl GapDiscoveryProcedureParameters {
     /// Number of bytes these parameters take when serialized.
     pub const LENGTH: usize = 6;
 
@@ -726,9 +727,9 @@ impl GapLimitedDiscoveryProcedureParameters {
     ///
     /// # Errors
     ///
-    /// - [BadScanWindow](Error::BadScanWindow) if the
-    ///   [`scan_interval`](GapLimitedDiscoveryProcedureParameters::scan_interval) is greater than
-    ///   the [`scan_window`](GapLimitedDiscoveryProcedureParameters::scan_window), or if either
+    /// - [BadScanInterval](Error::BadScanInterval) if the
+    ///   [`scan_interval`](GapDiscoveryProcedureParameters::scan_interval) is greater than
+    ///   the [`scan_window`](GapDiscoveryProcedureParameters::scan_window), or if either
     ///   parameter is out of the allowed range (2.5 ms to 10.24 s).
     pub fn validate<E>(&self) -> Result<(), Error<E>> {
         const MIN_INTERVAL: Duration = Duration::from_micros(2500);
@@ -744,7 +745,7 @@ impl GapLimitedDiscoveryProcedureParameters {
     }
 
     /// Serializes the parameters into the given byte buffer. The buffer must be the correct size
-    /// ([`LENGTH`] bytes).
+    /// ([`LENGTH`](GapDiscoveryProcedureParameters::LENGTH) bytes).
     pub fn into_bytes(&self, bytes: &mut [u8]) {
         assert_eq!(bytes.len(), Self::LENGTH);
 
