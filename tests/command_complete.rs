@@ -76,6 +76,7 @@ status_only! {
         0xFC,
         BNRGParams::GapStartGeneralDiscoveryProcedure
     );
+    gap_start_name_discovery_procedure(0x98, 0xFC, BNRGParams::GapStartNameDiscoveryProcedure);
 }
 
 #[test]

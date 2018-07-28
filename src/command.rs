@@ -646,3 +646,40 @@ impl GapDiscoveryProcedureParameters {
         bytes[5] = self.filter_duplicates as u8;
     }
 }
+
+/// Parameters for the [GAP Name Discovery](::ActiveBlueNRG::gap_start_name_discovery_procedure)
+/// procedure.
+pub struct GapNameDiscoveryProcedureParameters {
+    /// Scanning window for the discovery procedure.
+    pub scan_window: ScanWindow,
+
+    /// Address of the connected device
+    pub peer_address: hci::host::PeerAddrType,
+
+    /// Address type of this device.
+    pub own_address_type: hci::host::OwnAddressType,
+
+    /// Connection interval parameters.
+    pub conn_interval: ConnectionInterval,
+
+    /// Expected connection length
+    pub expected_connection_length: ExpectedConnectionLength,
+}
+
+impl GapNameDiscoveryProcedureParameters {
+    /// Number of bytes these parameters take when serialized.
+    pub const LENGTH: usize = 24;
+
+    /// Serializes the parameters into the given byte buffer. The buffer must be the correct size
+    /// ([`LENGTH`](GapNameDiscoveryProcedureParameters::LENGTH)) bytes).
+    pub fn into_bytes(&self, bytes: &mut [u8]) {
+        assert_eq!(bytes.len(), Self::LENGTH);
+
+        self.scan_window.into_bytes(&mut bytes[0..4]);
+        self.peer_address.into_bytes(&mut bytes[4..11]);
+        bytes[11] = self.own_address_type as u8;
+        self.conn_interval.into_bytes(&mut bytes[12..20]);
+        self.expected_connection_length
+            .into_bytes(&mut bytes[20..24]);
+    }
+}

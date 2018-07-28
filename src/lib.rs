@@ -955,6 +955,39 @@ where
 
         self.write_command(opcode, &bytes)
     }
+
+    /// Start the name discovery procedure.
+    ///
+    /// A [LE Create Connection](hci::host::Hci::le_create_connection) call will be made to the
+    /// controller by GAP with the [initiator filter
+    /// policy](hci::host::ConnectionParameters::initiator_filter_policy) set to
+    /// [UseAddress](hci::host::ConnectionFilterPolicy::UseAddress), to "ignore whitelist and
+    /// process connectable advertising packets only for the specified device". Once a connection is
+    /// established, GATT procedure is started to read the device name characteristic. When the read
+    /// is completed (successfully or unsuccessfully), a
+    /// [GapProcedureComplete](event::BlueNRGEvent::GapProcedureComplete) event is given to the
+    /// upper layer. The event also contains the name of the device if the device name was read
+    /// successfully.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated Events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated as soon as the
+    /// command is given. If [Success](hci::Status::Success) is returned, on completion of the
+    /// procedure, a [GapProcedureComplete](event::BlueNRGEvent::GapProcedureComplete) event is
+    /// returned with the procedure code set to [NameDiscovery](event::GapProcedure::NameDiscovery).
+    pub fn gap_start_name_discovery_procedure(
+        &mut self,
+        params: &GapNameDiscoveryProcedureParameters,
+    ) -> nb::Result<(), E> {
+        let mut bytes = [0; GapNameDiscoveryProcedureParameters::LENGTH];
+        params.into_bytes(&mut bytes);
+
+        self.write_command(opcode::GAP_START_NAME_DISCOVERY_PROCEDURE, &bytes)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

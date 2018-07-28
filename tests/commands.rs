@@ -999,3 +999,40 @@ fn gap_start_general_discovery_procedure() {
         [1, 0x97, 0xFC, 6, 0x04, 0x00, 0x04, 0x00, 0x01, 0x01]
     );
 }
+
+#[test]
+fn gap_start_name_discovery_procedure() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_start_name_discovery_procedure(&GapNameDiscoveryProcedureParameters {
+                scan_window: ScanWindow::start_every(Duration::from_micros(2500))
+                    .unwrap()
+                    .open_for(Duration::from_micros(2500))
+                    .unwrap(),
+                peer_address: hci::host::PeerAddrType::RandomDeviceAddress(hci::BdAddr([
+                    1, 2, 3, 4, 5, 6,
+                ])),
+                own_address_type: hci::host::OwnAddressType::Random,
+                conn_interval: ConnectionIntervalBuilder::new()
+                    .with_range(Duration::from_millis(50), Duration::from_millis(250))
+                    .with_latency(10)
+                    .with_supervision_timeout(Duration::from_millis(6000))
+                    .build()
+                    .unwrap(),
+                expected_connection_length: ExpectedConnectionLength::new(
+                    Duration::from_millis(150),
+                    Duration::from_millis(1500),
+                ).unwrap(),
+            })
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [
+            1, 0x98, 0xFC, 24, 0x04, 0x00, 0x04, 0x00, 0x01, 1, 2, 3, 4, 5, 6, 1, 0x28, 0x00, 0xc8,
+            0x00, 10, 0, 0x58, 0x02, 0xF0, 0x00, 0x60, 0x09
+        ]
+    );
+}
