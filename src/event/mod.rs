@@ -8,13 +8,14 @@ extern crate bluetooth_hci as hci;
 pub mod command;
 
 use byteorder::{ByteOrder, LittleEndian};
-use core::cmp::{min, PartialEq};
+use core::cmp::PartialEq;
 use core::convert::{TryFrom, TryInto};
 use core::fmt::{Debug, Formatter, Result as FmtResult};
 use core::mem;
 use core::time::Duration;
 
 pub use self::command::{CharacteristicHandle, ServiceHandle};
+pub use hci::types::{ConnectionInterval, ConnectionIntervalError};
 pub use hci::{BdAddr, BdAddrType, ConnectionHandle};
 
 /// Vendor-specific events for the BlueNRG-MS controllers.
@@ -303,6 +304,10 @@ pub enum BlueNRGError {
     /// event: The command was accepted, but the result was not recognized. It did not indicate the
     /// parameters were either updated or rejected. Includes the unknown value.
     BadL2CapConnectionResponseResult(u16),
+
+    /// For the [L2CAP Connection Update Request](BlueNRGEvent::L2CapConnectionUpdateRequest) event:
+    /// The provided connection interval is invalid. Includes the underlying error.
+    BadConnectionInterval(ConnectionIntervalError),
 
     /// For the [L2CAP Connection Update Request](BlueNRGEvent::L2CapConnectionUpdateRequest) event:
     /// The provided interval is invalid. Potential errors:
@@ -1061,33 +1066,8 @@ pub struct L2CapConnectionUpdateRequest {
     /// [`l2cap_connection_parameter_update_response`](::ActiveBlueNRG::l2cap_connection_parameter_update_response).
     pub identifier: u8,
 
-    /// Defines the range of the connection interval. The first value is the minimum, which must be
-    /// less than or equal to the second value, which is the maximum.
-    ///
-    /// The range of the interval is 7.5 ms to 4 seconds. Values outside the range are reserved for
-    /// future use.
-    pub interval: (Duration, Duration),
-
-    /// Defines the connection latency parameter.
-    ///
-    /// The valid range is from 0 to `((connSupervisionTimeout /
-    /// (connIntervalMax*2)) - 1)`. The connection latency field shall be less than 500.
-    pub conn_latency: u16,
-
-    /// Defines the connection supervision timeout.
-    ///
-    /// The range is 100 ms to 32 seconds.
-    pub timeout: Duration,
-}
-
-fn outside_interval_range(value: u16) -> bool {
-    value < 6 || value > 3200
-}
-
-fn from_conn_interval_value(interval: u16) -> Duration {
-    // Connection interval value: T = N * 1.25 ms
-    //   = 1250 * N us
-    Duration::from_micros(1250 * interval as u64)
+    /// Defines the range of the connection interval, the latency, and the supervision timeout.
+    pub conn_interval: ConnectionInterval,
 }
 
 fn to_l2cap_connection_update_request(
@@ -1097,53 +1077,14 @@ fn to_l2cap_connection_update_request(
     require_l2cap_event_data_len!(buffer, 11);
     require_l2cap_len!(LittleEndian::read_u16(&buffer[6..]), 8);
 
-    let interval_min = LittleEndian::read_u16(&buffer[8..]);
-    let interval_max = LittleEndian::read_u16(&buffer[10..]);
-    if outside_interval_range(interval_min)
-        || outside_interval_range(interval_max)
-        || interval_min > interval_max
-    {
-        return Err(hci::event::Error::Vendor(
-            BlueNRGError::BadL2CapConnectionUpdateRequestInterval(
-                from_conn_interval_value(interval_min),
-                from_conn_interval_value(interval_max),
-            ),
-        ));
-    }
-
-    let timeout_mult = LittleEndian::read_u16(&buffer[14..]);
-    if timeout_mult < 10 || timeout_mult > 3200 {
-        return Err(hci::event::Error::Vendor(
-            BlueNRGError::BadL2CapConnectionUpdateRequestTimeout(Duration::from_millis(
-                10 * timeout_mult as u64,
-            )),
-        ));
-    }
-
-    let conn_latency = LittleEndian::read_u16(&buffer[12..]);
-
-    // The maximum allowed connection latency is defined by ((supervision_timeout / (2 *
-    // connection_interval_max)) - 1), where
-    //   supervision_timeout = 10 * timeout_mult
-    //   connection_interval_max = 1.25 * interval_max
-    // This simplifies to the expression below. Regardless of the other values, the connection
-    // latency must be less than 500.
-    let conn_latency_limit = min(500, (4 * timeout_mult) / interval_max - 1);
-    if conn_latency >= conn_latency_limit {
-        return Err(hci::event::Error::Vendor(
-            BlueNRGError::BadL2CapConnectionUpdateRequestLatency(conn_latency, conn_latency_limit),
-        ));
-    }
+    let interval = ConnectionInterval::from_bytes(&buffer[8..16])
+        .map_err(BlueNRGError::BadConnectionInterval)
+        .map_err(hci::event::Error::Vendor)?;
 
     Ok(L2CapConnectionUpdateRequest {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         identifier: buffer[5],
-        interval: (
-            from_conn_interval_value(interval_min),
-            from_conn_interval_value(interval_max),
-        ),
-        conn_latency: conn_latency,
-        timeout: Duration::from_millis(10 * timeout_mult as u64),
+        conn_interval: interval,
     })
 }
 

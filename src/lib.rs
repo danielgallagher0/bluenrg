@@ -278,14 +278,11 @@ where
     pub fn l2cap_connection_parameter_update_response(
         &mut self,
         params: &L2CapConnectionParameterUpdateResponse,
-    ) -> nb::Result<(), Error<E>> {
-        params.validate().map_err(nb::Error::Other)?;
-
+    ) -> nb::Result<(), E> {
         let mut bytes = [0; L2CapConnectionParameterUpdateResponse::LENGTH];
         params.into_bytes(&mut bytes);
 
         self.write_command(opcode::L2CAP_CONN_PARAM_UPDATE_RESP, &bytes)
-            .map_err(rewrap_error)
     }
 
     /// Set the device in non-discoverable mode. This command will disable the LL advertising and
@@ -895,11 +892,7 @@ where
     ///
     /// # Errors
     ///
-    /// - [BadScanInterval](Error::BadScanInterval) if the
-    ///   [`scan_interval`](GapDiscoveryProcedureParameters::scan_interval) is greater than the
-    ///   [`scan_window`](GapDiscoveryProcedureParameters::scan_window), or if either parameter is
-    ///   out of the allowed range (2.5 ms to 10.24 s).
-    /// - Underlying communication errors.
+    /// Only underlying communication errors are reported.
     ///
     /// # Generated events
     ///
@@ -920,7 +913,7 @@ where
     pub fn gap_start_limited_discovery_procedure(
         &mut self,
         params: &GapDiscoveryProcedureParameters,
-    ) -> nb::Result<(), Error<E>> {
+    ) -> nb::Result<(), E> {
         self.gap_start_discovery_procedure(params, opcode::GAP_START_LIMITED_DISCOVERY_PROCEDURE)
     }
 
@@ -928,11 +921,7 @@ where
     ///
     /// # Errors
     ///
-    /// - [BadScanInterval](Error::BadScanInterval) if the
-    ///   [`scan_interval`](GapDiscoveryProcedureParameters::scan_interval) is greater than the
-    ///   [`scan_window`](GapDiscoveryProcedureParameters::scan_window), or if either parameter is
-    ///   out of the allowed range (2.5 ms to 10.24 s).
-    /// - Underlying communication errors.
+    /// Only underlying communication errors are reported.
     ///
     /// # Generated events
     ///
@@ -952,7 +941,7 @@ where
     pub fn gap_start_general_discovery_procedure(
         &mut self,
         params: &GapDiscoveryProcedureParameters,
-    ) -> nb::Result<(), Error<E>> {
+    ) -> nb::Result<(), E> {
         self.gap_start_discovery_procedure(params, opcode::GAP_START_GENERAL_DISCOVERY_PROCEDURE)
     }
 
@@ -960,13 +949,11 @@ where
         &mut self,
         params: &GapDiscoveryProcedureParameters,
         opcode: hci::Opcode,
-    ) -> nb::Result<(), Error<E>> {
-        params.validate().map_err(nb::Error::Other)?;
-
+    ) -> nb::Result<(), E> {
         let mut bytes = [0; GapDiscoveryProcedureParameters::LENGTH];
         params.into_bytes(&mut bytes);
 
-        self.write_command(opcode, &bytes).map_err(rewrap_error)
+        self.write_command(opcode, &bytes)
     }
 }
 

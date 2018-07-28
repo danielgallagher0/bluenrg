@@ -424,11 +424,14 @@ fn l2cap_connection_update_request() {
             assert_eq!(req.conn_handle, ConnectionHandle(1));
             assert_eq!(req.identifier, 2);
             assert_eq!(
-                req.interval,
+                req.conn_interval.interval(),
                 (Duration::from_micros(7500), Duration::from_micros(12500))
             );
-            assert_eq!(req.conn_latency, 10);
-            assert_eq!(req.timeout, Duration::from_millis(32000));
+            assert_eq!(req.conn_interval.conn_latency(), 10);
+            assert_eq!(
+                req.conn_interval.supervision_timeout(),
+                Duration::from_millis(32000)
+            );
         }
         other => panic!("Did not get L2CAP connection update request: {:?}", other),
     }
@@ -469,147 +472,6 @@ fn l2cap_connection_update_request_failed_l2cap_len() {
             L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
         ))) => assert_eq!(len, L2CAP_CONN_UPDATE_REQ_L2CAP_LEN - 1),
         other => panic!("Did not get L2CAP length: {:?}", other),
-    }
-}
-
-#[test]
-fn l2cap_connection_update_request_failed_bad_interval() {
-    let buffer_bad_min = l2cap_connection_update_request_buffer(
-        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
-        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
-        5,
-        3200,
-        499,
-        3200,
-    );
-    match BlueNRGEvent::new(&buffer_bad_min) {
-        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionUpdateRequestInterval(min, max))) => {
-            assert_eq!(min, Duration::from_micros(6250));
-            assert_eq!(max, Duration::from_secs(4));
-        }
-        other => panic!(
-            "Did not get L2CAP connection update request interval: {:?}",
-            other
-        ),
-    }
-
-    let buffer_bad_max = l2cap_connection_update_request_buffer(
-        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
-        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
-        6,
-        3201,
-        499,
-        3200,
-    );
-    match BlueNRGEvent::new(&buffer_bad_max) {
-        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionUpdateRequestInterval(min, max))) => {
-            assert_eq!(min, Duration::from_micros(7500));
-            assert_eq!(max, Duration::from_micros(4001250));
-        }
-        other => panic!(
-            "Did not get L2CAP connection update request interval: {:?}",
-            other
-        ),
-    }
-
-    let buffer_bad_range = l2cap_connection_update_request_buffer(
-        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
-        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
-        100,
-        99,
-        499,
-        3200,
-    );
-    match BlueNRGEvent::new(&buffer_bad_range) {
-        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionUpdateRequestInterval(min, max))) => {
-            assert_eq!(min, Duration::from_millis(125));
-            assert_eq!(max, Duration::from_micros(123750));
-        }
-        other => panic!(
-            "Did not get L2CAP connection update request interval: {:?}",
-            other
-        ),
-    }
-}
-
-#[test]
-fn l2cap_connection_update_request_failed_bad_conn_latency() {
-    let buffer_absolute_max = l2cap_connection_update_request_buffer(
-        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
-        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
-        6,
-        10,
-        500,
-        3200,
-    );
-    match BlueNRGEvent::new(&buffer_absolute_max) {
-        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionUpdateRequestLatency(
-            latency,
-            500,
-        ))) => {
-            assert_eq!(latency, 500);
-        }
-        other => panic!(
-            "Did not get L2CAP connection update request conn latency: {:?}",
-            other
-        ),
-    }
-
-    let buffer_relative_max = l2cap_connection_update_request_buffer(
-        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
-        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
-        6,
-        10,
-        6,
-        10,
-    );
-    match BlueNRGEvent::new(&buffer_relative_max) {
-        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionUpdateRequestLatency(latency, 3))) => {
-            assert_eq!(latency, 6);
-        }
-        other => panic!(
-            "Did not get L2CAP connection update request conn latency: {:?}",
-            other
-        ),
-    }
-}
-
-#[test]
-fn l2cap_connection_update_request_failed_bad_timeout_mult() {
-    let buffer_low = l2cap_connection_update_request_buffer(
-        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
-        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
-        6,
-        3200,
-        0,
-        9,
-    );
-    match BlueNRGEvent::new(&buffer_low) {
-        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionUpdateRequestTimeout(timeout))) => {
-            assert_eq!(timeout, Duration::from_millis(90));
-        }
-        other => panic!(
-            "Did not get L2CAP connection update request timeout multiplier: {:?}",
-            other
-        ),
-    }
-
-    let buffer_high = l2cap_connection_update_request_buffer(
-        L2CAP_CONN_UPDATE_REQ_EVENT_DATA_LEN,
-        L2CAP_CONN_UPDATE_REQ_L2CAP_LEN,
-        6,
-        3200,
-        0,
-        3201,
-    );
-    match BlueNRGEvent::new(&buffer_high) {
-        Err(HciError::Vendor(BlueNRGError::BadL2CapConnectionUpdateRequestTimeout(timeout))) => {
-            assert_eq!(timeout, Duration::from_millis(32010));
-        }
-        other => panic!(
-            "Did not get L2CAP connection update request timeout multiplier: {:?}",
-            other
-        ),
     }
 }
 

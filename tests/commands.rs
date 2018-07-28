@@ -4,6 +4,7 @@ extern crate embedded_hal as hal;
 extern crate nb;
 
 use bluenrg::*;
+use hci::types::{ConnectionIntervalBuilder, ExpectedConnectionLength, ScanWindow};
 use std::time::Duration;
 
 static mut DUMMY_RX_BUFFER: [u8; 8] = [0; 8];
@@ -111,16 +112,19 @@ fn l2cap_connection_parameter_update_request() {
             controller.l2cap_connection_parameter_update_request(
                 &L2CapConnectionParameterUpdateRequest {
                     conn_handle: hci::ConnectionHandle(0x0201),
-                    interval: (Duration::from_millis(30), Duration::from_millis(300)),
-                    conn_latency: 10,
-                    timeout: Duration::from_millis(1000),
+                    conn_interval: ConnectionIntervalBuilder::new()
+                        .with_range(Duration::from_millis(30), Duration::from_millis(300))
+                        .with_latency(10)
+                        .with_supervision_timeout(Duration::from_millis(6610))
+                        .build()
+                        .unwrap(),
                 },
             )
         })
         .unwrap();
     assert!(
         fixture.wrote(&[
-            1, 0x81, 0xFD, 10, 0x01, 0x02, 0x18, 0x00, 0xF0, 0x00, 0x0A, 0x00, 0x64, 0x00
+            1, 0x81, 0xFD, 10, 0x01, 0x02, 0x18, 0x00, 0xF0, 0x00, 0x0A, 0x00, 0x95, 0x02
         ])
     );
 }
@@ -133,13 +137,16 @@ fn l2cap_connection_parameter_update_response() {
             controller.l2cap_connection_parameter_update_response(
                 &L2CapConnectionParameterUpdateResponse {
                     conn_handle: hci::ConnectionHandle(0x0201),
-                    interval: (Duration::from_millis(30), Duration::from_millis(300)),
-                    conn_latency: 10,
-                    timeout: Duration::from_millis(1000),
-                    expected_connection_length_range: (
+                    conn_interval: ConnectionIntervalBuilder::new()
+                        .with_range(Duration::from_millis(30), Duration::from_millis(300))
+                        .with_latency(10)
+                        .with_supervision_timeout(Duration::from_millis(6610))
+                        .build()
+                        .unwrap(),
+                    expected_connection_length_range: ExpectedConnectionLength::new(
                         Duration::from_millis(500),
                         Duration::from_millis(1250),
-                    ),
+                    ).unwrap(),
                     identifier: 0x0F,
                     accepted: true,
                 },
@@ -148,76 +155,10 @@ fn l2cap_connection_parameter_update_response() {
         .unwrap();
     assert!(
         fixture.wrote(&
-                [1, 0x82, 0xFD, 16, 0x01, 0x02, 0x18, 0x00, 0xF0, 0x00, 0x0A, 0x00, 0x64, 0x00,
+                [1, 0x82, 0xFD, 16, 0x01, 0x02, 0x18, 0x00, 0xF0, 0x00, 0x0A, 0x00, 0x95, 0x02,
                  0x20, 0x03, 0xD0, 0x07, 0x0F, 0x01]
             );
         );
-}
-
-#[test]
-fn l2cap_connection_parameter_update_response_bad_connection_interval() {
-    let mut fixture = Fixture::new();
-    let err = fixture
-        .act(|controller| {
-            controller.l2cap_connection_parameter_update_response(
-                &L2CapConnectionParameterUpdateResponse {
-                    conn_handle: hci::ConnectionHandle(0x0201),
-                    interval: (Duration::from_millis(500), Duration::from_millis(499)),
-                    conn_latency: 10,
-                    timeout: Duration::from_millis(50),
-                    expected_connection_length_range: (
-                        Duration::from_millis(7),
-                        Duration::from_millis(8),
-                    ),
-                    identifier: 0x10,
-                    accepted: true,
-                },
-            )
-        })
-        .err()
-        .unwrap();
-    assert_eq!(
-        err,
-        nb::Error::Other(Error::BadConnectionInterval(
-            Duration::from_millis(500),
-            Duration::from_millis(499)
-        ))
-    );
-    assert!(!fixture.wrote_header());
-    assert_eq!(fixture.sink.written_data, []);
-}
-
-#[test]
-fn l2cap_connection_parameter_update_response_bad_expected_connection_length_range() {
-    let mut fixture = Fixture::new();
-    let err = fixture
-        .act(|controller| {
-            controller.l2cap_connection_parameter_update_response(
-                &L2CapConnectionParameterUpdateResponse {
-                    conn_handle: hci::ConnectionHandle(0x0201),
-                    interval: (Duration::from_millis(500), Duration::from_millis(501)),
-                    conn_latency: 10,
-                    timeout: Duration::from_millis(50),
-                    expected_connection_length_range: (
-                        Duration::from_millis(9),
-                        Duration::from_millis(8),
-                    ),
-                    identifier: 0x10,
-                    accepted: true,
-                },
-            )
-        })
-        .err()
-        .unwrap();
-    assert_eq!(
-        err,
-        nb::Error::Other(Error::BadConnectionLengthRange(
-            Duration::from_millis(9),
-            Duration::from_millis(8)
-        ))
-    );
-    assert!(!fixture.wrote_header());
-    assert_eq!(fixture.sink.written_data, []);
 }
 
 #[test]
@@ -1021,8 +962,10 @@ fn gap_start_limited_discovery_procedure() {
     fixture
         .act(|controller| {
             controller.gap_start_limited_discovery_procedure(&GapDiscoveryProcedureParameters {
-                scan_interval: Duration::from_micros(2500),
-                scan_window: Duration::from_micros(2500),
+                scan_window: ScanWindow::start_every(Duration::from_micros(2500))
+                    .unwrap()
+                    .open_for(Duration::from_micros(2500))
+                    .unwrap(),
                 own_address_type: hci::host::OwnAddressType::Random,
                 filter_duplicates: true,
             })
@@ -1036,45 +979,15 @@ fn gap_start_limited_discovery_procedure() {
 }
 
 #[test]
-fn gap_start_limited_discovery_procedure_bad_window() {
-    let mut fixture = Fixture::new();
-    for (interval, window) in [
-        (Duration::from_millis(19), Duration::from_millis(20)),
-        (Duration::from_millis(2), Duration::from_millis(1)),
-        (Duration::from_millis(12), Duration::from_millis(2)),
-        (Duration::from_millis(10241), Duration::from_millis(100)),
-        (Duration::from_millis(102), Duration::from_millis(10241)),
-    ].iter()
-    {
-        let err = fixture
-            .act(|controller| {
-                controller.gap_start_limited_discovery_procedure(&GapDiscoveryProcedureParameters {
-                    scan_interval: *interval,
-                    scan_window: *window,
-                    own_address_type: hci::host::OwnAddressType::Public,
-                    filter_duplicates: true,
-                })
-            })
-            .err()
-            .unwrap();
-
-        assert_eq!(
-            err,
-            nb::Error::Other(Error::BadScanInterval(*interval, *window))
-        );
-    }
-    assert!(!fixture.wrote_header());
-    assert_eq!(fixture.sink.written_data, []);
-}
-
-#[test]
 fn gap_start_general_discovery_procedure() {
     let mut fixture = Fixture::new();
     fixture
         .act(|controller| {
             controller.gap_start_general_discovery_procedure(&GapDiscoveryProcedureParameters {
-                scan_interval: Duration::from_micros(2500),
-                scan_window: Duration::from_micros(2500),
+                scan_window: ScanWindow::start_every(Duration::from_micros(2500))
+                    .unwrap()
+                    .open_for(Duration::from_micros(2500))
+                    .unwrap(),
                 own_address_type: hci::host::OwnAddressType::Random,
                 filter_duplicates: true,
             })
@@ -1085,36 +998,4 @@ fn gap_start_general_discovery_procedure() {
         fixture.sink.written_data,
         [1, 0x97, 0xFC, 6, 0x04, 0x00, 0x04, 0x00, 0x01, 0x01]
     );
-}
-
-#[test]
-fn gap_start_general_discovery_procedure_bad_window() {
-    let mut fixture = Fixture::new();
-    for (interval, window) in [
-        (Duration::from_millis(19), Duration::from_millis(20)),
-        (Duration::from_millis(2), Duration::from_millis(1)),
-        (Duration::from_millis(12), Duration::from_millis(2)),
-        (Duration::from_millis(10241), Duration::from_millis(100)),
-        (Duration::from_millis(102), Duration::from_millis(10241)),
-    ].iter()
-    {
-        let err = fixture
-            .act(|controller| {
-                controller.gap_start_general_discovery_procedure(&GapDiscoveryProcedureParameters {
-                    scan_interval: *interval,
-                    scan_window: *window,
-                    own_address_type: hci::host::OwnAddressType::Public,
-                    filter_duplicates: true,
-                })
-            })
-            .err()
-            .unwrap();
-
-        assert_eq!(
-            err,
-            nb::Error::Other(Error::BadScanInterval(*interval, *window))
-        );
-    }
-    assert!(!fixture.wrote_header());
-    assert_eq!(fixture.sink.written_data, []);
 }
