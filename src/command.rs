@@ -57,9 +57,11 @@ pub enum Error<E> {
     BadTerminationReason(hci::Status),
 
     /// For the [GAP Start Auto Connection
-    /// Establishment](::ActiveBlueNRG::gap_start_auto_connection_establishment) command, the
+    /// Establishment](::ActiveBlueNRG::gap_start_auto_connection_establishment) or [GAP Start
+    /// Selective Connection
+    /// Establishment](::ActiveBlueNRG::gap_start_selective_connection_establishment) commands, the
     /// provided [white list](GapAutoConnectionEstablishmentParameters::white_list) has more than 33
-    /// entries, which would cause the command to be longer than 255 bytes.
+    /// or 35 entries, respectively, which would cause the command to be longer than 255 bytes.
     WhiteListTooLong,
 
     /// Underlying communication error.
@@ -769,5 +771,57 @@ impl GapGeneralConnectionEstablishmentParameters {
         self.scan_window.into_bytes(&mut bytes[0..4]);
         bytes[4] = self.own_address_type as u8;
         bytes[5] = self.filter_duplicates as u8;
+    }
+}
+
+/// Parameters for the [GAP Start Selective Connection
+/// Establishment](::ActiveBlueNRG::gap_start_selective_connection_establishment) command.
+pub struct GapSelectiveConnectionEstablishmentParameters<'a> {
+    /// Type of scanning
+    pub scan_type: hci::host::ScanType,
+
+    /// Scanning window for connection establishment.
+    pub scan_window: ScanWindow,
+
+    /// Address type of this device.
+    pub own_address_type: hci::host::OwnAddressType,
+
+    /// If true, only report unique devices.
+    pub filter_duplicates: bool,
+
+    /// Addresses to white-list for automatic connection.
+    pub white_list: &'a [hci::host::PeerAddrType],
+}
+
+impl<'a> GapSelectiveConnectionEstablishmentParameters<'a> {
+    /// Maximum number of bytes that may be needed to serialize the parameters.
+    pub const MAX_LENGTH: usize = 252;
+
+    /// Serialize the parameters into the given byte buffer.
+    ///
+    /// Returns the length of the serialized command, which is placed at the beginning of the
+    /// buffer.
+    ///
+    /// # Panics
+    ///
+    /// - If the provided buffer is too small.
+    pub fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+        let len = self.len();
+        assert!(bytes.len() >= len);
+
+        bytes[0] = self.scan_type as u8;
+        self.scan_window.into_bytes(&mut bytes[1..5]);
+        bytes[5] = self.own_address_type as u8;
+        bytes[6] = self.filter_duplicates as u8;
+        bytes[7] = self.white_list.len() as u8;
+        for i in 0..self.white_list.len() {
+            self.white_list[i].into_bytes(&mut bytes[(8 + 7 * i)..(8 + 7 * (i + 1))]);
+        }
+
+        len
+    }
+
+    fn len(&self) -> usize {
+        8 + 7 * self.white_list.len()
     }
 }

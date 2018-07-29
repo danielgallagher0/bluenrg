@@ -1050,6 +1050,41 @@ where
 
         self.write_command(opcode::GAP_START_GENERAL_CONNECTION_ESTABLISHMENT, &bytes)
     }
+
+    /// Start a selective connection establishment procedure.
+    ///
+    /// The GAP adds the specified device addresses into white list and [enables
+    /// scanning](hci::host::Hci::le_set_scan_enable) in the controller with the scanner [filter
+    /// policy](hci::host::ScanParameters::filter_policy) set to
+    /// [WhiteList](hci::host::ScanFilterPolicy::WhiteList), to "accept packets only from devices in
+    /// whitelist". All the devices found are sent to the upper layer by the event [LE Advertising
+    /// Report](hci::event::Event::LeAdvertisingReport). The upper layer then has to select one of
+    /// the devices to which it wants to connect by issuing the command
+    /// [`gap_create_connection`](::ActiveBlueNRG::gap_create_connection).
+    ///
+    /// # Errors
+    ///
+    /// - If the [`white_list`](GapSelectiveConnectionEstablishmentParameters::white_list) is too
+    ///   long (such that the serialized command would not fit in 255 bytes), a
+    ///   [WhiteListTooLong](Error::WhiteListTooLong) is returned. The list cannot have more than 35
+    ///   elements.
+    pub fn gap_start_selective_connection_establishment<'a>(
+        &mut self,
+        params: &GapSelectiveConnectionEstablishmentParameters<'a>,
+    ) -> nb::Result<(), Error<E>> {
+        const MAX_WHITE_LIST_LENGTH: usize = 35;
+        if params.white_list.len() > MAX_WHITE_LIST_LENGTH {
+            return Err(nb::Error::Other(Error::WhiteListTooLong));
+        }
+
+        let mut bytes = [0; GapSelectiveConnectionEstablishmentParameters::MAX_LENGTH];
+        let len = params.into_bytes(&mut bytes);
+
+        self.write_command(
+            opcode::GAP_START_SELECTIVE_CONNECTION_ESTABLISHMENT,
+            &bytes[..len],
+        ).map_err(rewrap_error)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

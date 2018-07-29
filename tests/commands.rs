@@ -1141,3 +1141,66 @@ fn gap_start_general_connection_establishment() {
         [1, 0x9A, 0xFC, 6, 0x04, 0x00, 0x04, 0x00, 0x01, 0x1]
     );
 }
+
+#[test]
+fn gap_start_selective_connection_establishment() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_start_selective_connection_establishment(
+                &GapSelectiveConnectionEstablishmentParameters {
+                    scan_type: hci::host::ScanType::Active,
+                    scan_window: ScanWindow::start_every(Duration::from_micros(2500))
+                        .unwrap()
+                        .open_for(Duration::from_micros(2500))
+                        .unwrap(),
+                    own_address_type: hci::host::OwnAddressType::Random,
+                    filter_duplicates: true,
+                    white_list: &[
+                        hci::host::PeerAddrType::PublicDeviceAddress(hci::BdAddr([
+                            1, 2, 3, 4, 5, 6,
+                        ])),
+                        hci::host::PeerAddrType::RandomDeviceAddress(hci::BdAddr([
+                            6, 5, 4, 3, 2, 1,
+                        ])),
+                    ],
+                },
+            )
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [
+            1, 0x9B, 0xFC, 22, 0x01, 0x04, 0x00, 0x04, 0x00, 0x01, 0x01, 0x02, 0x00, 1, 2, 3, 4, 5,
+            6, 0x01, 6, 5, 4, 3, 2, 1
+        ]
+    );
+}
+
+#[test]
+fn gap_start_selective_connection_establishment_white_list_too_long() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.gap_start_selective_connection_establishment(
+                &GapSelectiveConnectionEstablishmentParameters {
+                    scan_type: hci::host::ScanType::Passive,
+                    scan_window: ScanWindow::start_every(Duration::from_micros(2500))
+                        .unwrap()
+                        .open_for(Duration::from_micros(2500))
+                        .unwrap(),
+                    own_address_type: hci::host::OwnAddressType::Random,
+                    filter_duplicates: true,
+                    white_list: &[hci::host::PeerAddrType::PublicDeviceAddress(hci::BdAddr([
+                        1, 2, 3, 4, 5, 6,
+                    ])); 36],
+                },
+            )
+        })
+        .err()
+        .unwrap();
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+    assert_eq!(err, nb::Error::Other(Error::WhiteListTooLong));
+}
