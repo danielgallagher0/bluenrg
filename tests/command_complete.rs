@@ -82,6 +82,11 @@ status_only! {
         0xFC,
         BNRGParams::GapStartAutoConnectionEstablishment
     );
+    gap_start_general_connection_establishment(
+        0x9A,
+        0xFC,
+        BNRGParams::GapStartGeneralConnectionEstablishment
+    );
 }
 
 #[test]

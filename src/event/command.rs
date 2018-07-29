@@ -118,6 +118,10 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GAP Start Auto Connection
     /// Establishment](::ActiveBlueNRG::gap_start_auto_connection_establishment) command.
     GapStartAutoConnectionEstablishment(hci::Status),
+
+    /// Parameters returned by the [GAP Start General Connection
+    /// Establishment](::ActiveBlueNRG::gap_start_general_connection_establishment) command.
+    GapStartGeneralConnectionEstablishment(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -203,6 +207,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ),
             ::opcode::GAP_START_AUTO_CONNECTION_ESTABLISHMENT => Ok(
                 ReturnParameters::GapStartAutoConnectionEstablishment(to_status(&bytes[3..])?),
+            ),
+            ::opcode::GAP_START_GENERAL_CONNECTION_ESTABLISHMENT => Ok(
+                ReturnParameters::GapStartGeneralConnectionEstablishment(to_status(&bytes[3..])?),
             ),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }

@@ -1117,3 +1117,27 @@ fn gap_start_auto_connection_establishment_white_list_too_long() {
     assert_eq!(fixture.sink.written_data, []);
     assert_eq!(err, nb::Error::Other(Error::WhiteListTooLong));
 }
+
+#[test]
+fn gap_start_general_connection_establishment() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_start_general_connection_establishment(
+                &GapGeneralConnectionEstablishmentParameters {
+                    scan_window: ScanWindow::start_every(Duration::from_micros(2500))
+                        .unwrap()
+                        .open_for(Duration::from_micros(2500))
+                        .unwrap(),
+                    own_address_type: hci::host::OwnAddressType::Random,
+                    filter_duplicates: true,
+                },
+            )
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [1, 0x9A, 0xFC, 6, 0x04, 0x00, 0x04, 0x00, 0x01, 0x1]
+    );
+}

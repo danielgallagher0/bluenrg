@@ -50,6 +50,7 @@ opcodes! {
         pub const GAP_START_GENERAL_DISCOVERY_PROCEDURE = 0x17;
         pub const GAP_START_NAME_DISCOVERY_PROCEDURE = 0x18;
         pub const GAP_START_AUTO_CONNECTION_ESTABLISHMENT = 0x19;
+        pub const GAP_START_GENERAL_CONNECTION_ESTABLISHMENT = 0x1A;
     }
     // Gatt = 0x2;
     L2Cap = 0x3;

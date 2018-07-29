@@ -742,3 +742,32 @@ impl<'a> GapAutoConnectionEstablishmentParameters<'a> {
         18 + 7 * self.white_list.len()
     }
 }
+
+/// Parameters for the [GAP Start General Connection
+/// Establishment](::ActiveBlueNRG::gap_start_general_connection_establishment) command.
+pub struct GapGeneralConnectionEstablishmentParameters {
+    /// Scanning window for connection establishment.
+    pub scan_window: ScanWindow,
+
+    /// Address type of this device.
+    pub own_address_type: hci::host::OwnAddressType,
+
+    /// If true, only report unique devices.
+    pub filter_duplicates: bool,
+}
+
+impl GapGeneralConnectionEstablishmentParameters {
+    /// Number of bytes these parameters take when serialized.
+    pub const LENGTH: usize = 6;
+
+    /// Serialize the parameters into the given byte buffer.
+    ///
+    /// # Panics
+    ///
+    /// - If the provided buffer is too small.
+    pub fn into_bytes(&self, bytes: &mut [u8]) {
+        self.scan_window.into_bytes(&mut bytes[0..4]);
+        bytes[4] = self.own_address_type as u8;
+        bytes[5] = self.filter_duplicates as u8;
+    }
+}

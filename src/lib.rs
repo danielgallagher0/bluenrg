@@ -1023,6 +1023,33 @@ where
             &bytes[..len],
         ).map_err(rewrap_error)
     }
+
+    /// Start a general connection establishment procedure.
+    ///
+    /// The host [enables scanning](hci::host::Hci::le_set_scan_enable) in the controller with the
+    /// scanner [filter policy](hci::host::ScanParameters::filter_policy) set to
+    /// [AcceptAll](hci::host::ScanFilterPolicy::AcceptAll), to "accept all advertising packets" and
+    /// from the scanning results, all the devices are sent to the upper layer using the event [LE
+    /// Advertising Report](hci::event::Event::LeAdvertisingReport). The upper layer then has to
+    /// select one of the devices to which it wants to connect by issuing the command
+    /// [`gap_create_connection`](::ActiveBlueNRG::gap_create_connection). If privacy is enabled,
+    /// then either a private resolvable address or a non-resolvable address, based on the address
+    /// type specified in the command is set as the scanner address but the GAP create connection
+    /// always uses a private resolvable address if the general connection establishment procedure
+    /// is active.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    pub fn gap_start_general_connection_establishment(
+        &mut self,
+        params: &GapGeneralConnectionEstablishmentParameters,
+    ) -> nb::Result<(), E> {
+        let mut bytes = [0; GapGeneralConnectionEstablishmentParameters::LENGTH];
+        params.into_bytes(&mut bytes);
+
+        self.write_command(opcode::GAP_START_GENERAL_CONNECTION_ESTABLISHMENT, &bytes)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller
