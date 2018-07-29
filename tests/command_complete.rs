@@ -92,6 +92,7 @@ status_only! {
         0xFC,
         BNRGParams::GapStartSelectiveConnectionEstablishment
     );
+    gap_create_connection(0x9C, 0xFC, BNRGParams::GapCreateConnection);
 }
 
 #[test]

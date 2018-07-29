@@ -126,6 +126,10 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GAP Start Selective Connection
     /// Establishment](::ActiveBlueNRG::gap_start_selective_connection_establishment) command.
     GapStartSelectiveConnectionEstablishment(hci::Status),
+
+    /// Parameters returned by the [GAP Create Connection](::ActiveBlueNRG::gap_create_connection)
+    /// command.
+    GapCreateConnection(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -218,6 +222,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_START_SELECTIVE_CONNECTION_ESTABLISHMENT => Ok(
                 ReturnParameters::GapStartSelectiveConnectionEstablishment(to_status(&bytes[3..])?),
             ),
+            ::opcode::GAP_CREATE_CONNECTION => Ok(ReturnParameters::GapCreateConnection(
+                to_status(&bytes[3..])?,
+            )),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }

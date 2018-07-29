@@ -1085,6 +1085,39 @@ where
             &bytes[..len],
         ).map_err(rewrap_error)
     }
+
+    /// Start the direct connection establishment procedure.
+    ///
+    /// A [LE Create Connection](hci::host::Hci::le_create_connection) call will be made to the
+    /// controller by GAP with the initiator [filter
+    /// policy](hci::host::ConnectionParameters::initiator_filter_policy) set to
+    /// [UseAddress](hci::ConnectionFilterPolicy::UseAddress) to "ignore whitelist and process
+    /// connectable advertising packets only for the specified device". The procedure can be
+    /// terminated explicitly by the upper layer by issuing the command
+    /// [`gap_terminate_procedure`](::ActiveBlueNRG::gap_terminate_procedure). When a command is
+    /// issued to terminate the procedure by upper layer, a
+    /// [`le_create_connection_cancel`](hci::host::Hci::le_create_connection_cancel) call will be
+    /// made to the controller by GAP.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated as soon as the
+    /// command is given. If [Success](hci::Status::Success) is returned, on termination of the
+    /// procedure, a [LE Connection Complete](hci::event::LeConnectionComplete) event is
+    /// returned. The procedure can be explicitly terminated by the upper layer by issuing the
+    /// command [`gap_terminate_procedure`](::ActiveBlueNRG::gap_terminate_procedure) with the
+    /// procedure_code set to
+    /// [DirectConnectionEstablishment](event::GapProcedure::DirectConnectionEstablishment).
+    pub fn gap_create_connection(&mut self, params: &GapConnectionParameters) -> nb::Result<(), E> {
+        let mut bytes = [0; GapConnectionParameters::LENGTH];
+        params.into_bytes(&mut bytes);
+
+        self.write_command(opcode::GAP_CREATE_CONNECTION, &bytes)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

@@ -825,3 +825,7 @@ impl<'a> GapSelectiveConnectionEstablishmentParameters<'a> {
         8 + 7 * self.white_list.len()
     }
 }
+
+/// The parameters for the [GAP Name Discovery](::ActiveBlueNRG::gap_start_name_discovery_procedure)
+/// and [GAP Create Connection](::ActiveBlueNRG::gap_create_connection) commands are identical.
+pub type GapConnectionParameters = GapNameDiscoveryProcedureParameters;

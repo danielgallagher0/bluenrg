@@ -1204,3 +1204,40 @@ fn gap_start_selective_connection_establishment_white_list_too_long() {
     assert_eq!(fixture.sink.written_data, []);
     assert_eq!(err, nb::Error::Other(Error::WhiteListTooLong));
 }
+
+#[test]
+fn gap_create_connection() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_create_connection(&GapConnectionParameters {
+                scan_window: ScanWindow::start_every(Duration::from_micros(2500))
+                    .unwrap()
+                    .open_for(Duration::from_micros(2500))
+                    .unwrap(),
+                peer_address: hci::host::PeerAddrType::PublicDeviceAddress(hci::BdAddr([
+                    1, 2, 3, 4, 5, 6,
+                ])),
+                own_address_type: hci::host::OwnAddressType::Random,
+                conn_interval: ConnectionIntervalBuilder::new()
+                    .with_range(Duration::from_millis(50), Duration::from_millis(250))
+                    .with_latency(10)
+                    .with_supervision_timeout(Duration::from_millis(6000))
+                    .build()
+                    .unwrap(),
+                expected_connection_length: ExpectedConnectionLength::new(
+                    Duration::from_millis(150),
+                    Duration::from_millis(1500),
+                ).unwrap(),
+            })
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [
+            1, 0x9C, 0xFC, 24, 0x04, 0x00, 0x04, 0x00, 0x00, 1, 2, 3, 4, 5, 6, 0x01, 0x28, 0x00,
+            0xc8, 0x00, 10, 0, 0x58, 0x02, 0xF0, 0x00, 0x60, 0x09
+        ]
+    );
+}
