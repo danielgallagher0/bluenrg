@@ -1141,6 +1141,32 @@ where
         self.write_command(opcode::GAP_TERMINATE_PROCEDURE, &[procedure.bits()])
             .map_err(rewrap_error)
     }
+
+    /// Start the connection update procedure.
+    ///
+    /// A [`le_connection_update`](hci::host::Hci::le_connection_update) call is be made to the
+    /// controller by GAP.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated as soon as the
+    /// command is given. If [Success](hci::Status::Success) is returned, on completion of
+    /// connection update, a
+    /// [LeConnectionUpdateComplete](hci::event::Event::LeConnectionUpdateComplete) event is
+    /// returned to the upper layer.
+    pub fn gap_start_connection_update(
+        &mut self,
+        params: &GapConnectionUpdateParameters,
+    ) -> nb::Result<(), E> {
+        let mut bytes = [0; GapConnectionUpdateParameters::LENGTH];
+        params.into_bytes(&mut bytes);
+
+        self.write_command(opcode::GAP_START_CONNECTION_UPDATE, &bytes)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

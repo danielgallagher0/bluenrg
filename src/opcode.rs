@@ -54,6 +54,7 @@ opcodes! {
         pub const GAP_START_SELECTIVE_CONNECTION_ESTABLISHMENT = 0x1B;
         pub const GAP_CREATE_CONNECTION = 0x1C;
         pub const GAP_TERMINATE_PROCEDURE = 0x1D;
+        pub const GAP_START_CONNECTION_UPDATE = 0x1E;
     }
     // Gatt = 0x2;
     L2Cap = 0x3;

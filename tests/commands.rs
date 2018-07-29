@@ -1277,3 +1277,33 @@ fn gap_terminate_no_procedure() {
     assert_eq!(fixture.sink.written_data, []);
     assert_eq!(err, nb::Error::Other(Error::NoProcedure));
 }
+
+#[test]
+fn gap_start_connection_update() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_start_connection_update(&GapConnectionUpdateParameters {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                conn_interval: ConnectionIntervalBuilder::new()
+                    .with_range(Duration::from_millis(50), Duration::from_millis(250))
+                    .with_latency(10)
+                    .with_supervision_timeout(Duration::from_millis(6000))
+                    .build()
+                    .unwrap(),
+                expected_connection_length: ExpectedConnectionLength::new(
+                    Duration::from_millis(150),
+                    Duration::from_millis(1500),
+                ).unwrap(),
+            })
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [
+            1, 0x9E, 0xFC, 14, 0x01, 0x02, 0x28, 0x00, 0xc8, 0x00, 10, 0, 0x58, 0x02, 0xF0, 0x00,
+            0x60, 0x09
+        ]
+    );
+}

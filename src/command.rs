@@ -858,3 +858,33 @@ bitflags!{
         const OBSERVATION = 0x80;
     }
 }
+
+/// Parameters for the [`gap_start_connection_update`](::ActiveBlueNRG::gap_start_connection_update)
+/// command.
+pub struct GapConnectionUpdateParameters {
+    /// Handle of the connection for which the update procedure has to be started.
+    pub conn_handle: hci::ConnectionHandle,
+
+    /// Updated connection interval for the connection.
+    pub conn_interval: ConnectionInterval,
+
+    /// Expected length of connection event needed for this connection.
+    pub expected_connection_length: ExpectedConnectionLength,
+}
+
+impl GapConnectionUpdateParameters {
+    /// Number of bytes these parameters take when serialized.
+    pub const LENGTH: usize = 14;
+
+    /// Serialize the parameters into the given byte buffer.
+    ///
+    /// # Panics
+    ///
+    /// - If the provided buffer is too small.
+    pub fn into_bytes(&self, bytes: &mut [u8]) {
+        LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
+        self.conn_interval.into_bytes(&mut bytes[2..10]);
+        self.expected_connection_length
+            .into_bytes(&mut bytes[10..14]);
+    }
+}
