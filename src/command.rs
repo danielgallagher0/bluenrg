@@ -56,6 +56,12 @@ pub enum Error<E> {
     /// not one of the allowed reason. The reason is returned.
     BadTerminationReason(hci::Status),
 
+    /// For the [GAP Start Auto Connection
+    /// Establishment](::ActiveBlueNRG::gap_start_auto_connection_establishment) command, the
+    /// provided [white list](GapAutoConnectionEstablishmentParameters::white_list) has more than 33
+    /// entries, which would cause the command to be longer than 255 bytes.
+    WhiteListTooLong,
+
     /// Underlying communication error.
     Comm(E),
 }
@@ -681,5 +687,58 @@ impl GapNameDiscoveryProcedureParameters {
         self.conn_interval.into_bytes(&mut bytes[12..20]);
         self.expected_connection_length
             .into_bytes(&mut bytes[20..24]);
+    }
+}
+
+/// Parameters for the [GAP Start Auto Connection
+/// Establishment](::ActiveBlueNRG::gap_start_auto_connection_establishment) command.
+pub struct GapAutoConnectionEstablishmentParameters<'a> {
+    /// Scanning window for connection establishment.
+    pub scan_window: ScanWindow,
+
+    /// Address type of this device.
+    pub own_address_type: hci::host::OwnAddressType,
+
+    /// Connection interval parameters.
+    pub conn_interval: ConnectionInterval,
+
+    /// Expected connection length
+    pub expected_connection_length: ExpectedConnectionLength,
+
+    /// Addresses to white-list for automatic connection.
+    pub white_list: &'a [hci::host::PeerAddrType],
+}
+
+impl<'a> GapAutoConnectionEstablishmentParameters<'a> {
+    /// Maximum number of bytes that may be needed to serialize the parameters.
+    pub const MAX_LENGTH: usize = 249;
+
+    /// Serialize the parameters into the given byte buffer.
+    ///
+    /// Returns the length of the serialized command, which is placed at the beginning of the
+    /// buffer.
+    ///
+    /// # Panics
+    ///
+    /// - If the provided buffer is too small.
+    pub fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+        let len = self.len();
+        assert!(bytes.len() >= len);
+
+        self.scan_window.into_bytes(&mut bytes[0..4]);
+        bytes[4] = self.own_address_type as u8;
+        self.conn_interval.into_bytes(&mut bytes[5..13]);
+        self.expected_connection_length
+            .into_bytes(&mut bytes[13..17]);
+        bytes[17] = self.white_list.len() as u8;
+        for i in 0..self.white_list.len() {
+            self.white_list[i].into_bytes(&mut bytes[(18 + 7 * i)..(18 + 7 * (i + 1))]);
+        }
+
+        len
+    }
+
+    fn len(&self) -> usize {
+        18 + 7 * self.white_list.len()
     }
 }

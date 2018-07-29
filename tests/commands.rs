@@ -1036,3 +1036,84 @@ fn gap_start_name_discovery_procedure() {
         ]
     );
 }
+
+#[test]
+fn gap_start_auto_connection_establishment() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_start_auto_connection_establishment(
+                &GapAutoConnectionEstablishmentParameters {
+                    scan_window: ScanWindow::start_every(Duration::from_micros(2500))
+                        .unwrap()
+                        .open_for(Duration::from_micros(2500))
+                        .unwrap(),
+                    own_address_type: hci::host::OwnAddressType::Random,
+                    conn_interval: ConnectionIntervalBuilder::new()
+                        .with_range(Duration::from_millis(50), Duration::from_millis(250))
+                        .with_latency(10)
+                        .with_supervision_timeout(Duration::from_millis(6000))
+                        .build()
+                        .unwrap(),
+                    expected_connection_length: ExpectedConnectionLength::new(
+                        Duration::from_millis(150),
+                        Duration::from_millis(1500),
+                    ).unwrap(),
+                    white_list: &[
+                        hci::host::PeerAddrType::PublicDeviceAddress(hci::BdAddr([
+                            1, 2, 3, 4, 5, 6,
+                        ])),
+                        hci::host::PeerAddrType::RandomDeviceAddress(hci::BdAddr([
+                            6, 5, 4, 3, 2, 1,
+                        ])),
+                    ],
+                },
+            )
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+
+    let expected = [
+        1, 0x99, 0xFC, 32, 0x04, 0x00, 0x04, 0x00, 0x01, 0x28, 0x00, 0xc8, 0x00, 10, 0, 0x58, 0x02,
+        0xF0, 0x00, 0x60, 0x09, 2, 0, 1, 2, 3, 4, 5, 6, 1, 6, 5, 4, 3, 2, 1,
+    ];
+
+    assert_eq!(&fixture.sink.written_data[..16], &expected[..16]);
+    assert_eq!(&fixture.sink.written_data[16..32], &expected[16..32]);
+    assert_eq!(&fixture.sink.written_data[32..], &expected[32..]);
+}
+
+#[test]
+fn gap_start_auto_connection_establishment_white_list_too_long() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.gap_start_auto_connection_establishment(
+                &GapAutoConnectionEstablishmentParameters {
+                    scan_window: ScanWindow::start_every(Duration::from_micros(2500))
+                        .unwrap()
+                        .open_for(Duration::from_micros(2500))
+                        .unwrap(),
+                    own_address_type: hci::host::OwnAddressType::Random,
+                    conn_interval: ConnectionIntervalBuilder::new()
+                        .with_range(Duration::from_millis(50), Duration::from_millis(250))
+                        .with_latency(10)
+                        .with_supervision_timeout(Duration::from_millis(6000))
+                        .build()
+                        .unwrap(),
+                    expected_connection_length: ExpectedConnectionLength::new(
+                        Duration::from_millis(150),
+                        Duration::from_millis(1500),
+                    ).unwrap(),
+                    white_list: &[hci::host::PeerAddrType::PublicDeviceAddress(hci::BdAddr([
+                        1, 2, 3, 4, 5, 6,
+                    ])); 34],
+                },
+            )
+        })
+        .err()
+        .unwrap();
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+    assert_eq!(err, nb::Error::Other(Error::WhiteListTooLong));
+}

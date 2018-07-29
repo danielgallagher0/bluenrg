@@ -988,6 +988,41 @@ where
 
         self.write_command(opcode::GAP_START_NAME_DISCOVERY_PROCEDURE, &bytes)
     }
+
+    /// Start the auto connection establishment procedure.
+    ///
+    /// The devices specified are added to the white list of the controller and a
+    /// [`le_create_connection`](hci::host::Hci::le_create_connection) call will be made to the
+    /// controller by GAP with the [initiator filter
+    /// policy](hci::host::ConnectionParameters::initiator_filter_policy) set to
+    /// [WhiteList](hci::host::ConnectionFilterPolicy::WhiteList), to "use whitelist to determine
+    /// which advertiser to connect to". When a command is issued to terminate the procedure by
+    /// upper layer, a [`le_create_connection_cancel`](hci::host::Hci::le_create_connection_cancel)
+    /// call will be made to the controller by GAP.
+    ///
+    /// # Errors
+    ///
+    /// - If the [`white_list`](GapAutoConnectionEstablishmentParameters::white_list) is too long
+    ///   (such that the serialized command would not fit in 255 bytes), a
+    ///   [WhiteListTooLong](Error::WhiteListTooLong) is returned. The list cannot have more than 33
+    ///   elements.
+    pub fn gap_start_auto_connection_establishment<'a>(
+        &mut self,
+        params: &GapAutoConnectionEstablishmentParameters<'a>,
+    ) -> nb::Result<(), Error<E>> {
+        const MAX_WHITE_LIST_LENGTH: usize = 33;
+        if params.white_list.len() > MAX_WHITE_LIST_LENGTH {
+            return Err(nb::Error::Other(Error::WhiteListTooLong));
+        }
+
+        let mut bytes = [0; GapAutoConnectionEstablishmentParameters::MAX_LENGTH];
+        let len = params.into_bytes(&mut bytes);
+
+        self.write_command(
+            opcode::GAP_START_AUTO_CONNECTION_ESTABLISHMENT,
+            &bytes[..len],
+        ).map_err(rewrap_error)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

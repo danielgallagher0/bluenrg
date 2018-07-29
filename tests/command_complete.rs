@@ -77,6 +77,11 @@ status_only! {
         BNRGParams::GapStartGeneralDiscoveryProcedure
     );
     gap_start_name_discovery_procedure(0x98, 0xFC, BNRGParams::GapStartNameDiscoveryProcedure);
+    gap_start_auto_connection_establishment(
+        0x99,
+        0xFC,
+        BNRGParams::GapStartAutoConnectionEstablishment
+    );
 }
 
 #[test]
