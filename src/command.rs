@@ -64,6 +64,10 @@ pub enum Error<E> {
     /// or 35 entries, respectively, which would cause the command to be longer than 255 bytes.
     WhiteListTooLong,
 
+    /// For the [GAP Terminate Procedure](::ActiveBlueNRG::gap_terminate_procedure) command, the
+    /// provided bitfield had no bits set.
+    NoProcedure,
+
     /// Underlying communication error.
     Comm(E),
 }
@@ -829,3 +833,28 @@ impl<'a> GapSelectiveConnectionEstablishmentParameters<'a> {
 /// The parameters for the [GAP Name Discovery](::ActiveBlueNRG::gap_start_name_discovery_procedure)
 /// and [GAP Create Connection](::ActiveBlueNRG::gap_create_connection) commands are identical.
 pub type GapConnectionParameters = GapNameDiscoveryProcedureParameters;
+
+bitflags!{
+    /// Roles for a [GAP service](::ActiveBlueNRG::gap_init).
+    pub struct GapProcedure: u8 {
+        /// [Limited Discovery](::ActiveBlueNRG::gap_start_limited_discovery_procedure) procedure.
+        const LIMITED_DISCOVERY = 0x01;
+        /// [General Discovery](::ActiveBlueNRG::gap_start_general_discovery_procedure) procedure.
+        const GENERAL_DISCOVERY = 0x02;
+        /// [Name Discovery](::ActiveBlueNRG::gap_start_name_discovery_procedure) procedure.
+        const NAME_DISCOVERY = 0x04;
+        /// [Auto Connection Establishment](::ActiveBlueNRG::gap_auto_connection_establishment).
+        const AUTO_CONNECTION_ESTABLISHMENT = 0x08;
+        /// [General Connection
+        /// Establishment](::ActiveBlueNRG::gap_general_connection_establishment).
+        const GENERAL_CONNECTION_ESTABLISHMENT = 0x10;
+        /// [Selective Connection
+        /// Establishment](::ActiveBlueNRG::gap_selective_connection_establishment).
+        const SELECTIVE_CONNECTION_ESTABLISHMENT = 0x20;
+        /// [Direct Connection
+        /// Establishment](::ActiveBlueNRG::gap_direct_connection_establishment).
+        const DIRECT_CONNECTION_ESTABLISHMENT = 0x40;
+        /// [Observation](::ActiveBlueNRG::gap_start_observation_procedure) procedure.
+        const OBSERVATION = 0x80;
+    }
+}

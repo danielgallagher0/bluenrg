@@ -130,6 +130,10 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GAP Create Connection](::ActiveBlueNRG::gap_create_connection)
     /// command.
     GapCreateConnection(hci::Status),
+
+    /// Parameters returned by the [GAP Terminate
+    /// Procedure](::ActiveBlueNRG::gap_terminate_procedure) command.
+    GapTerminateProcedure(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -223,6 +227,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                 ReturnParameters::GapStartSelectiveConnectionEstablishment(to_status(&bytes[3..])?),
             ),
             ::opcode::GAP_CREATE_CONNECTION => Ok(ReturnParameters::GapCreateConnection(
+                to_status(&bytes[3..])?,
+            )),
+            ::opcode::GAP_TERMINATE_PROCEDURE => Ok(ReturnParameters::GapTerminateProcedure(
                 to_status(&bytes[3..])?,
             )),
             other => Err(hci::event::Error::UnknownOpcode(other)),

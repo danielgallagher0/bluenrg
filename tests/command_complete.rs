@@ -93,6 +93,7 @@ status_only! {
         BNRGParams::GapStartSelectiveConnectionEstablishment
     );
     gap_create_connection(0x9C, 0xFC, BNRGParams::GapCreateConnection);
+    gap_terminate_procedure(0x9D, 0xFC, BNRGParams::GapTerminateProcedure);
 }
 
 #[test]

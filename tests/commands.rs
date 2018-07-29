@@ -1241,3 +1241,39 @@ fn gap_create_connection() {
         ]
     );
 }
+
+#[test]
+fn gap_terminate_procedure() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_terminate_procedure(GapProcedure::LIMITED_DISCOVERY))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x9D, 0xFC, 1, 0x01]);
+}
+
+#[test]
+fn gap_terminate_multiple_procedure() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_terminate_procedure(
+                GapProcedure::LIMITED_DISCOVERY | GapProcedure::OBSERVATION,
+            )
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x9D, 0xFC, 1, 0x81]);
+}
+
+#[test]
+fn gap_terminate_no_procedure() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| controller.gap_terminate_procedure(GapProcedure::empty()))
+        .err()
+        .unwrap();
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+    assert_eq!(err, nb::Error::Other(Error::NoProcedure));
+}

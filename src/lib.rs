@@ -1118,6 +1118,29 @@ where
 
         self.write_command(opcode::GAP_CREATE_CONNECTION, &bytes)
     }
+
+    /// The GAP procedure(s) specified is terminated.
+    ///
+    /// # Errors
+    ///
+    /// - [NoProcedure](Error::NoProcedure) if the bitfield is empty.
+    /// - Underlying communication errors
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::GapProcedureComplete) event is
+    /// generated for this command. If the command was successfully processed, the status field will
+    /// be [Success](hci::Status::Success) and a
+    /// [GapProcedureCompleted](::event::Event::GapProcedureCompleted) event is returned with the
+    /// procedure code set to the corresponding procedure.
+    pub fn gap_terminate_procedure(&mut self, procedure: GapProcedure) -> nb::Result<(), Error<E>> {
+        if procedure.is_empty() {
+            return Err(nb::Error::Other(Error::NoProcedure));
+        }
+
+        self.write_command(opcode::GAP_TERMINATE_PROCEDURE, &[procedure.bits()])
+            .map_err(rewrap_error)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller
