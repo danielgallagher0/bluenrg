@@ -888,3 +888,34 @@ impl GapConnectionUpdateParameters {
             .into_bytes(&mut bytes[10..14]);
     }
 }
+
+/// Parameters for the [`gap_send_pairing_request`](::ActiveBlueNRG::gap_send_pairing_request)
+/// command.
+pub struct GapPairingRequest {
+    /// Handle of the connection for which the pairing request has to be sent.
+    pub conn_handle: hci::ConnectionHandle,
+
+    /// Whether pairing request has to be sent if the device is previously bonded or not. If false,
+    /// the pairing request is sent only if the device has not previously bonded.
+    pub force_rebond: bool,
+
+    /// Whether the link has to be re-encrypted after the key exchange.
+    pub force_reencrypt: bool,
+}
+
+impl GapPairingRequest {
+    /// Number of bytes these parameters take when serialized.
+    pub const LENGTH: usize = 3;
+
+    /// Serialize the parameters into the given byte buffer.
+    ///
+    /// # Panics
+    ///
+    /// - If the provided buffer is too small.
+    pub fn into_bytes(&self, bytes: &mut [u8]) {
+        assert!(bytes.len() >= Self::LENGTH);
+
+        LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
+        bytes[2] = self.force_rebond as u8 | ((self.force_reencrypt as u8) << 1);
+    }
+}

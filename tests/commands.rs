@@ -1307,3 +1307,22 @@ fn gap_start_connection_update() {
         ]
     );
 }
+
+#[test]
+fn gap_send_pairing_request() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_send_pairing_request(&GapPairingRequest {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                force_rebond: true,
+                force_reencrypt: true,
+            })
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [1, 0x9F, 0xFC, 3, 0x01, 0x02, 0x03]
+    );
+}

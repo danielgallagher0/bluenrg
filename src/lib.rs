@@ -1167,6 +1167,29 @@ where
 
         self.write_command(opcode::GAP_START_CONNECTION_UPDATE, &bytes)
     }
+
+    /// Send the SM pairing request to start a pairing process. The authentication requirements and
+    /// I/O capabilities should be set before issuing this command using the
+    /// [`gap_set_io_capabilities`](::ActiveBlueNRG::gap_set_io_capabilities) and
+    /// [`gap_set_authentication_requirements`](::ActiveBlueNRG::gap_set_authentication_requirements)
+    /// commands.
+    ///
+    /// # Errors
+    ///
+    /// Only uunderlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated when the command is
+    /// received. If [Success](hci::Status::Success) is returned in the command status event, a
+    /// [Pairing Complete](::event::BlueNRGEvent::GapPairingComplete) event is returned after the
+    /// pairing process is completed.
+    pub fn gap_send_pairing_request(&mut self, params: &GapPairingRequest) -> nb::Result<(), E> {
+        let mut bytes = [0; GapPairingRequest::LENGTH];
+        params.into_bytes(&mut bytes);
+
+        self.write_command(opcode::GAP_SEND_PAIRING_REQUEST, &bytes)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

@@ -138,6 +138,10 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GAP Start Connection
     /// Update](::ActiveBlueNRG::gap_start_connection_update) command.
     GapStartConnectionUpdate(hci::Status),
+
+    /// Parameters returned by the [GAP Send Pairing
+    /// Request](::ActiveBlueNRG::gap_send_pairing_request) command.
+    GapSendPairingRequest(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -239,6 +243,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_START_CONNECTION_UPDATE => Ok(
                 ReturnParameters::GapStartConnectionUpdate(to_status(&bytes[3..])?),
             ),
+            ::opcode::GAP_SEND_PAIRING_REQUEST => Ok(ReturnParameters::GapSendPairingRequest(
+                to_status(&bytes[3..])?,
+            )),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }

@@ -95,6 +95,7 @@ status_only! {
     gap_create_connection(0x9C, 0xFC, BNRGParams::GapCreateConnection);
     gap_terminate_procedure(0x9D, 0xFC, BNRGParams::GapTerminateProcedure);
     gap_start_connection_update(0x9E, 0xFC, BNRGParams::GapStartConnectionUpdate);
+    gap_send_pairing_request(0x9F, 0xFC, BNRGParams::GapSendPairingRequest);
 }
 
 #[test]
