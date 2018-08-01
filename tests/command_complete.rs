@@ -162,3 +162,57 @@ fn gap_get_security_level_bad_pass_key_requirement() {
         other => panic!("Did not get bad pass key requirement: {:?}", other),
     }
 }
+
+#[test]
+fn gap_resolve_private_address() {
+    let buffer = [0x0E, 10, 1, 0xA0, 0xFC, 0, 1, 2, 3, 4, 5, 6];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 1);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::GapResolvePrivateAddress(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(params.bd_addr, Some(hci::BdAddr([1, 2, 3, 4, 5, 6])));
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_resolve_private_address_failed() {
+    let buffer = [0x0E, 4, 1, 0xA0, 0xFC, 0x12];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 1);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::GapResolvePrivateAddress(params)) => {
+                    assert_eq!(params.status, hci::Status::InvalidParameters);
+                    assert_eq!(params.bd_addr, None);
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_resolve_private_address_failed_mixed_signals() {
+    let buffer = [0x0E, 10, 1, 0xA0, 0xFC, 0x12, 1, 2, 3, 4, 5, 6];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 1);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::GapResolvePrivateAddress(params)) => {
+                    assert_eq!(params.status, hci::Status::InvalidParameters);
+                    assert_eq!(params.bd_addr, None);
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}

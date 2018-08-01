@@ -142,6 +142,10 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GAP Send Pairing
     /// Request](::ActiveBlueNRG::gap_send_pairing_request) command.
     GapSendPairingRequest(hci::Status),
+
+    /// Parameters returned by the [GAP Resolve Private
+    /// Address](::ActiveBlueNRG::gap_resolve_private_address) command.
+    GapResolvePrivateAddress(GapResolvePrivateAddress),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -246,6 +250,11 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_SEND_PAIRING_REQUEST => Ok(ReturnParameters::GapSendPairingRequest(
                 to_status(&bytes[3..])?,
             )),
+            ::opcode::GAP_RESOLVE_PRIVATE_ADDRESS => {
+                Ok(ReturnParameters::GapResolvePrivateAddress(
+                    to_gap_resolve_private_address(&bytes[3..])?,
+                ))
+            }
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }
@@ -370,4 +379,38 @@ fn to_gap_security_level(
         out_of_band_data_present: to_boolean(bytes[3]).map_err(hci::event::Error::Vendor)?,
         pass_key_required: bytes[4].try_into().map_err(hci::event::Error::Vendor)?,
     })
+}
+
+/// Parameters returned by the [GAP Resolve Private
+/// Address](::ActiveBlueNRG::gap_resolve_private_address) command.
+#[derive(Copy, Clone, Debug)]
+pub struct GapResolvePrivateAddress {
+    /// Did the command fail, and if so, how?
+    pub status: hci::Status,
+
+    /// If the address was successfully resolved, the peer address is returned.  This value is
+    /// `None` if the address could not be resolved.
+    pub bd_addr: Option<hci::BdAddr>,
+}
+
+fn to_gap_resolve_private_address(
+    bytes: &[u8],
+) -> Result<GapResolvePrivateAddress, hci::event::Error<super::BlueNRGError>> {
+    let status = to_status(&bytes)?;
+    if status == hci::Status::Success {
+        require_len!(bytes, 7);
+
+        let mut addr = [0; 6];
+        addr.copy_from_slice(&bytes[1..7]);
+
+        Ok(GapResolvePrivateAddress {
+            status: status,
+            bd_addr: Some(hci::BdAddr(addr)),
+        })
+    } else {
+        Ok(GapResolvePrivateAddress {
+            status: status,
+            bd_addr: None,
+        })
+    }
 }

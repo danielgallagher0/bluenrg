@@ -1326,3 +1326,16 @@ fn gap_send_pairing_request() {
         [1, 0x9F, 0xFC, 3, 0x01, 0x02, 0x03]
     );
 }
+
+#[test]
+fn gap_resolve_private_address() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_resolve_private_address(hci::BdAddr([1, 2, 3, 4, 5, 6])))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [1, 0xA0, 0xFC, 6, 1, 2, 3, 4, 5, 6]
+    );
+}

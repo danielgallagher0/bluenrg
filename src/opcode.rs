@@ -56,6 +56,7 @@ opcodes! {
         pub const GAP_TERMINATE_PROCEDURE = 0x1D;
         pub const GAP_START_CONNECTION_UPDATE = 0x1E;
         pub const GAP_SEND_PAIRING_REQUEST = 0x1F;
+        pub const GAP_RESOLVE_PRIVATE_ADDRESS = 0x20;
     }
     // Gatt = 0x2;
     L2Cap = 0x3;

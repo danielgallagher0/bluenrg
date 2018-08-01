@@ -1176,7 +1176,7 @@ where
     ///
     /// # Errors
     ///
-    /// Only uunderlying communication errors are reported.
+    /// Only underlying communication errors are reported.
     ///
     /// # Generated events
     ///
@@ -1189,6 +1189,25 @@ where
         params.into_bytes(&mut bytes);
 
         self.write_command(opcode::GAP_SEND_PAIRING_REQUEST, &bytes)
+    }
+
+    /// This command tries to resolve the address provided with the IRKs present in its database.
+    ///
+    /// If the address is resolved successfully with any one of the IRKs present in the database, it
+    /// returns success and also the corresponding public/static random address stored with the IRK
+    /// in the database.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::ResolvePrivateAddress) event is
+    /// generated. If [Success](hci::Status::Success) is returned as the status, then the address is
+    /// also returned in the event.
+    pub fn gap_resolve_private_address(&mut self, addr: hci::BdAddr) -> nb::Result<(), E> {
+        self.write_command(opcode::GAP_RESOLVE_PRIVATE_ADDRESS, &addr.0)
     }
 }
 
