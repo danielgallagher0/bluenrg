@@ -1339,3 +1339,13 @@ fn gap_resolve_private_address() {
         [1, 0xA0, 0xFC, 6, 1, 2, 3, 4, 5, 6]
     );
 }
+
+#[test]
+fn gap_get_bonded_devices() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_get_bonded_devices())
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0xA3, 0xFC, 0]);
+}

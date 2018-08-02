@@ -393,6 +393,16 @@ pub enum BlueNRGError {
     /// [event](command::ReturnParameters::GapGetSecurityLevel): the pass key requirement field was
     /// an invalid value. The unknown byte is provided.
     BadPassKeyRequirement(u8),
+
+    /// For the [GAP Get Bonded Devices](::ActiveBlueNRG::gap_get_bonded_addresses) command complete
+    /// [event](command::ReturnParameters::GapGetBondedDevices): the packat was not long enough to
+    /// contain the number of addresses it claimed to contain.
+    PartialBondedDeviceAddress,
+
+    /// For the [GAP Get Bonded Devices](::ActiveBlueNRG::gap_get_bonded_addresses) command complete
+    /// [event](command::ReturnParameters::GapGetBondedDevices): one of the address type bytes was
+    /// invalid. Includes the invalid byte.
+    BadBdAddrType(u8),
 }
 
 macro_rules! require_len {

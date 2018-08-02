@@ -1209,6 +1209,21 @@ where
     pub fn gap_resolve_private_address(&mut self, addr: hci::BdAddr) -> nb::Result<(), E> {
         self.write_command(opcode::GAP_RESOLVE_PRIVATE_ADDRESS, &addr.0)
     }
+
+    /// This command gets the list of the devices which are bonded. It returns the number of
+    /// addresses and the corresponding address types and values.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::GapBondedDevices) event is
+    /// generated.
+    pub fn gap_get_bonded_devices(&mut self) -> nb::Result<(), E> {
+        self.write_command(opcode::GAP_GET_BONDED_DEVICES, &[])
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

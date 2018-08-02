@@ -8,6 +8,7 @@ extern crate bluetooth_hci as hci;
 
 use byteorder::{ByteOrder, LittleEndian};
 use core::convert::{TryFrom, TryInto};
+use core::fmt::{Debug, Formatter, Result as FmtResult};
 
 /// Vendor-specific commands that may generate the [Command
 /// Complete](hci::event::command::ReturnParameters::Vendor) event. If the commands have defined
@@ -146,6 +147,10 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GAP Resolve Private
     /// Address](::ActiveBlueNRG::gap_resolve_private_address) command.
     GapResolvePrivateAddress(GapResolvePrivateAddress),
+
+    /// Parameters returned by the [GAP Get Bonded Devices](::ActiveBlueNRG::gap_get_bonded_devices)
+    /// command.
+    GapGetBondedDevices(GapBondedDevices),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -255,6 +260,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                     to_gap_resolve_private_address(&bytes[3..])?,
                 ))
             }
+            ::opcode::GAP_GET_BONDED_DEVICES => Ok(ReturnParameters::GapGetBondedDevices(
+                to_gap_bonded_devices(&bytes[3..])?,
+            )),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }
@@ -412,5 +420,78 @@ fn to_gap_resolve_private_address(
             status: status,
             bd_addr: None,
         })
+    }
+}
+
+/// Parameters returned by the [GAP Get Bonded Devices](::ActiveBlueNRG::gap_get_bonded_devices)
+/// command.
+#[derive(Copy, Clone)]
+pub struct GapBondedDevices {
+    /// Did the command fail, and if so, how?
+    pub status: hci::Status,
+
+    // Number of peer addresses in the event, and a buffer that can hold all of the addresses.
+    address_count: usize,
+    address_buffer: [hci::BdAddrType; MAX_ADDRESSES],
+}
+
+// Max packet size (255 bytes) less non-address data (4 bytes) divided by peer address size (7):
+const MAX_ADDRESSES: usize = 35;
+
+impl GapBondedDevices {
+    /// Return an iterator over the bonded device addresses.
+    pub fn bonded_addresses(&self) -> &[hci::BdAddrType] {
+        &self.address_buffer[..self.address_count]
+    }
+}
+
+impl Debug for GapBondedDevices {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "{{")?;
+        for addr in self.bonded_addresses().iter() {
+            write!(f, "{:?}, ", addr)?;
+        }
+        write!(f, "}}")
+    }
+}
+
+fn to_gap_bonded_devices(
+    bytes: &[u8],
+) -> Result<GapBondedDevices, hci::event::Error<super::BlueNRGError>> {
+    let status = to_status(&bytes)?;
+    match status {
+        hci::Status::Success => {
+            const HEADER_LEN: usize = 2;
+            const ADDR_LEN: usize = 7;
+
+            require_len_at_least!(bytes, HEADER_LEN);
+            let address_count = bytes[1] as usize;
+            if bytes.len() != HEADER_LEN + ADDR_LEN * address_count {
+                return Err(hci::event::Error::Vendor(
+                    super::BlueNRGError::PartialBondedDeviceAddress,
+                ));
+            }
+
+            let mut address_buffer = [hci::BdAddrType::Public(hci::BdAddr([0; 6])); MAX_ADDRESSES];
+            for i in 0..address_count {
+                let index = HEADER_LEN + i * ADDR_LEN;
+                let mut addr = [0; 6];
+                addr.copy_from_slice(&bytes[(1 + index)..(7 + index)]);
+                address_buffer[i] = hci::to_bd_addr_type(bytes[index], hci::BdAddr(addr)).map_err(
+                    |e| hci::event::Error::Vendor(super::BlueNRGError::BadBdAddrType(e.0)),
+                )?;
+            }
+
+            Ok(GapBondedDevices {
+                status,
+                address_count,
+                address_buffer,
+            })
+        }
+        _ => Ok(GapBondedDevices {
+            status,
+            address_count: 0,
+            address_buffer: [hci::BdAddrType::Public(hci::BdAddr([0; 6])); MAX_ADDRESSES],
+        }),
     }
 }

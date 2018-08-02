@@ -216,3 +216,87 @@ fn gap_resolve_private_address_failed_mixed_signals() {
         other => panic!("Did not get command complete event: {:?}", other),
     }
 }
+
+#[test]
+fn gap_get_bonded_addresses() {
+    let buffer = [
+        0x0E, 19, 1, 0xA3, 0xFC, 0, 2, 0, 1, 2, 3, 4, 5, 6, 1, 6, 5, 4, 3, 2, 1,
+    ];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 1);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::GapGetBondedDevices(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(
+                        params.bonded_addresses(),
+                        [
+                            hci::BdAddrType::Public(hci::BdAddr([1, 2, 3, 4, 5, 6])),
+                            hci::BdAddrType::Random(hci::BdAddr([6, 5, 4, 3, 2, 1])),
+                        ]
+                    );
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_get_bonded_addresses_partial() {
+    let buffer = [
+        0x0E, 18, 1, 0xA3, 0xFC, 0, 2, 0, 1, 2, 3, 4, 5, 6, 1, 6, 5, 4, 3, 2,
+    ];
+    match Event::new(Packet(&buffer)) {
+        Err(HciError::Vendor(BlueNRGError::PartialBondedDeviceAddress)) => (),
+        other => panic!("Did not get partial bonded device address: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_get_bonded_addresses_bad_addr_type() {
+    let buffer = [
+        0x0E, 19, 1, 0xA3, 0xFC, 0, 2, 2, 1, 2, 3, 4, 5, 6, 1, 6, 5, 4, 3, 2, 1,
+    ];
+    match Event::new(Packet(&buffer)) {
+        Err(HciError::Vendor(BlueNRGError::BadBdAddrType(2))) => (),
+        other => panic!("Did not get bad address type: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_get_bonded_addresses_failed() {
+    let buffer = [0x0E, 4, 1, 0xA3, 0xFC, 0x12];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 1);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::GapGetBondedDevices(params)) => {
+                    assert_eq!(params.status, hci::Status::InvalidParameters);
+                    assert_eq!(params.bonded_addresses(), []);
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
+fn gap_get_bonded_addresses_failed_mixed_signals() {
+    let buffer = [0x0E, 12, 1, 0xA3, 0xFC, 0x12, 1, 0, 1, 2, 3, 4, 5, 6];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 1);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::GapGetBondedDevices(params)) => {
+                    assert_eq!(params.status, hci::Status::InvalidParameters);
+                    assert_eq!(params.bonded_addresses(), []);
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
