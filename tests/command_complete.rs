@@ -98,6 +98,7 @@ status_only! {
     gap_send_pairing_request(0x9F, 0xFC, BNRGParams::GapSendPairingRequest);
     gap_set_broadcast_mode(0xA1, 0xFC, BNRGParams::GapSetBroadcastMode);
     gap_start_observation_procedure(0xA2, 0xFC, BNRGParams::GapStartObservationProcedure);
+    gap_is_device_bonded(0xA4, 0xFC, BNRGParams::GapIsDeviceBonded);
 }
 
 #[test]

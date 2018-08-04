@@ -60,6 +60,7 @@ opcodes! {
         pub const GAP_SET_BROADCAST_MODE = 0x21;
         pub const GAP_START_OBSERVATION_PROCEDURE = 0x22;
         pub const GAP_GET_BONDED_DEVICES = 0x23;
+        pub const GAP_IS_DEVICE_BONDED = 0x24;
     }
     // Gatt = 0x2;
     L2Cap = 0x3;

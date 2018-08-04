@@ -1545,3 +1545,20 @@ fn gap_start_observation_procedure() {
         [1, 0xA2, 0xFC, 7, 0x04, 0x00, 0x04, 0x00, 0x00, 0x01, 0x01]
     );
 }
+
+#[test]
+fn gap_is_device_bonded() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_is_device_bonded(hci::host::PeerAddrType::PublicDeviceAddress(
+                hci::BdAddr([1, 2, 3, 4, 5, 6]),
+            ))
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [1, 0xA4, 0xFC, 7, 0x00, 1, 2, 3, 4, 5, 6]
+    );
+}

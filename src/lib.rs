@@ -1279,6 +1279,25 @@ where
 
         self.write_command(opcode::GAP_START_OBSERVATION_PROCEDURE, &bytes)
     }
+
+    /// The command finds whether the device, whose address is specified in the command, is
+    /// bonded. If the device is using a resolvable private address and it has been bonded, then the
+    /// command will return [Success](hci::Status::Success).
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::GapIsDeviceBonded) event is
+    /// generated.
+    pub fn gap_is_device_bonded(&mut self, addr: hci::host::PeerAddrType) -> nb::Result<(), E> {
+        let mut bytes = [0; 7];
+        addr.into_bytes(&mut bytes);
+
+        self.write_command(opcode::GAP_IS_DEVICE_BONDED, &bytes)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller
