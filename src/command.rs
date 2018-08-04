@@ -20,8 +20,9 @@ pub enum Error<E> {
     /// first element, max as the second.
     BadConnectionInterval(Duration, Duration),
 
-    /// For the [GAP Set Limited Discoverable](::ActiveBlueNRG::gap_set_limited_discoverable)
-    /// command, the advertising type is disallowed.  Returns the invalid advertising type.
+    /// For the [GAP Set Limited Discoverable](::ActiveBlueNRG::gap_set_limited_discoverable) and
+    /// [GAP Set Broadcast Mode](::ActiveBlueNRG::gap_set_broadcast_mode) commands, the advertising
+    /// type is disallowed.  Returns the invalid advertising type.
     BadAdvertisingType(::AdvertisingType),
 
     /// For the [GAP Set Limited Discoverable](::ActiveBlueNRG::gap_set_limited_discoverable)
@@ -47,9 +48,9 @@ pub enum Error<E> {
     /// allowed.
     BadAdvertisingFilterPolicy(::AdvertisingFilterPolicy),
 
-    /// For the [GAP Update Advertising Data](::ActiveBlueNRG::gap_update_advertising_data) command,
-    /// the advertising data is too long. It must be 31 bytes or less. The length of the provided
-    /// data is returned.
+    /// For the [GAP Update Advertising Data](::ActiveBlueNRG::gap_update_advertising_data) and [GAP
+    /// Set Broadcast Mode](::ActiveBlueNRG::gap_set_broadcast_mode) commands, the advertising data
+    /// is too long. It must be 31 bytes or less. The length of the provided data is returned.
     BadAdvertisingDataLength(usize),
 
     /// For the [GAP Terminate](::ActiveBlueNRG::gap_terminate) command, the termination reason was
@@ -62,6 +63,10 @@ pub enum Error<E> {
     /// Establishment](::ActiveBlueNRG::gap_start_selective_connection_establishment) commands, the
     /// provided [white list](GapAutoConnectionEstablishmentParameters::white_list) has more than 33
     /// or 35 entries, respectively, which would cause the command to be longer than 255 bytes.
+    ///
+    /// For the [GAP Set Broadcast Mode](::ActiveBlueNRG::gap_set_broadcast_mode), the provided
+    /// [white list](GapBroadcastModeParameters::white_list) the maximum number of entries ranges
+    /// from 31 to 35, depending on the length of the advertising data.
     WhiteListTooLong,
 
     /// For the [GAP Terminate Procedure](::ActiveBlueNRG::gap_terminate_procedure) command, the
@@ -917,5 +922,103 @@ impl GapPairingRequest {
 
         LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
         bytes[2] = self.force_rebond as u8 | ((self.force_reencrypt as u8) << 1);
+    }
+}
+
+/// Parameters for the [GAP Set Broadcast Mode](::ActiveBlueNRG::gap_set_broadcast_mode) command.
+pub struct GapBroadcastModeParameters<'a, 'b> {
+    /// Advertising type and interval.
+    ///
+    /// Only the [ScannableUndirected](hci::types::AdvertisingType::ScannableUndirected) and
+    /// [NonConnectableUndirected](hci::types::AdvertisingType::NonConnectableUndirected).
+    pub advertising_interval: hci::types::AdvertisingInterval,
+
+    /// Type of this device's address.
+    ///
+    /// A privacy enabled device uses either a [resolvable private
+    /// address](GapAddressType::ResolvablePrivate) or a [non-resolvable
+    /// private](GapAddressType::NonResolvablePrivate) address.
+    pub own_address_type: GapAddressType,
+
+    /// Advertising data used by the device when advertising.
+    ///
+    /// Must be 31 bytes or fewer.
+    pub advertising_data: &'a [u8],
+
+    /// Addresses to add to the white list.
+    ///
+    /// Each address takes up 7 bytes (1 byte for the type, 6 for the address). The full length of
+    /// this packet must not exceed 255 bytes. The white list must be less than a maximum of between
+    /// 31 and 35 entries, depending on the length of
+    /// [`advertising_data`](GapBroadcastModeParameters::advertising_data). Shorter advertising data
+    /// allows more white list entries.
+    pub white_list: &'b [hci::host::PeerAddrType],
+}
+
+impl<'a, 'b> GapBroadcastModeParameters<'a, 'b> {
+    /// Maximum length of a GAP Broadcast Mode Parameter list
+    pub const MAX_LENGTH: usize = 255;
+
+    /// Ensure that the provided parameters match the requirements.
+    ///
+    /// # Errors
+    ///
+    /// - [BadAdvertisingType](Error::BadAdvertisingType) if the advertising type is not
+    ///   [ScannableUndirected](hci::types::AdvertisingType::ScannableUndirected) or
+    ///   [NonConnectableUndirected](hci::types::AdvertisingType::NonConnectableUndirected).
+    /// - [BadAdvertisingDataLength](Error::BadAdvertisingDataLength) if the advertising data is
+    ///   longer than 31 bytes.
+    /// - [WhiteListTooLong](Error::WhiteListTooLong) if the length of the white list would put the
+    ///   packet length over 255 bytes. The exact number of addresses that can be in the white list
+    ///   can range from 35 to 31, depending on the length of the advertising data.
+    pub fn validate<E>(&self) -> Result<(), Error<E>> {
+        match self.advertising_interval.advertising_type() {
+            hci::types::AdvertisingType::ScannableUndirected
+            | hci::types::AdvertisingType::NonConnectableUndirected => (),
+            other => return Err(Error::BadAdvertisingType(other)),
+        }
+
+        const MAX_ADVERTISING_DATA_LENGTH: usize = 31;
+        if self.advertising_data.len() > MAX_ADVERTISING_DATA_LENGTH {
+            return Err(Error::BadAdvertisingDataLength(self.advertising_data.len()));
+        }
+
+        if self.len() > Self::MAX_LENGTH {
+            return Err(Error::WhiteListTooLong);
+        }
+
+        Ok(())
+    }
+
+    fn len(&self) -> usize {
+        5 + // advertising_interval
+            1 + // own_address_type
+            1 + self.advertising_data.len() + // advertising_data
+            1 + 7 * self.white_list.len() // white_list
+    }
+
+    /// Serialize the parameters into the given byte buffer. Returns the number of valid bytes.
+    ///
+    /// # Panics
+    ///
+    /// If bytes is shorter than the required length for these parameters. If [validate] returns a
+    /// [WhiteListTooLong](Error::WhiteListTooLong) error, this function should not be called, since
+    /// the required length is longer than the maximum packet size.
+    pub fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+        assert!(self.len() <= bytes.len());
+
+        self.advertising_interval.into_bytes(&mut bytes[0..5]);
+        bytes[5] = self.own_address_type as u8;
+        bytes[6] = self.advertising_data.len() as u8;
+        bytes[7..7 + self.advertising_data.len()].copy_from_slice(self.advertising_data);
+        bytes[7 + self.advertising_data.len()] = self.white_list.len() as u8;
+
+        let mut index = 8 + self.advertising_data.len();
+        for addr in self.white_list.iter() {
+            addr.into_bytes(&mut bytes[index..index + 7]);
+            index += 7;
+        }
+
+        index
     }
 }

@@ -1224,6 +1224,37 @@ where
     pub fn gap_get_bonded_devices(&mut self) -> nb::Result<(), E> {
         self.write_command(opcode::GAP_GET_BONDED_DEVICES, &[])
     }
+
+    /// This command puts the device into broadcast mode.
+    ///
+    /// # Errors
+    ///
+    /// - [BadAdvertisingType](Error::BadAdvertisingType) if the advertising type is not
+    ///   [ScannableUndirected](hci::types::AdvertisingType::ScannableUndirected) or
+    ///   [NonConnectableUndirected](hci::types::AdvertisingType::NonConnectableUndirected).
+    /// - [BadAdvertisingDataLength](Error::BadAdvertisingDataLength) if the advertising data is
+    ///   longer than 31 bytes.
+    /// - [WhiteListTooLong](Error::WhiteListTooLong) if the length of the white list would put the
+    ///   packet length over 255 bytes. The exact number of addresses that can be in the white list
+    ///   can range from 35 to 31, depending on the length of the advertising data.
+    /// - Underlying communication errors.
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::GapSetBroadcastMode) event is
+    /// returned where the status indicates whether the command was successful.
+    pub fn gap_set_broadcast_mode(
+        &mut self,
+        params: &GapBroadcastModeParameters,
+    ) -> nb::Result<(), Error<E>> {
+        params.validate().map_err(nb::Error::Other)?;
+
+        let mut bytes = [0; GapBroadcastModeParameters::MAX_LENGTH];
+        let len = params.into_bytes(&mut bytes);
+
+        self.write_command(opcode::GAP_SET_BROADCAST_MODE, &bytes[..len])
+            .map_err(rewrap_error)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

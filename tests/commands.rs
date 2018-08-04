@@ -1349,3 +1349,176 @@ fn gap_get_bonded_devices() {
     assert!(fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, [1, 0xA3, 0xFC, 0]);
 }
+
+#[test]
+fn gap_set_broadcast_mode() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_set_broadcast_mode(&GapBroadcastModeParameters {
+                advertising_interval: hci::types::AdvertisingInterval::for_type(
+                    hci::types::AdvertisingType::ScannableUndirected,
+                ).with_range(
+                    Duration::from_millis(100),
+                    Duration::from_millis(1000),
+                )
+                    .unwrap(),
+                own_address_type: GapAddressType::Public,
+                advertising_data: &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                white_list: &[
+                    hci::host::PeerAddrType::PublicDeviceAddress(hci::BdAddr([1, 2, 3, 4, 5, 6])),
+                    hci::host::PeerAddrType::RandomDeviceAddress(hci::BdAddr([6, 5, 4, 3, 2, 1])),
+                ],
+            })
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+
+    let expected = [
+        1, 0xA1, 0xFC, 32, 0xA0, 0x00, 0x40, 0x06, 0x02, 0x00, 10, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+        2, 0x00, 1, 2, 3, 4, 5, 6, 0x01, 6, 5, 4, 3, 2, 1,
+    ];
+    assert_eq!(fixture.sink.written_data[..16], expected[..16]);
+    assert_eq!(fixture.sink.written_data[16..], expected[16..]);
+}
+
+#[test]
+fn gap_set_broadcast_mode_bad_advertising_type() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.gap_set_broadcast_mode(&GapBroadcastModeParameters {
+                advertising_interval: hci::types::AdvertisingInterval::for_type(
+                    hci::types::AdvertisingType::ConnectableUndirected,
+                ).with_range(
+                    Duration::from_millis(100),
+                    Duration::from_millis(1000),
+                )
+                    .unwrap(),
+                own_address_type: GapAddressType::Public,
+                advertising_data: &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                white_list: &[
+                    hci::host::PeerAddrType::PublicDeviceAddress(hci::BdAddr([1, 2, 3, 4, 5, 6])),
+                    hci::host::PeerAddrType::RandomDeviceAddress(hci::BdAddr([6, 5, 4, 3, 2, 1])),
+                ],
+            })
+        })
+        .err()
+        .unwrap();
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+    assert_eq!(
+        err,
+        nb::Error::Other(Error::BadAdvertisingType(
+            hci::types::AdvertisingType::ConnectableUndirected
+        ))
+    );
+}
+
+#[test]
+fn gap_set_broadcast_mode_advertising_data_too_long() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.gap_set_broadcast_mode(&GapBroadcastModeParameters {
+                advertising_interval: hci::types::AdvertisingInterval::for_type(
+                    hci::types::AdvertisingType::ScannableUndirected,
+                ).with_range(
+                    Duration::from_millis(100),
+                    Duration::from_millis(1000),
+                )
+                    .unwrap(),
+                own_address_type: GapAddressType::Public,
+                advertising_data: &[0; 32],
+                white_list: &[
+                    hci::host::PeerAddrType::PublicDeviceAddress(hci::BdAddr([1, 2, 3, 4, 5, 6])),
+                    hci::host::PeerAddrType::RandomDeviceAddress(hci::BdAddr([6, 5, 4, 3, 2, 1])),
+                ],
+            })
+        })
+        .err()
+        .unwrap();
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+    assert_eq!(err, nb::Error::Other(Error::BadAdvertisingDataLength(32)));
+}
+
+#[test]
+fn gap_set_broadcast_mode_white_list_too_long() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.gap_set_broadcast_mode(&GapBroadcastModeParameters {
+                advertising_interval: hci::types::AdvertisingInterval::for_type(
+                    hci::types::AdvertisingType::ScannableUndirected,
+                ).with_range(
+                    Duration::from_millis(100),
+                    Duration::from_millis(1000),
+                )
+                    .unwrap(),
+                own_address_type: GapAddressType::Public,
+                advertising_data: &[0; 31],
+
+                // With 31 bytes of advertising data, we have room for (255 - 38) / 7 = 31 white
+                // listed addresses.
+                white_list: &[hci::host::PeerAddrType::PublicDeviceAddress(hci::BdAddr([
+                    1, 2, 3, 4, 5, 6,
+                ])); 32],
+            })
+        })
+        .err()
+        .unwrap();
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+    assert_eq!(err, nb::Error::Other(Error::WhiteListTooLong));
+}
+
+#[test]
+fn gap_set_broadcast_mode_white_list_too_long_no_adv_data() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.gap_set_broadcast_mode(&GapBroadcastModeParameters {
+                advertising_interval: hci::types::AdvertisingInterval::for_type(
+                    hci::types::AdvertisingType::ScannableUndirected,
+                ).with_range(
+                    Duration::from_millis(100),
+                    Duration::from_millis(1000),
+                )
+                    .unwrap(),
+                own_address_type: GapAddressType::Public,
+                advertising_data: &[],
+
+                // With 0 bytes of advertising data, we have room for (255 - 7) / 7 = 35 white
+                // listed addresses.
+                white_list: &[hci::host::PeerAddrType::PublicDeviceAddress(hci::BdAddr([
+                    1, 2, 3, 4, 5, 6,
+                ])); 35],
+            })?;
+
+            // The above call should succeed with 35 addresses. This call should fail with 36.
+            controller.gap_set_broadcast_mode(&GapBroadcastModeParameters {
+                advertising_interval: hci::types::AdvertisingInterval::for_type(
+                    hci::types::AdvertisingType::ScannableUndirected,
+                ).with_range(
+                    Duration::from_millis(100),
+                    Duration::from_millis(1000),
+                )
+                    .unwrap(),
+                own_address_type: GapAddressType::Public,
+                advertising_data: &[],
+                white_list: &[hci::host::PeerAddrType::PublicDeviceAddress(hci::BdAddr([
+                    1, 2, 3, 4, 5, 6,
+                ])); 36],
+            })
+        })
+        .err()
+        .unwrap();
+
+    // We wrote the header with the first call.
+    assert!(fixture.wrote_header());
+    // don't check all of the written data.
+
+    // We get the error from the second call.
+    assert_eq!(err, nb::Error::Other(Error::WhiteListTooLong));
+}

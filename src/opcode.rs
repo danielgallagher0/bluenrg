@@ -57,6 +57,7 @@ opcodes! {
         pub const GAP_START_CONNECTION_UPDATE = 0x1E;
         pub const GAP_SEND_PAIRING_REQUEST = 0x1F;
         pub const GAP_RESOLVE_PRIVATE_ADDRESS = 0x20;
+        pub const GAP_SET_BROADCAST_MODE = 0x21;
         pub const GAP_GET_BONDED_DEVICES = 0x23;
     }
     // Gatt = 0x2;

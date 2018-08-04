@@ -96,6 +96,7 @@ status_only! {
     gap_terminate_procedure(0x9D, 0xFC, BNRGParams::GapTerminateProcedure);
     gap_start_connection_update(0x9E, 0xFC, BNRGParams::GapStartConnectionUpdate);
     gap_send_pairing_request(0x9F, 0xFC, BNRGParams::GapSendPairingRequest);
+    gap_set_broadcast_mode(0xA1, 0xFC, BNRGParams::GapSetBroadcastMode);
 }
 
 #[test]

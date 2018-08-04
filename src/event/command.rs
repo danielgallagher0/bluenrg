@@ -151,6 +151,10 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GAP Get Bonded Devices](::ActiveBlueNRG::gap_get_bonded_devices)
     /// command.
     GapGetBondedDevices(GapBondedDevices),
+
+    /// Parameters returned by the [GAP Set Broadcast Mode](::ActiveBlueNRG::gap_set_broadcast_mode)
+    /// command.
+    GapSetBroadcastMode(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -262,6 +266,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             }
             ::opcode::GAP_GET_BONDED_DEVICES => Ok(ReturnParameters::GapGetBondedDevices(
                 to_gap_bonded_devices(&bytes[3..])?,
+            )),
+            ::opcode::GAP_SET_BROADCAST_MODE => Ok(ReturnParameters::GapSetBroadcastMode(
+                to_status(&bytes[3..])?,
             )),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
