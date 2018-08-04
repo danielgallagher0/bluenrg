@@ -1255,6 +1255,30 @@ where
         self.write_command(opcode::GAP_SET_BROADCAST_MODE, &bytes[..len])
             .map_err(rewrap_error)
     }
+
+    /// Starts an Observation procedure, when the device is in Observer Role.
+    ///
+    /// The host enables scanning in the controller. The advertising reports are sent to the upper
+    /// layer using standard LE Advertising Report Event. See Bluetooth Core v4.1, Vol. 2, part E,
+    /// Ch. 7.7.65.2, LE Advertising Report Event.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::GapStartObservationProcedure) event
+    /// is generated.
+    pub fn gap_start_observation_procedure(
+        &mut self,
+        params: &GapObservationProcedureParameters,
+    ) -> nb::Result<(), E> {
+        let mut bytes = [0; GapObservationProcedureParameters::LENGTH];
+        params.into_bytes(&mut bytes);
+
+        self.write_command(opcode::GAP_START_OBSERVATION_PROCEDURE, &bytes)
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller

@@ -155,6 +155,10 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GAP Set Broadcast Mode](::ActiveBlueNRG::gap_set_broadcast_mode)
     /// command.
     GapSetBroadcastMode(hci::Status),
+
+    /// Parameters returned by the [GAP Start Observation
+    /// Procedure](::ActiveBlueNRG::gap_start_observation_procedure) command.
+    GapStartObservationProcedure(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -270,6 +274,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_SET_BROADCAST_MODE => Ok(ReturnParameters::GapSetBroadcastMode(
                 to_status(&bytes[3..])?,
             )),
+            ::opcode::GAP_START_OBSERVATION_PROCEDURE => Ok(
+                ReturnParameters::GapStartObservationProcedure(to_status(&bytes[3..])?),
+            ),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }

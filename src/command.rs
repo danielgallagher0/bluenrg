@@ -1022,3 +1022,39 @@ impl<'a, 'b> GapBroadcastModeParameters<'a, 'b> {
         index
     }
 }
+
+/// Parameters for the [GAP Start Observation
+/// Procedure](::ActiveBlueNRG::gap_start_observation_procedure) command.
+pub struct GapObservationProcedureParameters {
+    /// Scanning window.
+    pub scan_window: hci::types::ScanWindow,
+
+    /// Active or passive scanning
+    pub scan_type: hci::host::ScanType,
+
+    /// Address type of this device.
+    pub own_address_type: GapAddressType,
+
+    /// If true, do not report duplicate events in the [advertising
+    /// report](hci::event::Event::LeAdvertisingReport).
+    pub filter_duplicates: bool,
+}
+
+impl GapObservationProcedureParameters {
+    /// Number of bytes these parameters take when serialized.
+    pub const LENGTH: usize = 7;
+
+    /// Serialize the parameters into the given byte buffer.
+    ///
+    /// # Panics
+    ///
+    /// - If the provided buffer is too small.
+    pub fn into_bytes(&self, bytes: &mut [u8]) {
+        assert!(bytes.len() >= Self::LENGTH);
+
+        self.scan_window.into_bytes(&mut bytes[0..4]);
+        bytes[4] = self.scan_type as u8;
+        bytes[5] = self.own_address_type as u8;
+        bytes[6] = self.filter_duplicates as u8;
+    }
+}

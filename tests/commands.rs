@@ -1522,3 +1522,26 @@ fn gap_set_broadcast_mode_white_list_too_long_no_adv_data() {
     // We get the error from the second call.
     assert_eq!(err, nb::Error::Other(Error::WhiteListTooLong));
 }
+
+#[test]
+fn gap_start_observation_procedure() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_start_observation_procedure(&GapObservationProcedureParameters {
+                scan_window: ScanWindow::start_every(Duration::from_micros(2500))
+                    .unwrap()
+                    .open_for(Duration::from_micros(2500))
+                    .unwrap(),
+                scan_type: hci::host::ScanType::Passive,
+                own_address_type: GapAddressType::Random,
+                filter_duplicates: true,
+            })
+        })
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [1, 0xA2, 0xFC, 7, 0x04, 0x00, 0x04, 0x00, 0x00, 0x01, 0x01]
+    );
+}
