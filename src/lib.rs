@@ -262,13 +262,7 @@ where
     ///
     /// # Errors
     ///
-    /// - [`BadConnectionInterval`](Error::BadConnectionInterval) if
-    ///   [`interval`](L2CapConnectionParameterUpdateResponse::interval) is inverted; that is, if
-    ///   the minimum is greater than the maximum.
-    /// - [`BadConnectionLengthRange`](Error::BadConnectionLengthRange) if
-    ///   [`expected_connection_length_range`](L2CapConnectionParameterUpdateResponse::expected_connection_length_range)
-    ///   is inverted; that is, if the minimum is greater than the maximum.
-    /// - Underlying communication errors.
+    /// Only underlying communication errors are reported.
     ///
     /// # Generated events
     ///
@@ -902,11 +896,11 @@ where
     /// If [Success](hci::Status::Success) is returned in the command status, the procedure is
     /// terminated when either the upper layers issue a command to terminate the procedure by
     /// issuing the command [`gap_terminate_procedure`](::ActiveBlueNRG::gap_terminate_procedure)
-    /// with the procedure code set to [LimitedDiscovery](GapProcedure::LimitedDiscovery) or a
-    /// [timeout](event::BlueNRGEvent::GapLimitedDiscoverableTimeout) happens. When the procedure is
-    /// terminated due to any of the above reasons, a
+    /// with the procedure code set to [LimitedDiscovery](event::GapProcedure::LimitedDiscovery) or
+    /// a [timeout](event::BlueNRGEvent::GapLimitedDiscoverableTimeout) happens. When the procedure
+    /// is terminated due to any of the above reasons, a
     /// [GapProcedureComplete](event::BlueNRGEvent::GapProcedureComplete) event is returned with the
-    /// procedure code set to [LimitedDiscovery](GapProcedure::LimitedDiscovery).
+    /// procedure code set to [LimitedDiscovery](event::GapProcedure::LimitedDiscovery).
     ///
     /// The device found when the procedure is ongoing is returned to the upper layers through the
     /// [LeAdvertisingReport](hci::event::Event::LeAdvertisingReport) event.
@@ -931,10 +925,10 @@ where
     /// If [Success](hci::Status::Success) is returned in the command status, the procedure is
     /// terminated when either the upper layers issue a command to terminate the procedure by
     /// issuing the command [`gap_terminate_procedure`](::ActiveBlueNRG::gap_terminate_procedure)
-    /// with the procedure code set to [GeneralDiscovery](GapProcedure::GeneralDiscovery) or a
+    /// with the procedure code set to [GeneralDiscovery](event::GapProcedure::GeneralDiscovery) or a
     /// timeout happens. When the procedure is terminated due to any of the above reasons, a
     /// [GapProcedureComplete](event::BlueNRGEvent::GapProcedureComplete) event is returned with the
-    /// procedure code set to [GeneralDiscovery](GapProcedure::GeneralDiscovery).
+    /// procedure code set to [GeneralDiscovery](event::GapProcedure::GeneralDiscovery).
     ///
     /// The device found when the procedure is ongoing is returned to the upper layers through the
     /// [LeAdvertisingReport](hci::event::Event::LeAdvertisingReport) event.
@@ -1091,7 +1085,7 @@ where
     /// A [LE Create Connection](hci::host::Hci::le_create_connection) call will be made to the
     /// controller by GAP with the initiator [filter
     /// policy](hci::host::ConnectionParameters::initiator_filter_policy) set to
-    /// [UseAddress](hci::ConnectionFilterPolicy::UseAddress) to "ignore whitelist and process
+    /// [UseAddress](hci::host::ConnectionFilterPolicy::UseAddress) to "ignore whitelist and process
     /// connectable advertising packets only for the specified device". The procedure can be
     /// terminated explicitly by the upper layer by issuing the command
     /// [`gap_terminate_procedure`](::ActiveBlueNRG::gap_terminate_procedure). When a command is
@@ -1128,11 +1122,11 @@ where
     ///
     /// # Generated events
     ///
-    /// A [command complete](::event::command::ReturnParameters::GapProcedureComplete) event is
+    /// A [command complete](event::command::ReturnParameters::GapTerminateProcedure) event is
     /// generated for this command. If the command was successfully processed, the status field will
     /// be [Success](hci::Status::Success) and a
-    /// [GapProcedureCompleted](::event::Event::GapProcedureCompleted) event is returned with the
-    /// procedure code set to the corresponding procedure.
+    /// [GapProcedureCompleted](event::BlueNRGEvent::GapProcedureComplete) event is returned with
+    /// the procedure code set to the corresponding procedure.
     pub fn gap_terminate_procedure(&mut self, procedure: GapProcedure) -> nb::Result<(), Error<E>> {
         if procedure.is_empty() {
             return Err(nb::Error::Other(Error::NoProcedure));
@@ -1170,8 +1164,8 @@ where
 
     /// Send the SM pairing request to start a pairing process. The authentication requirements and
     /// I/O capabilities should be set before issuing this command using the
-    /// [`gap_set_io_capabilities`](::ActiveBlueNRG::gap_set_io_capabilities) and
-    /// [`gap_set_authentication_requirements`](::ActiveBlueNRG::gap_set_authentication_requirements)
+    /// [`gap_set_io_capability`](::ActiveBlueNRG::gap_set_io_capability) and
+    /// [`gap_set_authentication_requirement`](::ActiveBlueNRG::gap_set_authentication_requirement)
     /// commands.
     ///
     /// # Errors
@@ -1203,7 +1197,7 @@ where
     ///
     /// # Generated events
     ///
-    /// A [command complete](::event::command::ReturnParameters::ResolvePrivateAddress) event is
+    /// A [command complete](::event::command::ReturnParameters::GapResolvePrivateAddress) event is
     /// generated. If [Success](hci::Status::Success) is returned as the status, then the address is
     /// also returned in the event.
     pub fn gap_resolve_private_address(&mut self, addr: hci::BdAddr) -> nb::Result<(), E> {
@@ -1219,7 +1213,7 @@ where
     ///
     /// # Generated events
     ///
-    /// A [command complete](::event::command::ReturnParameters::GapBondedDevices) event is
+    /// A [command complete](::event::command::ReturnParameters::GapGetBondedDevices) event is
     /// generated.
     pub fn gap_get_bonded_devices(&mut self) -> nb::Result<(), E> {
         self.write_command(opcode::GAP_GET_BONDED_DEVICES, &[])

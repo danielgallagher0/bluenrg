@@ -109,7 +109,7 @@ pub struct L2CapConnectionParameterUpdateResponse {
     /// [`L2CapConnectionUpdateRequest`](::event::BlueNRGEvent::L2CapConnectionUpdateRequest) event.
     pub conn_handle: hci::ConnectionHandle,
 
-    /// [Connection interval](::event::L2CapConnectionUpdateRequest::interval) received in the
+    /// [Connection interval](::event::L2CapConnectionUpdateRequest::conn_interval) received in the
     /// [`L2CapConnectionUpdateRequest`](::event::BlueNRGEvent::L2CapConnectionUpdateRequest) event.
     pub conn_interval: ConnectionInterval,
 
@@ -1001,7 +1001,8 @@ impl<'a, 'b> GapBroadcastModeParameters<'a, 'b> {
     ///
     /// # Panics
     ///
-    /// If bytes is shorter than the required length for these parameters. If [validate] returns a
+    /// If bytes is shorter than the required length for these parameters. If
+    /// [validate](GapBroadcastModeParameters::validate) returns a
     /// [WhiteListTooLong](Error::WhiteListTooLong) error, this function should not be called, since
     /// the required length is longer than the maximum packet size.
     pub fn into_bytes(&self, bytes: &mut [u8]) -> usize {
