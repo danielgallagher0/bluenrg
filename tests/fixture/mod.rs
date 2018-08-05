@@ -5,6 +5,7 @@ extern crate embedded_hal as hal;
 extern crate nb;
 
 use bluenrg::{ActiveBlueNRG, BlueNRG};
+use std::cmp;
 
 static mut DUMMY_RX_BUFFER: [u8; 8] = [0; 8];
 
@@ -33,8 +34,20 @@ impl Fixture {
     }
 
     pub fn wrote(&self, bytes: &[u8]) -> bool {
-        self.sink.written_header == [0x0A, 0x00, 0x00, 0x00, 0x00]
-            && self.sink.written_data == bytes
+        assert_eq!(self.sink.written_header, [0x0A, 0x00, 0x00, 0x00, 0x00]);
+        // assert_eq!(self.sink.written_data.len(), bytes.len());
+        for section in 0..=bytes.len() / 16 {
+            let actual_first = cmp::min(section * 16, self.sink.written_data.len());
+            let actual_last = cmp::min((1 + section) * 16, self.sink.written_data.len());
+            let expected_first = cmp::min(section * 16, bytes.len());
+            let expected_last = cmp::min((section + 1) * 16, bytes.len());
+            assert_eq!(
+                self.sink.written_data[actual_first..actual_last],
+                bytes[expected_first..expected_last]
+            );
+        }
+
+        true
     }
 }
 

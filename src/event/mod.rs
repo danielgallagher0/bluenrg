@@ -14,7 +14,6 @@ use core::fmt::{Debug, Formatter, Result as FmtResult};
 use core::mem;
 use core::time::Duration;
 
-pub use self::command::CharacteristicHandle;
 pub use hci::types::{ConnectionInterval, ConnectionIntervalError};
 pub use hci::{BdAddr, BdAddrType, ConnectionHandle};
 

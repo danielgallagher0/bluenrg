@@ -99,3 +99,76 @@ fn bad_service_handle_range() {
     // Both ends of the range may be equal
     ServiceHandleRange::new(ServiceHandle(0x0201), ServiceHandle(0x0201)).unwrap();
 }
+
+#[test]
+fn add_characteristic_16() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.add_characteristic(&AddCharacteristicParameters {
+                service_handle: ServiceHandle(0x0201),
+                characteristic_uuid: Uuid::Uuid16(0x0403),
+                characteristic_value_len: 0x0605,
+                characteristic_properties: CharacteristicProperty::BROADCAST
+                    | CharacteristicProperty::READ
+                    | CharacteristicProperty::NOTIFY,
+                security_permissions: CharacteristicPermission::AUTHENTICATED_READ
+                    | CharacteristicPermission::AUTHENTICATED_WRITE,
+                gatt_event_mask: CharacteristicEvent::ATTRIBUTE_WRITE
+                    | CharacteristicEvent::CONFIRM_WRITE
+                    | CharacteristicEvent::CONFIRM_READ,
+                encryption_key_size: EncryptionKeySize::with_value(8).unwrap(),
+                is_variable: true,
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[
+        1, 0x04, 0xFD, 12, 0x01, 0x02, 0x01, 0x03, 0x04, 0x05, 0x06, 0x13, 0x09, 0x07, 8, 1
+    ]));
+}
+
+#[test]
+fn add_characteristic_128() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.add_characteristic(&AddCharacteristicParameters {
+                service_handle: ServiceHandle(0x0201),
+                characteristic_uuid: Uuid::Uuid128([
+                    0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C,
+                    0x1D, 0x1E, 0x1F,
+                ]),
+                characteristic_value_len: 0x0605,
+                characteristic_properties: CharacteristicProperty::BROADCAST
+                    | CharacteristicProperty::READ
+                    | CharacteristicProperty::NOTIFY,
+                security_permissions: CharacteristicPermission::AUTHENTICATED_READ
+                    | CharacteristicPermission::AUTHENTICATED_WRITE,
+                gatt_event_mask: CharacteristicEvent::ATTRIBUTE_WRITE
+                    | CharacteristicEvent::CONFIRM_WRITE
+                    | CharacteristicEvent::CONFIRM_READ,
+                encryption_key_size: EncryptionKeySize::with_value(8).unwrap(),
+                is_variable: true,
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[
+        1, 0x04, 0xFD, 26, 0x01, 0x02, 0x02, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+        0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x05, 0x06, 0x13, 0x09, 0x07, 8, 1
+    ]));
+}
+
+#[test]
+fn encryption_key_size_range() {
+    assert_eq!(
+        EncryptionKeySizeError::TooShort,
+        EncryptionKeySize::with_value(6).err().unwrap()
+    );
+    for size in 7..=16 {
+        assert_eq!(EncryptionKeySize::with_value(size).unwrap().value(), size);
+    }
+    assert_eq!(
+        EncryptionKeySizeError::TooLong,
+        EncryptionKeySize::with_value(17).err().unwrap()
+    );
+}

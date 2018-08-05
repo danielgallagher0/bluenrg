@@ -120,8 +120,14 @@ fn gap_init() {
                 HciParams::Vendor(BNRGParams::GapInit(params)) => {
                     assert_eq!(params.status, hci::Status::Success);
                     assert_eq!(params.service_handle, bluenrg::gatt::ServiceHandle(0x0201));
-                    assert_eq!(params.dev_name_handle, CharacteristicHandle(0x0403));
-                    assert_eq!(params.appearance_handle, CharacteristicHandle(0x0605));
+                    assert_eq!(
+                        params.dev_name_handle,
+                        bluenrg::gatt::CharacteristicHandle(0x0403)
+                    );
+                    assert_eq!(
+                        params.appearance_handle,
+                        bluenrg::gatt::CharacteristicHandle(0x0605)
+                    );
                 }
                 other => panic!("Wrong return parameters: {:?}", other),
             }
@@ -342,6 +348,27 @@ fn gatt_include_service() {
                 HciParams::Vendor(BNRGParams::GattIncludeService(params)) => {
                     assert_eq!(params.status, hci::Status::Success);
                     assert_eq!(params.service_handle, bluenrg::gatt::ServiceHandle(0x0201));
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
+fn gatt_add_characteristic() {
+    let buffer = [0x0E, 6, 1, 0x04, 0xFD, 0x00, 0x01, 0x02];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 1);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::GattAddCharacteristic(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(
+                        params.characteristic_handle,
+                        bluenrg::gatt::CharacteristicHandle(0x0201)
+                    );
                 }
                 other => panic!("Wrong return parameters: {:?}", other),
             }

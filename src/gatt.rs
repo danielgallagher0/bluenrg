@@ -59,6 +59,34 @@ pub trait Commands {
     /// generated.
     fn include_service(&mut self, params: &IncludeServiceParameters)
         -> nb::Result<(), Self::Error>;
+
+    /// Add a characteristic to a service.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// When the command is completed, a [command
+    /// complete](::event::command::ReturnParameters::GattAddCharacteristic) event will be generated
+    /// by the controller which carries the status of the command and the handle of the
+    /// characteristic as parameters.
+    fn add_characteristic(
+        &mut self,
+        params: &AddCharacteristicParameters,
+    ) -> nb::Result<(), Self::Error>;
+}
+
+macro_rules! impl_variable_length_params {
+    ($method:ident, $param_type:ident, $opcode:path) => {
+        fn $method(&mut self, params: &$param_type) -> nb::Result<(), Self::Error> {
+            let mut bytes = [0; $param_type::MAX_LENGTH];
+            let len = params.into_bytes(&mut bytes);
+
+            self.write_command($opcode, &bytes[..len])
+        }
+    }
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -75,22 +103,23 @@ where
         self.write_command(::opcode::GATT_INIT, &[])
     }
 
-    fn add_service(&mut self, params: &AddServiceParameters) -> nb::Result<(), Self::Error> {
-        let mut bytes = [0; AddServiceParameters::MAX_LENGTH];
-        let len = params.into_bytes(&mut bytes);
+    impl_variable_length_params!(
+        add_service,
+        AddServiceParameters,
+        ::opcode::GATT_ADD_SERVICE
+    );
 
-        self.write_command(::opcode::GATT_ADD_SERVICE, &bytes[..len])
-    }
+    impl_variable_length_params!(
+        include_service,
+        IncludeServiceParameters,
+        ::opcode::GATT_INCLUDE_SERVICE
+    );
 
-    fn include_service(
-        &mut self,
-        params: &IncludeServiceParameters,
-    ) -> nb::Result<(), Self::Error> {
-        let mut bytes = [0; IncludeServiceParameters::MAX_LENGTH];
-        let len = params.into_bytes(&mut bytes);
-
-        self.write_command(::opcode::GATT_INCLUDE_SERVICE, &bytes[..len])
-    }
+    impl_variable_length_params!(
+        add_characteristic,
+        AddCharacteristicParameters,
+        ::opcode::GATT_ADD_CHARACTERISTIC
+    );
 }
 
 /// Parameters for the [GATT Add Service](Commands::add_service) command.
@@ -234,3 +263,186 @@ pub enum ServiceHandleRangeError {
     /// The beginning of the range came after the end.
     Inverted,
 }
+
+/// Parameters for the [GATT Add Characteristic](Commands::add_characteristic) command.
+pub struct AddCharacteristicParameters {
+    /// Handle of the service to which the characteristic has to be added
+    pub service_handle: ServiceHandle,
+
+    /// UUID of the characteristic
+    pub characteristic_uuid: Uuid,
+
+    /// Maximum length of the characteristic value
+    pub characteristic_value_len: usize,
+
+    /// Properties of the characteristic (defined in Volume 3, Part G, Section 3.3.3.1 of Bluetooth
+    /// Specification 4.1)
+    pub characteristic_properties: CharacteristicProperty,
+
+    /// Security requirements of the characteristic
+    pub security_permissions: CharacteristicPermission,
+
+    /// Which types of events will be generated when the attribute is accessed.
+    pub gatt_event_mask: CharacteristicEvent,
+
+    /// The minimum encryption key size requirement for this attribute.
+    pub encryption_key_size: EncryptionKeySize,
+
+    /// If true, the attribute has a variable length value field. Otherwise, the value field length
+    /// is fixed.
+    pub is_variable: bool,
+}
+
+impl AddCharacteristicParameters {
+    const MAX_LENGTH: usize = 26;
+
+    fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+        assert!(bytes.len() >= Self::MAX_LENGTH);
+
+        LittleEndian::write_u16(&mut bytes[0..2], self.service_handle.0);
+        let uuid_len = self.characteristic_uuid.into_bytes(&mut bytes[2..19]);
+        let next = 2 + uuid_len;
+        LittleEndian::write_u16(
+            &mut bytes[next..next + 2],
+            self.characteristic_value_len as u16,
+        );
+        bytes[next + 2] = self.characteristic_properties.bits();
+        bytes[next + 3] = self.security_permissions.bits();
+        bytes[next + 4] = self.gatt_event_mask.bits();
+        bytes[next + 5] = self.encryption_key_size.0;
+        bytes[next + 6] = self.is_variable as u8;
+
+        next + 7
+    }
+}
+
+/// Available [properties](AddCharacteristicParameters::characteristic_properties) for
+/// characteristics. Defined in Volume 3, Part G, Section 3.3.3.1 of Bluetooth
+/// Specification 4.1.
+bitflags! {
+    pub struct CharacteristicProperty: u8 {
+        /// If set, permits broadcasts of the Characteristic Value using Server Characteristic
+        /// Configuration Descriptor. If set, the Server Characteristic Configuration Descriptor
+        /// shall exist.
+        const BROADCAST = 0x01;
+
+        /// If set, permits reads of the Characteristic Value using procedures defined in Volume 3,
+        /// Part G, Section 4.8 of the Bluetooth specification 4.1.
+        const READ = 0x02;
+
+        /// If set, permit writes of the Characteristic Value without response using procedures
+        /// defined in Volume 3, Part G, Section 4.9.1 of the Bluetooth specification 4.1.
+        const WRITE_WITHOUT_RESPONSE = 0x04;
+
+        /// If set, permits writes of the Characteristic Value with response using procedures
+        /// defined in Volume 3, Part Section 4.9.3 or Section 4.9.4 of the Bluetooth
+        /// specification 4.1.
+        const WRITE = 0x08;
+
+        /// If set, permits notifications of a Characteristic Value without acknowledgement using
+        /// the procedure defined in Volume 3, Part G, Section 4.10 of the Bluetooth specification
+        /// 4.1. If set, the Client Characteristic Configuration Descriptor shall exist.
+        const NOTIFY = 0x10;
+
+        /// If set, permits indications of a Characteristic Value with acknowledgement using the
+        /// procedure defined in Volume 3, Part G, Section 4.11 of the Bluetooth specification
+        /// 4.1. If set, the Client Characteristic Configuration Descriptor shall exist.
+        const INDICATE = 0x20;
+
+        /// If set, permits signed writes to the Characteristic Value using the Signed Writes
+        /// procedure defined in Volume 3, Part G, Section 4.9.2 of the Bluetooth specification
+        /// 4.1.
+        const AUTHENTICATED = 0x40;
+
+        /// If set, additional characteristic properties are defined in the Characteristic Extended
+        /// Properties Descriptor defined in Volume 3, Part G, Section 3.3.3.1 of the Bluetooth
+        /// specification 4.1. If set, the Characteristic Extended Properties Descriptor shall
+        /// exist.
+        const EXTENDED_PROPERTIES = 0x80;
+    }
+}
+
+bitflags! {
+    /// [Permissions](AddCharacteristicParameter::security_permissions) available for
+    /// characteristics.
+    pub struct CharacteristicPermission: u8 {
+        /// Need authentication to read.
+        const AUTHENTICATED_READ = 0x01;
+
+        /// Need authorization to read.
+        const AUTHORIZED_READ = 0x02;
+
+        /// Link should be encrypted to read.
+        const ENCRYPTED_READ = 0x04;
+
+        /// Need authentication to write.
+        const AUTHENTICATED_WRITE = 0x08;
+
+        /// Need authorization to write.
+        const AUTHORIZED_WRITE = 0x10;
+
+        /// Link should be encrypted for write.
+        const ENCRYPTED_WRITE = 0x20;
+    }
+}
+
+bitflags! {
+    /// Which events may be generated when a characteristic is accessed.
+    pub struct CharacteristicEvent: u8 {
+        /// The application will be notified when a client writes to this attribute.
+        const ATTRIBUTE_WRITE = 0x01;
+
+        /// The application will be notified when a write request/write command/signed write command
+        /// is received by the server for this attribute.
+        const CONFIRM_WRITE = 0x02;
+
+        /// The application will be notified when a read request of any type is got for this
+        /// attribute.
+        const CONFIRM_READ = 0x04;
+    }
+}
+
+/// Encryption key size, in bytes.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct EncryptionKeySize(u8);
+
+impl EncryptionKeySize {
+    /// Validate the size as a valid encryption key size. Valid range is 7 to 16, inclusive.
+    ///
+    /// # Errors
+    ///
+    /// - [TooShort](EncryptionKeySizeError::TooShort) if the provided size is less than 7.
+    /// - [TooLong](EncryptionKeySizeError::TooLong) if the provided size is greater than 16.
+    pub fn with_value(sz: usize) -> Result<EncryptionKeySize, EncryptionKeySizeError> {
+        const MIN: usize = 7;
+        const MAX: usize = 16;
+
+        if sz < MIN {
+            return Err(EncryptionKeySizeError::TooShort);
+        }
+
+        if sz > MAX {
+            return Err(EncryptionKeySizeError::TooLong);
+        }
+
+        Ok(EncryptionKeySize(sz as u8))
+    }
+
+    /// Retrieve the key size.
+    pub fn value(&self) -> usize {
+        self.0 as usize
+    }
+}
+
+/// Errors that can occur when creating an [EncryptionKeySize].
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum EncryptionKeySizeError {
+    /// The provided size was less than the minimum allowed size.
+    TooShort,
+    /// The provided size was greater than the maximum allowed size.
+    TooLong,
+}
+
+/// Handle for GATT characteristics.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct CharacteristicHandle(pub u16);
