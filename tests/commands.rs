@@ -120,8 +120,7 @@ fn l2cap_connection_parameter_update_request() {
                         .unwrap(),
                 },
             )
-        })
-        .unwrap();
+        }).unwrap();
     assert!(
         fixture.wrote(&[
             1, 0x81, 0xFD, 10, 0x01, 0x02, 0x18, 0x00, 0xF0, 0x00, 0x0A, 0x00, 0x95, 0x02
@@ -151,8 +150,7 @@ fn l2cap_connection_parameter_update_response() {
                     accepted: true,
                 },
             )
-        })
-        .unwrap();
+        }).unwrap();
     assert!(
         fixture.wrote(&
                 [1, 0x82, 0xFD, 16, 0x01, 0x02, 0x18, 0x00, 0xF0, 0x00, 0x0A, 0x00, 0x95, 0x02,
@@ -188,8 +186,7 @@ fn gap_set_limited_discoverable() {
                 advertising_data: &[0x01, 0x02, 0x03, 0x04],
                 conn_interval: (Some(Duration::from_millis(5000)), None),
             })
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -217,8 +214,7 @@ fn gap_set_limited_discoverable_bad_adv_type() {
                 advertising_data: &[0x01, 0x02, 0x03, 0x04],
                 conn_interval: (Some(Duration::from_millis(5000)), None),
             })
-        })
-        .err()
+        }).err()
         .unwrap();
     assert_eq!(
         err,
@@ -248,8 +244,7 @@ fn gap_set_limited_discoverable_bad_adv_interval() {
                 advertising_data: &[0x01, 0x02, 0x03, 0x04],
                 conn_interval: (Some(Duration::from_millis(5000)), None),
             })
-        })
-        .err()
+        }).err()
         .unwrap();
     assert_eq!(
         err,
@@ -283,8 +278,7 @@ fn gap_set_limited_discoverable_bad_conn_interval() {
                     Some(Duration::from_millis(4999)),
                 ),
             })
-        })
-        .err()
+        }).err()
         .unwrap();
     assert_eq!(
         err,
@@ -315,8 +309,7 @@ fn gap_set_discoverable() {
                 advertising_data: &[0x01, 0x02, 0x03, 0x04],
                 conn_interval: (Some(Duration::from_millis(5000)), None),
             })
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -344,8 +337,7 @@ fn gap_set_discoverable_bad_adv_type() {
                 advertising_data: &[0x01, 0x02, 0x03, 0x04],
                 conn_interval: (Some(Duration::from_millis(5000)), None),
             })
-        })
-        .err()
+        }).err()
         .unwrap();
     assert_eq!(
         err,
@@ -375,8 +367,7 @@ fn gap_set_discoverable_bad_adv_interval() {
                 advertising_data: &[0x01, 0x02, 0x03, 0x04],
                 conn_interval: (Some(Duration::from_millis(5000)), None),
             })
-        })
-        .err()
+        }).err()
         .unwrap();
     assert_eq!(
         err,
@@ -410,8 +401,7 @@ fn gap_set_discoverable_bad_conn_interval() {
                     Some(Duration::from_millis(4999)),
                 ),
             })
-        })
-        .err()
+        }).err()
         .unwrap();
     assert_eq!(
         err,
@@ -433,15 +423,13 @@ fn gap_set_direct_connectable() {
         .act(|controller| {
             controller.gap_set_direct_connectable(&GapDirectConnectableParameters {
                 own_address_type: OwnAddressType::Public,
-                advertising_type: AdvertisingType::ConnectableDirectedHighDutyCycle,
                 initiator_address: BdAddrType::Public(BdAddr([1, 2, 3, 4, 5, 6])),
             })
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
-        [1, 0x84, 0xFC, 9, 0x00, 0x01, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06]
+        [1, 0x84, 0xFC, 8, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06]
     );
 }
 
@@ -457,8 +445,7 @@ fn gap_set_direct_connectable() {
                 initiator_address: BdAddrType::Public(BdAddr([1, 2, 3, 4, 5, 6])),
                 advertising_interval: (Duration::from_millis(20), Duration::from_millis(50)),
             })
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -469,7 +456,7 @@ fn gap_set_direct_connectable() {
     );
 }
 
-#[cfg(not(feature = "ms"))]
+#[cfg(feature = "ms")]
 #[test]
 fn gap_set_direct_connectable_bad_adv_type() {
     let mut fixture = Fixture::new();
@@ -479,9 +466,9 @@ fn gap_set_direct_connectable_bad_adv_type() {
                 own_address_type: OwnAddressType::Public,
                 advertising_type: AdvertisingType::ConnectableUndirected,
                 initiator_address: BdAddrType::Public(BdAddr([1, 2, 3, 4, 5, 6])),
+                advertising_interval: (Duration::from_millis(20), Duration::from_millis(50)),
             })
-        })
-        .err()
+        }).err()
         .unwrap();
     assert_eq!(
         err,
@@ -501,7 +488,8 @@ fn gap_set_direct_connectable_bad_adv_interval() {
         (Duration::from_millis(19), Duration::from_millis(50)),
         (Duration::from_millis(20), Duration::from_millis(10241)),
         (Duration::from_millis(500), Duration::from_millis(499)),
-    ].into_iter()
+    ]
+        .into_iter()
     {
         let err = fixture
             .act(|controller| {
@@ -511,8 +499,7 @@ fn gap_set_direct_connectable_bad_adv_interval() {
                     initiator_address: BdAddrType::Public(BdAddr([1, 2, 3, 4, 5, 6])),
                     advertising_interval: (*min, *max),
                 })
-            })
-            .err()
+            }).err()
             .unwrap();
         assert_eq!(
             err,
@@ -547,8 +534,7 @@ fn gap_set_authentication_requirement() {
                 fixed_pin: Pin::Fixed(123456),
                 bonding_required: true,
             })
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -571,8 +557,7 @@ fn gap_set_authentication_requirement_2() {
                 fixed_pin: Pin::Requested,
                 bonding_required: false,
             })
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -595,8 +580,7 @@ fn gap_set_authentication_requirement_bad_key_size_range() {
                 fixed_pin: Pin::Requested,
                 bonding_required: false,
             })
-        })
-        .err()
+        }).err()
         .unwrap();
     assert_eq!(
         err,
@@ -618,8 +602,7 @@ fn gap_set_authentication_requirement_bad_pin() {
                 fixed_pin: Pin::Fixed(1000000),
                 bonding_required: false,
             })
-        })
-        .err()
+        }).err()
         .unwrap();
     assert_eq!(err, nb::Error::Other(Error::BadFixedPin(1000000)));
     assert!(!fixture.wrote_header());
@@ -632,8 +615,7 @@ fn gap_set_authorization_requirement() {
     fixture
         .act(|controller| {
             controller.gap_set_authorization_requirement(hci::ConnectionHandle(0x0201), true)
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -675,8 +657,7 @@ fn gap_authorization_response() {
                 hci::ConnectionHandle(0x0201),
                 Authorization::Authorized,
             )
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -727,8 +708,7 @@ fn gap_set_nonconnectable_bad_type() {
     let err = fixture
         .act(|controller| {
             controller.gap_set_nonconnectable(AdvertisingType::ConnectableDirectedHighDutyCycle)
-        })
-        .err()
+        }).err()
         .unwrap();
     assert_eq!(
         err,
@@ -750,8 +730,7 @@ fn gap_set_nonconnectable() {
                 AdvertisingType::ScannableUndirected,
                 GapAddressType::ResolvablePrivate,
             )
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, [1, 0x8B, 0xFC, 2, 0x02, 0x02]);
 }
@@ -766,8 +745,7 @@ fn gap_set_nonconnectable_bad_type() {
                 AdvertisingType::ConnectableDirectedHighDutyCycle,
                 GapAddressType::ResolvablePrivate,
             )
-        })
-        .err()
+        }).err()
         .unwrap();
     assert_eq!(
         err,
@@ -788,8 +766,7 @@ fn gap_set_undirected_connectable() {
                 AdvertisingFilterPolicy::AllowConnectionAndScan,
                 GapAddressType::ResolvablePrivate,
             )
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, [1, 0x8C, 0xFC, 2, 0x00, 0x02]);
 }
@@ -803,8 +780,7 @@ fn gap_set_undirected_connectable_bad_advertising_filter_policy() {
                 AdvertisingFilterPolicy::WhiteListConnectionAllowScan,
                 GapAddressType::ResolvablePrivate,
             )
-        })
-        .err()
+        }).err()
         .unwrap();
     assert_eq!(
         err,
@@ -826,8 +802,7 @@ fn gap_peripheral_security_request() {
                 bonding: true,
                 mitm_protection: false,
             })
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -885,8 +860,7 @@ fn gap_set_event_mask() {
             controller.gap_set_event_mask(
                 GapEventFlags::LIMITED_DISCOVERABLE_TIMEOUT | GapEventFlags::PAIRING_COMPLETE,
             )
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, [1, 0x91, 0xFC, 2, 0x03, 0x00]);
 }
@@ -907,8 +881,7 @@ fn gap_terminate() {
     fixture
         .act(|controller| {
             controller.gap_terminate(hci::ConnectionHandle(0x0201), hci::Status::AuthFailure)
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -925,8 +898,7 @@ fn gap_terminate_bad_disconnection_reason() {
                 hci::ConnectionHandle(0x0201),
                 hci::Status::CommandDisallowed,
             )
-        })
-        .err()
+        }).err()
         .unwrap();
     assert_eq!(
         err,
@@ -946,6 +918,18 @@ fn gap_clear_security_database() {
     assert_eq!(fixture.sink.written_data, [1, 0x94, 0xFC, 0]);
 }
 
+#[cfg(not(feature = "ms"))]
+#[test]
+fn gap_allow_rebond() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.gap_allow_rebond())
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, [1, 0x95, 0xFC, 0]);
+}
+
+#[cfg(feature = "ms")]
 #[test]
 fn gap_allow_rebond() {
     let mut fixture = Fixture::new();
@@ -969,8 +953,7 @@ fn gap_start_limited_discovery_procedure() {
                 own_address_type: hci::host::OwnAddressType::Random,
                 filter_duplicates: true,
             })
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -991,8 +974,7 @@ fn gap_start_general_discovery_procedure() {
                 own_address_type: hci::host::OwnAddressType::Random,
                 filter_duplicates: true,
             })
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -1025,8 +1007,7 @@ fn gap_start_name_discovery_procedure() {
                     Duration::from_millis(1500),
                 ).unwrap(),
             })
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -1037,6 +1018,55 @@ fn gap_start_name_discovery_procedure() {
     );
 }
 
+#[cfg(not(feature = "ms"))]
+#[test]
+fn gap_start_auto_connection_establishment() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_start_auto_connection_establishment(
+                &GapAutoConnectionEstablishmentParameters {
+                    scan_window: ScanWindow::start_every(Duration::from_micros(2500))
+                        .unwrap()
+                        .open_for(Duration::from_micros(2500))
+                        .unwrap(),
+                    own_address_type: hci::host::OwnAddressType::Random,
+                    conn_interval: ConnectionIntervalBuilder::new()
+                        .with_range(Duration::from_millis(50), Duration::from_millis(250))
+                        .with_latency(10)
+                        .with_supervision_timeout(Duration::from_millis(6000))
+                        .build()
+                        .unwrap(),
+                    expected_connection_length: ExpectedConnectionLength::new(
+                        Duration::from_millis(150),
+                        Duration::from_millis(1500),
+                    ).unwrap(),
+                    reconnection_address: Some(hci::BdAddr([10, 20, 30, 40, 50, 60])),
+                    white_list: &[
+                        hci::host::PeerAddrType::PublicDeviceAddress(hci::BdAddr([
+                            1, 2, 3, 4, 5, 6,
+                        ])),
+                        hci::host::PeerAddrType::RandomDeviceAddress(hci::BdAddr([
+                            6, 5, 4, 3, 2, 1,
+                        ])),
+                    ],
+                },
+            )
+        }).unwrap();
+    assert!(fixture.wrote_header());
+
+    let expected = [
+        1, 0x99, 0xFC, 39, 0x04, 0x00, 0x04, 0x00, 0x01, 0x28, 0x00, 0xc8, 0x00, 10, 0, 0x58, 0x02,
+        0xF0, 0x00, 0x60, 0x09, 1, 10, 20, 30, 40, 50, 60, 2, 0, 1, 2, 3, 4, 5, 6, 1, 6, 5, 4, 3,
+        2, 1,
+    ];
+
+    assert_eq!(&fixture.sink.written_data[..16], &expected[..16]);
+    assert_eq!(&fixture.sink.written_data[16..32], &expected[16..32]);
+    assert_eq!(&fixture.sink.written_data[32..], &expected[32..]);
+}
+
+#[cfg(feature = "ms")]
 #[test]
 fn gap_start_auto_connection_establishment() {
     let mut fixture = Fixture::new();
@@ -1069,8 +1099,7 @@ fn gap_start_auto_connection_establishment() {
                     ],
                 },
             )
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
 
     let expected = [
@@ -1083,6 +1112,43 @@ fn gap_start_auto_connection_establishment() {
     assert_eq!(&fixture.sink.written_data[32..], &expected[32..]);
 }
 
+#[cfg(not(feature = "ms"))]
+#[test]
+fn gap_start_auto_connection_establishment_white_list_too_long() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.gap_start_auto_connection_establishment(
+                &GapAutoConnectionEstablishmentParameters {
+                    scan_window: ScanWindow::start_every(Duration::from_micros(2500))
+                        .unwrap()
+                        .open_for(Duration::from_micros(2500))
+                        .unwrap(),
+                    own_address_type: hci::host::OwnAddressType::Random,
+                    conn_interval: ConnectionIntervalBuilder::new()
+                        .with_range(Duration::from_millis(50), Duration::from_millis(250))
+                        .with_latency(10)
+                        .with_supervision_timeout(Duration::from_millis(6000))
+                        .build()
+                        .unwrap(),
+                    expected_connection_length: ExpectedConnectionLength::new(
+                        Duration::from_millis(150),
+                        Duration::from_millis(1500),
+                    ).unwrap(),
+                    reconnection_address: None,
+                    white_list: &[hci::host::PeerAddrType::PublicDeviceAddress(hci::BdAddr([
+                        1, 2, 3, 4, 5, 6,
+                    ])); 33],
+                },
+            )
+        }).err()
+        .unwrap();
+    assert!(!fixture.wrote_header());
+    assert_eq!(fixture.sink.written_data, []);
+    assert_eq!(err, nb::Error::Other(Error::WhiteListTooLong));
+}
+
+#[cfg(feature = "ms")]
 #[test]
 fn gap_start_auto_connection_establishment_white_list_too_long() {
     let mut fixture = Fixture::new();
@@ -1110,14 +1176,39 @@ fn gap_start_auto_connection_establishment_white_list_too_long() {
                     ])); 34],
                 },
             )
-        })
-        .err()
+        }).err()
         .unwrap();
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
     assert_eq!(err, nb::Error::Other(Error::WhiteListTooLong));
 }
 
+#[cfg(not(feature = "ms"))]
+#[test]
+fn gap_start_general_connection_establishment() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.gap_start_general_connection_establishment(
+                &GapGeneralConnectionEstablishmentParameters {
+                    scan_window: ScanWindow::start_every(Duration::from_micros(2500))
+                        .unwrap()
+                        .open_for(Duration::from_micros(2500))
+                        .unwrap(),
+                    own_address_type: hci::host::OwnAddressType::Random,
+                    filter_duplicates: true,
+                    reconnection_address: Some(hci::BdAddr([1, 2, 3, 4, 5, 6])),
+                },
+            )
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert_eq!(
+        fixture.sink.written_data,
+        [1, 0x9A, 0xFC, 13, 0x04, 0x00, 0x04, 0x00, 0x01, 0x1, 0x1, 1, 2, 3, 4, 5, 6]
+    );
+}
+
+#[cfg(feature = "ms")]
 #[test]
 fn gap_start_general_connection_establishment() {
     let mut fixture = Fixture::new();
@@ -1133,8 +1224,7 @@ fn gap_start_general_connection_establishment() {
                     filter_duplicates: true,
                 },
             )
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -1166,8 +1256,7 @@ fn gap_start_selective_connection_establishment() {
                     ],
                 },
             )
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -1197,8 +1286,7 @@ fn gap_start_selective_connection_establishment_white_list_too_long() {
                     ])); 36],
                 },
             )
-        })
-        .err()
+        }).err()
         .unwrap();
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
@@ -1230,8 +1318,7 @@ fn gap_create_connection() {
                     Duration::from_millis(1500),
                 ).unwrap(),
             })
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -1260,8 +1347,7 @@ fn gap_terminate_multiple_procedure() {
             controller.gap_terminate_procedure(
                 GapProcedure::LIMITED_DISCOVERY | GapProcedure::OBSERVATION,
             )
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, [1, 0x9D, 0xFC, 1, 0x81]);
 }
@@ -1296,8 +1382,7 @@ fn gap_start_connection_update() {
                     Duration::from_millis(1500),
                 ).unwrap(),
             })
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -1318,8 +1403,7 @@ fn gap_send_pairing_request() {
                 force_rebond: true,
                 force_reencrypt: true,
             })
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -1350,6 +1434,7 @@ fn gap_get_bonded_devices() {
     assert_eq!(fixture.sink.written_data, [1, 0xA3, 0xFC, 0]);
 }
 
+#[cfg(feature = "ms")]
 #[test]
 fn gap_set_broadcast_mode() {
     let mut fixture = Fixture::new();
@@ -1358,11 +1443,8 @@ fn gap_set_broadcast_mode() {
             controller.gap_set_broadcast_mode(&GapBroadcastModeParameters {
                 advertising_interval: hci::types::AdvertisingInterval::for_type(
                     hci::types::AdvertisingType::ScannableUndirected,
-                ).with_range(
-                    Duration::from_millis(100),
-                    Duration::from_millis(1000),
-                )
-                    .unwrap(),
+                ).with_range(Duration::from_millis(100), Duration::from_millis(1000))
+                .unwrap(),
                 own_address_type: GapAddressType::Public,
                 advertising_data: &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
                 white_list: &[
@@ -1370,8 +1452,7 @@ fn gap_set_broadcast_mode() {
                     hci::host::PeerAddrType::RandomDeviceAddress(hci::BdAddr([6, 5, 4, 3, 2, 1])),
                 ],
             })
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
 
     let expected = [
@@ -1382,6 +1463,7 @@ fn gap_set_broadcast_mode() {
     assert_eq!(fixture.sink.written_data[16..], expected[16..]);
 }
 
+#[cfg(feature = "ms")]
 #[test]
 fn gap_set_broadcast_mode_bad_advertising_type() {
     let mut fixture = Fixture::new();
@@ -1390,11 +1472,8 @@ fn gap_set_broadcast_mode_bad_advertising_type() {
             controller.gap_set_broadcast_mode(&GapBroadcastModeParameters {
                 advertising_interval: hci::types::AdvertisingInterval::for_type(
                     hci::types::AdvertisingType::ConnectableUndirected,
-                ).with_range(
-                    Duration::from_millis(100),
-                    Duration::from_millis(1000),
-                )
-                    .unwrap(),
+                ).with_range(Duration::from_millis(100), Duration::from_millis(1000))
+                .unwrap(),
                 own_address_type: GapAddressType::Public,
                 advertising_data: &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
                 white_list: &[
@@ -1402,8 +1481,7 @@ fn gap_set_broadcast_mode_bad_advertising_type() {
                     hci::host::PeerAddrType::RandomDeviceAddress(hci::BdAddr([6, 5, 4, 3, 2, 1])),
                 ],
             })
-        })
-        .err()
+        }).err()
         .unwrap();
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
@@ -1415,6 +1493,7 @@ fn gap_set_broadcast_mode_bad_advertising_type() {
     );
 }
 
+#[cfg(feature = "ms")]
 #[test]
 fn gap_set_broadcast_mode_advertising_data_too_long() {
     let mut fixture = Fixture::new();
@@ -1423,11 +1502,8 @@ fn gap_set_broadcast_mode_advertising_data_too_long() {
             controller.gap_set_broadcast_mode(&GapBroadcastModeParameters {
                 advertising_interval: hci::types::AdvertisingInterval::for_type(
                     hci::types::AdvertisingType::ScannableUndirected,
-                ).with_range(
-                    Duration::from_millis(100),
-                    Duration::from_millis(1000),
-                )
-                    .unwrap(),
+                ).with_range(Duration::from_millis(100), Duration::from_millis(1000))
+                .unwrap(),
                 own_address_type: GapAddressType::Public,
                 advertising_data: &[0; 32],
                 white_list: &[
@@ -1435,14 +1511,14 @@ fn gap_set_broadcast_mode_advertising_data_too_long() {
                     hci::host::PeerAddrType::RandomDeviceAddress(hci::BdAddr([6, 5, 4, 3, 2, 1])),
                 ],
             })
-        })
-        .err()
+        }).err()
         .unwrap();
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
     assert_eq!(err, nb::Error::Other(Error::BadAdvertisingDataLength(32)));
 }
 
+#[cfg(feature = "ms")]
 #[test]
 fn gap_set_broadcast_mode_white_list_too_long() {
     let mut fixture = Fixture::new();
@@ -1451,11 +1527,8 @@ fn gap_set_broadcast_mode_white_list_too_long() {
             controller.gap_set_broadcast_mode(&GapBroadcastModeParameters {
                 advertising_interval: hci::types::AdvertisingInterval::for_type(
                     hci::types::AdvertisingType::ScannableUndirected,
-                ).with_range(
-                    Duration::from_millis(100),
-                    Duration::from_millis(1000),
-                )
-                    .unwrap(),
+                ).with_range(Duration::from_millis(100), Duration::from_millis(1000))
+                .unwrap(),
                 own_address_type: GapAddressType::Public,
                 advertising_data: &[0; 31],
 
@@ -1465,14 +1538,14 @@ fn gap_set_broadcast_mode_white_list_too_long() {
                     1, 2, 3, 4, 5, 6,
                 ])); 32],
             })
-        })
-        .err()
+        }).err()
         .unwrap();
     assert!(!fixture.wrote_header());
     assert_eq!(fixture.sink.written_data, []);
     assert_eq!(err, nb::Error::Other(Error::WhiteListTooLong));
 }
 
+#[cfg(feature = "ms")]
 #[test]
 fn gap_set_broadcast_mode_white_list_too_long_no_adv_data() {
     let mut fixture = Fixture::new();
@@ -1481,11 +1554,8 @@ fn gap_set_broadcast_mode_white_list_too_long_no_adv_data() {
             controller.gap_set_broadcast_mode(&GapBroadcastModeParameters {
                 advertising_interval: hci::types::AdvertisingInterval::for_type(
                     hci::types::AdvertisingType::ScannableUndirected,
-                ).with_range(
-                    Duration::from_millis(100),
-                    Duration::from_millis(1000),
-                )
-                    .unwrap(),
+                ).with_range(Duration::from_millis(100), Duration::from_millis(1000))
+                .unwrap(),
                 own_address_type: GapAddressType::Public,
                 advertising_data: &[],
 
@@ -1500,19 +1570,15 @@ fn gap_set_broadcast_mode_white_list_too_long_no_adv_data() {
             controller.gap_set_broadcast_mode(&GapBroadcastModeParameters {
                 advertising_interval: hci::types::AdvertisingInterval::for_type(
                     hci::types::AdvertisingType::ScannableUndirected,
-                ).with_range(
-                    Duration::from_millis(100),
-                    Duration::from_millis(1000),
-                )
-                    .unwrap(),
+                ).with_range(Duration::from_millis(100), Duration::from_millis(1000))
+                .unwrap(),
                 own_address_type: GapAddressType::Public,
                 advertising_data: &[],
                 white_list: &[hci::host::PeerAddrType::PublicDeviceAddress(hci::BdAddr([
                     1, 2, 3, 4, 5, 6,
                 ])); 36],
             })
-        })
-        .err()
+        }).err()
         .unwrap();
 
     // We wrote the header with the first call.
@@ -1523,6 +1589,7 @@ fn gap_set_broadcast_mode_white_list_too_long_no_adv_data() {
     assert_eq!(err, nb::Error::Other(Error::WhiteListTooLong));
 }
 
+#[cfg(feature = "ms")]
 #[test]
 fn gap_start_observation_procedure() {
     let mut fixture = Fixture::new();
@@ -1537,8 +1604,7 @@ fn gap_start_observation_procedure() {
                 own_address_type: GapAddressType::Random,
                 filter_duplicates: true,
             })
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,
@@ -1554,8 +1620,7 @@ fn gap_is_device_bonded() {
             controller.gap_is_device_bonded(hci::host::PeerAddrType::PublicDeviceAddress(
                 hci::BdAddr([1, 2, 3, 4, 5, 6]),
             ))
-        })
-        .unwrap();
+        }).unwrap();
     assert!(fixture.wrote_header());
     assert_eq!(
         fixture.sink.written_data,

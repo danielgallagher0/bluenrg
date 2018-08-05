@@ -859,6 +859,26 @@ where
         self.write_command(opcode::GAP_CLEAR_SECURITY_DATABASE, &[])
     }
 
+    #[cfg(not(feature = "ms"))]
+    /// This command should be given by the application when it receives the
+    /// [GAP Bond Lost](event::BlueNRGEvent::GapBondLost) event if it wants the re-bonding to happen
+    /// successfully. If this command is not given on receiving the event, the bonding procedure
+    /// will timeout.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command Complete](event::command::ReturnParameters::GapAllowRebond) event is
+    /// generated. Even if the command is given when it is not valid, success will be returned but
+    /// internally it will have no effect.
+    pub fn gap_allow_rebond(&mut self) -> nb::Result<(), E> {
+        self.write_command(opcode::GAP_ALLOW_REBOND, &[])
+    }
+
+    #[cfg(feature = "ms")]
     /// This command should be given by the application when it receives the
     /// [GAP Bond Lost](event::BlueNRGEvent::GapBondLost) event if it wants the re-bonding to happen
     /// successfully. If this command is not given on receiving the event, the bonding procedure
@@ -1005,7 +1025,9 @@ where
         params: &GapAutoConnectionEstablishmentParameters<'a>,
     ) -> nb::Result<(), Error<E>> {
         const MAX_WHITE_LIST_LENGTH: usize = 33;
-        if params.white_list.len() > MAX_WHITE_LIST_LENGTH {
+        if params.white_list.len()
+            > MAX_WHITE_LIST_LENGTH - if cfg!(feature = "ms") { 0 } else { 1 }
+        {
             return Err(nb::Error::Other(Error::WhiteListTooLong));
         }
 
@@ -1219,6 +1241,7 @@ where
         self.write_command(opcode::GAP_GET_BONDED_DEVICES, &[])
     }
 
+    #[cfg(feature = "ms")]
     /// This command puts the device into broadcast mode.
     ///
     /// # Errors
@@ -1250,6 +1273,7 @@ where
             .map_err(rewrap_error)
     }
 
+    #[cfg(feature = "ms")]
     /// Starts an Observation procedure, when the device is in Observer Role.
     ///
     /// The host enables scanning in the controller. The advertising reports are sent to the upper

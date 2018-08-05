@@ -344,6 +344,7 @@ pub struct GapDirectConnectableParameters {
     /// Address type of this device.
     pub own_address_type: OwnAddressType,
 
+    #[cfg(feature = "ms")]
     /// Advertising method for the device.
     ///
     /// Must be
@@ -366,7 +367,7 @@ pub struct GapDirectConnectableParameters {
 impl GapDirectConnectableParameters {
     #[cfg(not(feature = "ms"))]
     /// Length, in bytes, of the serialized message
-    pub const LENGTH: usize = 9;
+    pub const LENGTH: usize = 8;
 
     #[cfg(feature = "ms")]
     /// Length, in bytes, of the serialized message
@@ -386,14 +387,14 @@ impl GapDirectConnectableParameters {
     ///   [`advertising_interval`](GapDiscoverableParameters::advertising_interval) is
     ///   out of range (20 ms to 10.24 s) or inverted (the min is greater than the max).
     pub fn validate<E>(&self) -> Result<(), Error<E>> {
-        match self.advertising_type {
-            AdvertisingType::ConnectableDirectedHighDutyCycle
-            | AdvertisingType::ConnectableDirectedLowDutyCycle => (),
-            _ => return Err(Error::BadAdvertisingType(self.advertising_type)),
-        }
-
         #[cfg(feature = "ms")]
         {
+            match self.advertising_type {
+                AdvertisingType::ConnectableDirectedHighDutyCycle
+                | AdvertisingType::ConnectableDirectedLowDutyCycle => (),
+                _ => return Err(Error::BadAdvertisingType(self.advertising_type)),
+            }
+
             const MIN_DURATION: Duration = Duration::from_millis(20);
             const MAX_DURATION: Duration = Duration::from_millis(10240);
 
@@ -416,11 +417,16 @@ impl GapDirectConnectableParameters {
         assert_eq!(bytes.len(), Self::LENGTH);
 
         bytes[0] = self.own_address_type as u8;
-        bytes[1] = self.advertising_type as u8;
-        self.initiator_address.into_bytes(&mut bytes[2..9]);
+
+        #[cfg(not(feature = "ms"))]
+        {
+            self.initiator_address.into_bytes(&mut bytes[1..8]);
+        }
 
         #[cfg(feature = "ms")]
         {
+            bytes[1] = self.advertising_type as u8;
+            self.initiator_address.into_bytes(&mut bytes[2..9]);
             LittleEndian::write_u16(
                 &mut bytes[9..],
                 to_connection_length_value(self.advertising_interval.0),
@@ -716,6 +722,12 @@ pub struct GapAutoConnectionEstablishmentParameters<'a> {
     /// Expected connection length
     pub expected_connection_length: ExpectedConnectionLength,
 
+    #[cfg(not(feature = "ms"))]
+    /// Reconnection address is used as our address during the procedure. The address has been
+    /// previously notified to the application through the
+    /// [GapReconnectionAddress](event::Event::GapReconnectionAddress) event.
+    pub reconnection_address: Option<hci::BdAddr>,
+
     /// Addresses to white-list for automatic connection.
     pub white_list: &'a [hci::host::PeerAddrType],
 }
@@ -741,16 +753,31 @@ impl<'a> GapAutoConnectionEstablishmentParameters<'a> {
         self.conn_interval.into_bytes(&mut bytes[5..13]);
         self.expected_connection_length
             .into_bytes(&mut bytes[13..17]);
-        bytes[17] = self.white_list.len() as u8;
+
+        #[cfg(not(feature = "ms"))]
+        {
+            if let Some(addr) = self.reconnection_address {
+                bytes[17] = 1;
+                bytes[18..24].copy_from_slice(&addr.0);
+            } else {
+                bytes[17..24].copy_from_slice(&[0; 7]);
+            }
+        }
+
+        let index = if cfg!(feature = "ms") { 17 } else { 24 };
+
+        bytes[index] = self.white_list.len() as u8;
+        let index = index + 1;
         for i in 0..self.white_list.len() {
-            self.white_list[i].into_bytes(&mut bytes[(18 + 7 * i)..(18 + 7 * (i + 1))]);
+            self.white_list[i].into_bytes(&mut bytes[(index + 7 * i)..(index + 7 * (i + 1))]);
         }
 
         len
     }
 
     fn len(&self) -> usize {
-        18 + 7 * self.white_list.len()
+        let reconn_addr_len = if cfg!(feature = "ms") { 0 } else { 7 };
+        18 + reconn_addr_len + 7 * self.white_list.len()
     }
 }
 
@@ -765,9 +792,20 @@ pub struct GapGeneralConnectionEstablishmentParameters {
 
     /// If true, only report unique devices.
     pub filter_duplicates: bool,
+
+    #[cfg(not(feature = "ms"))]
+    /// Reconnection address is used as our address during the procedure. The address has been
+    /// previously notified to the application through the
+    /// [GapReconnectionAddress](event::Event::GapReconnectionAddress) event.
+    pub reconnection_address: Option<hci::BdAddr>,
 }
 
 impl GapGeneralConnectionEstablishmentParameters {
+    #[cfg(not(feature = "ms"))]
+    /// Number of bytes these parameters take when serialized.
+    pub const LENGTH: usize = 13;
+
+    #[cfg(feature = "ms")]
     /// Number of bytes these parameters take when serialized.
     pub const LENGTH: usize = 6;
 
@@ -775,11 +813,23 @@ impl GapGeneralConnectionEstablishmentParameters {
     ///
     /// # Panics
     ///
-    /// - If the provided buffer is too small.
+    /// -If the provided buffer is too small.
     pub fn into_bytes(&self, bytes: &mut [u8]) {
+        assert!(bytes.len() >= Self::LENGTH);
+
         self.scan_window.into_bytes(&mut bytes[0..4]);
         bytes[4] = self.own_address_type as u8;
         bytes[5] = self.filter_duplicates as u8;
+
+        #[cfg(not(feature = "ms"))]
+        {
+            if let Some(addr) = self.reconnection_address {
+                bytes[6] = 1;
+                bytes[7..13].copy_from_slice(&addr.0)
+            } else {
+                bytes[6..13].copy_from_slice(&[0; 7])
+            }
+        }
     }
 }
 
@@ -925,6 +975,7 @@ impl GapPairingRequest {
     }
 }
 
+#[cfg(feature = "ms")]
 /// Parameters for the [GAP Set Broadcast Mode](::ActiveBlueNRG::gap_set_broadcast_mode) command.
 pub struct GapBroadcastModeParameters<'a, 'b> {
     /// Advertising type and interval.
@@ -955,6 +1006,7 @@ pub struct GapBroadcastModeParameters<'a, 'b> {
     pub white_list: &'b [hci::host::PeerAddrType],
 }
 
+#[cfg(feature = "ms")]
 impl<'a, 'b> GapBroadcastModeParameters<'a, 'b> {
     /// Maximum length of a GAP Broadcast Mode Parameter list
     pub const MAX_LENGTH: usize = 255;
@@ -1024,6 +1076,7 @@ impl<'a, 'b> GapBroadcastModeParameters<'a, 'b> {
     }
 }
 
+#[cfg(feature = "ms")]
 /// Parameters for the [GAP Start Observation
 /// Procedure](::ActiveBlueNRG::gap_start_observation_procedure) command.
 pub struct GapObservationProcedureParameters {
@@ -1041,6 +1094,7 @@ pub struct GapObservationProcedureParameters {
     pub filter_duplicates: bool,
 }
 
+#[cfg(feature = "ms")]
 impl GapObservationProcedureParameters {
     /// Number of bytes these parameters take when serialized.
     pub const LENGTH: usize = 7;

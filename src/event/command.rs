@@ -144,6 +144,12 @@ pub enum ReturnParameters {
     /// Request](::ActiveBlueNRG::gap_send_pairing_request) command.
     GapSendPairingRequest(hci::Status),
 
+    #[cfg(not(feature = "ms"))]
+    /// Parameters returned by the [GAP Resolve Private
+    /// Address](::ActiveBlueNRG::gap_resolve_private_address) command.
+    GapResolvePrivateAddress(hci::Status),
+
+    #[cfg(feature = "ms")]
     /// Parameters returned by the [GAP Resolve Private
     /// Address](::ActiveBlueNRG::gap_resolve_private_address) command.
     GapResolvePrivateAddress(GapResolvePrivateAddress),
@@ -152,10 +158,12 @@ pub enum ReturnParameters {
     /// command.
     GapGetBondedDevices(GapBondedDevices),
 
+    #[cfg(feature = "ms")]
     /// Parameters returned by the [GAP Set Broadcast Mode](::ActiveBlueNRG::gap_set_broadcast_mode)
     /// command.
     GapSetBroadcastMode(hci::Status),
 
+    #[cfg(feature = "ms")]
     /// Parameters returned by the [GAP Start Observation
     /// Procedure](::ActiveBlueNRG::gap_start_observation_procedure) command.
     GapStartObservationProcedure(hci::Status),
@@ -268,19 +276,53 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                 to_status(&bytes[3..])?,
             )),
             ::opcode::GAP_RESOLVE_PRIVATE_ADDRESS => {
-                Ok(ReturnParameters::GapResolvePrivateAddress(
-                    to_gap_resolve_private_address(&bytes[3..])?,
-                ))
+                #[cfg(not(feature = "ms"))]
+                {
+                    Ok(ReturnParameters::GapResolvePrivateAddress(to_status(
+                        &bytes[3..],
+                    )?))
+                }
+
+                #[cfg(feature = "ms")]
+                {
+                    Ok(ReturnParameters::GapResolvePrivateAddress(
+                        to_gap_resolve_private_address(&bytes[3..])?,
+                    ))
+                }
             }
             ::opcode::GAP_GET_BONDED_DEVICES => Ok(ReturnParameters::GapGetBondedDevices(
                 to_gap_bonded_devices(&bytes[3..])?,
             )),
-            ::opcode::GAP_SET_BROADCAST_MODE => Ok(ReturnParameters::GapSetBroadcastMode(
-                to_status(&bytes[3..])?,
-            )),
-            ::opcode::GAP_START_OBSERVATION_PROCEDURE => Ok(
-                ReturnParameters::GapStartObservationProcedure(to_status(&bytes[3..])?),
-            ),
+            ::opcode::GAP_SET_BROADCAST_MODE => {
+                #[cfg(feature = "ms")]
+                {
+                    Ok(ReturnParameters::GapSetBroadcastMode(to_status(
+                        &bytes[3..],
+                    )?))
+                }
+
+                #[cfg(not(feature = "ms"))]
+                {
+                    Err(hci::event::Error::UnknownOpcode(
+                        ::opcode::GAP_SET_BROADCAST_MODE,
+                    ))
+                }
+            }
+            ::opcode::GAP_START_OBSERVATION_PROCEDURE => {
+                #[cfg(feature = "ms")]
+                {
+                    Ok(ReturnParameters::GapStartObservationProcedure(to_status(
+                        &bytes[3..],
+                    )?))
+                }
+
+                #[cfg(not(feature = "ms"))]
+                {
+                    Err(hci::event::Error::UnknownOpcode(
+                        ::opcode::GAP_START_OBSERVATION_PROCEDURE,
+                    ))
+                }
+            }
             ::opcode::GAP_IS_DEVICE_BONDED => {
                 Ok(ReturnParameters::GapIsDeviceBonded(to_status(&bytes[3..])?))
             }
@@ -410,6 +452,7 @@ fn to_gap_security_level(
     })
 }
 
+#[cfg(feature = "ms")]
 /// Parameters returned by the [GAP Resolve Private
 /// Address](::ActiveBlueNRG::gap_resolve_private_address) command.
 #[derive(Copy, Clone, Debug)]
@@ -422,6 +465,7 @@ pub struct GapResolvePrivateAddress {
     pub bd_addr: Option<hci::BdAddr>,
 }
 
+#[cfg(feature = "ms")]
 fn to_gap_resolve_private_address(
     bytes: &[u8],
 ) -> Result<GapResolvePrivateAddress, hci::event::Error<super::BlueNRGError>> {
@@ -498,9 +542,10 @@ fn to_gap_bonded_devices(
                 let index = HEADER_LEN + i * ADDR_LEN;
                 let mut addr = [0; 6];
                 addr.copy_from_slice(&bytes[(1 + index)..(7 + index)]);
-                address_buffer[i] = hci::to_bd_addr_type(bytes[index], hci::BdAddr(addr)).map_err(
-                    |e| hci::event::Error::Vendor(super::BlueNRGError::BadBdAddrType(e.0)),
-                )?;
+                address_buffer[i] =
+                    hci::to_bd_addr_type(bytes[index], hci::BdAddr(addr)).map_err(|e| {
+                        hci::event::Error::Vendor(super::BlueNRGError::BadBdAddrType(e.0))
+                    })?;
             }
 
             Ok(GapBondedDevices {

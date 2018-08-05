@@ -96,7 +96,11 @@ status_only! {
     gap_terminate_procedure(0x9D, 0xFC, BNRGParams::GapTerminateProcedure);
     gap_start_connection_update(0x9E, 0xFC, BNRGParams::GapStartConnectionUpdate);
     gap_send_pairing_request(0x9F, 0xFC, BNRGParams::GapSendPairingRequest);
+    #[cfg(not(feature = "ms"))]
+    gap_resolve_private_address(0xA0, 0xFC, BNRGParams::GapResolvePrivateAddress);
+    #[cfg(feature = "ms")]
     gap_set_broadcast_mode(0xA1, 0xFC, BNRGParams::GapSetBroadcastMode);
+    #[cfg(feature = "ms")]
     gap_start_observation_procedure(0xA2, 0xFC, BNRGParams::GapStartObservationProcedure);
     gap_is_device_bonded(0xA4, 0xFC, BNRGParams::GapIsDeviceBonded);
 }
@@ -166,6 +170,7 @@ fn gap_get_security_level_bad_pass_key_requirement() {
     }
 }
 
+#[cfg(feature = "ms")]
 #[test]
 fn gap_resolve_private_address() {
     let buffer = [0x0E, 10, 1, 0xA0, 0xFC, 0, 1, 2, 3, 4, 5, 6];
@@ -184,6 +189,7 @@ fn gap_resolve_private_address() {
     }
 }
 
+#[cfg(feature = "ms")]
 #[test]
 fn gap_resolve_private_address_failed() {
     let buffer = [0x0E, 4, 1, 0xA0, 0xFC, 0x12];
@@ -202,6 +208,7 @@ fn gap_resolve_private_address_failed() {
     }
 }
 
+#[cfg(feature = "ms")]
 #[test]
 fn gap_resolve_private_address_failed_mixed_signals() {
     let buffer = [0x0E, 10, 1, 0xA0, 0xFC, 0x12, 1, 2, 3, 4, 5, 6];
