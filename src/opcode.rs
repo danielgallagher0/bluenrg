@@ -62,7 +62,10 @@ opcodes! {
         pub const GAP_GET_BONDED_DEVICES = 0x23;
         pub const GAP_IS_DEVICE_BONDED = 0x24;
     }
-    // Gatt = 0x2;
+    Gatt = 0x2;
+    {
+        pub const GATT_INIT = 0x01;
+    }
     L2Cap = 0x3;
     {
         pub const L2CAP_CONN_PARAM_UPDATE_REQ = 0x01;

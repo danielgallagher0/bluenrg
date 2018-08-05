@@ -15,14 +15,6 @@ use core::fmt::{Debug, Formatter, Result as FmtResult};
 /// return parameters, they are included in the enum.
 #[derive(Clone, Debug)]
 pub enum ReturnParameters {
-    /// Status returned by the [L2CAP Connection Parameter Update
-    /// Request](::l2cap::Commands::connection_parameter_update_request) command.
-    L2CapConnectionParameterUpdateRequest(hci::Status),
-
-    /// Status returned by the [L2CAP Connection Parameter Update
-    /// Response](::l2cap::Commands::connection_parameter_update_response) command.
-    L2CapConnectionParameterUpdateResponse(hci::Status),
-
     /// Status returned by the [GAP Set Non-Discoverable](::gap::Commands::set_nondiscoverable)
     /// command.
     GapSetNondiscoverable(hci::Status),
@@ -171,6 +163,17 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GAP Is Device Bonded](::gap::Commands::is_device_bonded)
     /// command.
     GapIsDeviceBonded(hci::Status),
+
+    /// Parameters returned by the [GATT Init](::gatt::Commands::init) command.
+    GattInit(hci::Status),
+
+    /// Status returned by the [L2CAP Connection Parameter Update
+    /// Request](::l2cap::Commands::connection_parameter_update_request) command.
+    L2CapConnectionParameterUpdateRequest(hci::Status),
+
+    /// Status returned by the [L2CAP Connection Parameter Update
+    /// Response](::l2cap::Commands::connection_parameter_update_response) command.
+    L2CapConnectionParameterUpdateResponse(hci::Status),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -180,12 +183,6 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
         check_len_at_least(bytes, 3)?;
 
         match hci::Opcode(LittleEndian::read_u16(&bytes[1..])) {
-            ::opcode::L2CAP_CONN_PARAM_UPDATE_REQ => Ok(
-                ReturnParameters::L2CapConnectionParameterUpdateRequest(to_status(&bytes[3..])?),
-            ),
-            ::opcode::L2CAP_CONN_PARAM_UPDATE_RESP => Ok(
-                ReturnParameters::L2CapConnectionParameterUpdateResponse(to_status(&bytes[3..])?),
-            ),
             ::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNondiscoverable(
                 to_status(&bytes[3..])?,
             )),
@@ -326,6 +323,13 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_IS_DEVICE_BONDED => {
                 Ok(ReturnParameters::GapIsDeviceBonded(to_status(&bytes[3..])?))
             }
+            ::opcode::GATT_INIT => Ok(ReturnParameters::GattInit(to_status(&bytes[3..])?)),
+            ::opcode::L2CAP_CONN_PARAM_UPDATE_REQ => Ok(
+                ReturnParameters::L2CapConnectionParameterUpdateRequest(to_status(&bytes[3..])?),
+            ),
+            ::opcode::L2CAP_CONN_PARAM_UPDATE_RESP => Ok(
+                ReturnParameters::L2CapConnectionParameterUpdateResponse(to_status(&bytes[3..])?),
+            ),
             other => Err(hci::event::Error::UnknownOpcode(other)),
         }
     }

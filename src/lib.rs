@@ -61,6 +61,7 @@ use hci::Controller;
 mod cb;
 pub mod event;
 pub mod gap;
+pub mod gatt;
 pub mod l2cap;
 mod opcode;
 

@@ -47,6 +47,7 @@ status_only! {
         0xFD,
         BNRGParams::L2CapConnectionParameterUpdateResponse
     );
+
     gap_set_nondiscoverable(0x81, 0xFC, BNRGParams::GapSetNondiscoverable);
     gap_set_limited_discoverable(0x82, 0xFC, BNRGParams::GapSetLimitedDiscoverable);
     gap_set_discoverable(0x83, 0xFC, BNRGParams::GapSetDiscoverable);
@@ -103,6 +104,8 @@ status_only! {
     #[cfg(feature = "ms")]
     gap_start_observation_procedure(0xA2, 0xFC, BNRGParams::GapStartObservationProcedure);
     gap_is_device_bonded(0xA4, 0xFC, BNRGParams::GapIsDeviceBonded);
+
+    gatt_init(0x01, 0xFD, BNRGParams::GattInit);
 }
 
 #[test]
