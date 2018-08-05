@@ -39,9 +39,26 @@ pub trait Commands {
     ///
     /// Only underlying communication errors are reported.
     ///
+    /// # Generated events
+    ///
     /// A [Command complete](::event::command::ReturnParameters::GattAddService) event is
     /// generated.
     fn add_service(&mut self, params: &AddServiceParameters) -> nb::Result<(), Self::Error>;
+
+    /// Include a service to another service.
+    ///
+    /// Attribute server creates an INCLUDE definition attribute.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [Command complete](::event::command::ReturnParameters::GattIncludeService) event is
+    /// generated.
+    fn include_service(&mut self, params: &IncludeServiceParameters)
+        -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -63,6 +80,16 @@ where
         let len = params.into_bytes(&mut bytes);
 
         self.write_command(::opcode::GATT_ADD_SERVICE, &bytes[..len])
+    }
+
+    fn include_service(
+        &mut self,
+        params: &IncludeServiceParameters,
+    ) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; IncludeServiceParameters::MAX_LENGTH];
+        let len = params.into_bytes(&mut bytes);
+
+        self.write_command(::opcode::GATT_INCLUDE_SERVICE, &bytes[..len])
     }
 }
 
@@ -135,4 +162,75 @@ pub enum ServiceType {
     Primary = 0x01,
     /// Secondary service
     Secondary = 0x02,
+}
+
+/// Parameters for the [GATT Include Service](Commands::include_service) command.
+pub struct IncludeServiceParameters {
+    /// Handle of the service to which another service has to be included
+    pub service_handle: ServiceHandle,
+
+    /// Range of handles of the service which has to be included in the service.
+    pub include_handle_range: ServiceHandleRange,
+
+    /// UUID of the included service
+    pub include_uuid: Uuid,
+}
+
+impl IncludeServiceParameters {
+    const MAX_LENGTH: usize = 23;
+
+    fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+        assert!(bytes.len() >= Self::MAX_LENGTH);
+
+        LittleEndian::write_u16(&mut bytes[0..2], self.service_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], self.include_handle_range.first().0);
+        LittleEndian::write_u16(&mut bytes[4..6], self.include_handle_range.last().0);
+        let uuid_len = self.include_uuid.into_bytes(&mut bytes[6..]);
+
+        6 + uuid_len
+    }
+}
+
+/// Handle for GAP Services.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct ServiceHandle(pub u16);
+
+/// Range of service handles.
+pub struct ServiceHandleRange {
+    from: ServiceHandle,
+    to: ServiceHandle,
+}
+
+impl ServiceHandleRange {
+    /// Create and return a new [ServiceHandleRange].
+    ///
+    /// # Errors
+    ///
+    /// - [Inverted](ServiceHandleRangeError::Inverted) if the beginning handle is greater than the
+    ///   ending handle.
+    pub fn new(
+        from: ServiceHandle,
+        to: ServiceHandle,
+    ) -> Result<ServiceHandleRange, ServiceHandleRangeError> {
+        if from.0 > to.0 {
+            return Err(ServiceHandleRangeError::Inverted);
+        }
+
+        Ok(ServiceHandleRange { from, to })
+    }
+
+    fn first(&self) -> ServiceHandle {
+        self.from
+    }
+
+    fn last(&self) -> ServiceHandle {
+        self.to
+    }
+}
+
+/// Potential errors that can occer when creating a [ServiceHandleRange].
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum ServiceHandleRangeError {
+    /// The beginning of the range came after the end.
+    Inverted,
 }

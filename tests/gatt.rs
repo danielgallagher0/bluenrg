@@ -9,6 +9,7 @@ use fixture::Fixture;
 fn init() {
     let mut fixture = Fixture::new();
     fixture.act(|controller| controller.init()).unwrap();
+    assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x01, 0xFD, 0]));
 }
 
@@ -23,6 +24,7 @@ fn add_service_16() {
                 max_attribute_records: 3,
             })
         }).unwrap();
+    assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x02, 0xFD, 5, 0x01, 0x01, 0x02, 0x01, 3]));
 }
 
@@ -37,7 +39,63 @@ fn add_service_128() {
                 max_attribute_records: 255,
             })
         }).unwrap();
+    assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[
         1, 0x02, 0xFD, 19, 0x02, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0x02, 255
     ]));
+}
+
+#[test]
+fn include_service_16() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.include_service(&IncludeServiceParameters {
+                service_handle: ServiceHandle(0x0201),
+                include_handle_range: ServiceHandleRange::new(
+                    ServiceHandle(0x0403),
+                    ServiceHandle(0x0605),
+                ).unwrap(),
+                include_uuid: Uuid::Uuid16(0x0807),
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(
+        fixture.wrote(&[1, 0x03, 0xFD, 9, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x01, 0x07, 0x08])
+    );
+}
+
+#[test]
+fn include_service_128() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.include_service(&IncludeServiceParameters {
+                service_handle: ServiceHandle(0x0201),
+                include_handle_range: ServiceHandleRange::new(
+                    ServiceHandle(0x0403),
+                    ServiceHandle(0x0605),
+                ).unwrap(),
+                include_uuid: Uuid::Uuid128([
+                    0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C,
+                    0x1D, 0x1E, 0x1F,
+                ]),
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[
+        1, 0x03, 0xFD, 23, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x02, 0x10, 0x11, 0x12, 0x13, 0x14,
+        0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
+    ]));
+}
+
+#[test]
+fn bad_service_handle_range() {
+    let err = ServiceHandleRange::new(ServiceHandle(0x0201), ServiceHandle(0x0102))
+        .err()
+        .unwrap();
+    assert_eq!(err, ServiceHandleRangeError::Inverted);
+
+    // Both ends of the range may be equal
+    ServiceHandleRange::new(ServiceHandle(0x0201), ServiceHandle(0x0201)).unwrap();
 }

@@ -168,7 +168,11 @@ pub enum ReturnParameters {
     GattInit(hci::Status),
 
     /// Parameters returned by the [GATT Add Service](::gatt::Commands::add_service) command.
-    GattAddService(GattAddService),
+    GattAddService(GattService),
+
+    /// Parameters returned by the [GATT Include Service](::gatt::Commands::include_service)
+    /// command.
+    GattIncludeService(GattService),
 
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Request](::l2cap::Commands::connection_parameter_update_request) command.
@@ -327,8 +331,11 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                 Ok(ReturnParameters::GapIsDeviceBonded(to_status(&bytes[3..])?))
             }
             ::opcode::GATT_INIT => Ok(ReturnParameters::GattInit(to_status(&bytes[3..])?)),
-            ::opcode::GATT_ADD_SERVICE => Ok(ReturnParameters::GattAddService(
-                to_gatt_add_service(&bytes[3..])?,
+            ::opcode::GATT_ADD_SERVICE => Ok(ReturnParameters::GattAddService(to_gatt_service(
+                &bytes[3..],
+            )?)),
+            ::opcode::GATT_INCLUDE_SERVICE => Ok(ReturnParameters::GattIncludeService(
+                to_gatt_service(&bytes[3..])?,
             )),
             ::opcode::L2CAP_CONN_PARAM_UPDATE_REQ => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateRequest(to_status(&bytes[3..])?),
@@ -368,7 +375,7 @@ pub struct GapInit {
     pub status: hci::Status,
 
     /// Handle for the GAP service
-    pub service_handle: ServiceHandle,
+    pub service_handle: ::gatt::ServiceHandle,
 
     /// Handle for the device name characteristic added to the GAP service.
     pub dev_name_handle: CharacteristicHandle,
@@ -376,10 +383,6 @@ pub struct GapInit {
     /// Handle for the appearance characteristic added to the GAP service.
     pub appearance_handle: CharacteristicHandle,
 }
-
-/// Handle for GAP Services.
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct ServiceHandle(pub u16);
 
 /// Handle for GAP characteristics.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -390,7 +393,7 @@ fn to_gap_init(bytes: &[u8]) -> Result<GapInit, hci::event::Error<super::BlueNRG
 
     Ok(GapInit {
         status: to_status(bytes)?,
-        service_handle: ServiceHandle(LittleEndian::read_u16(&bytes[1..])),
+        service_handle: ::gatt::ServiceHandle(LittleEndian::read_u16(&bytes[1..])),
         dev_name_handle: CharacteristicHandle(LittleEndian::read_u16(&bytes[3..])),
         appearance_handle: CharacteristicHandle(LittleEndian::read_u16(&bytes[5..])),
     })
@@ -574,7 +577,7 @@ fn to_gap_bonded_devices(
 
 /// Parameters returned by the [GATT Add Service](::gatt::Commands::add_service) command.
 #[derive(Copy, Clone, Debug)]
-pub struct GattAddService {
+pub struct GattService {
     /// Did the command fail, and if so, how?
     pub status: hci::Status,
 
@@ -584,16 +587,14 @@ pub struct GattAddService {
     /// service. Also server allocates a range of handles for this service from `service_handle` to
     /// `service_handle +
     /// [max_attribute_records](::gatt::ServiceParameters::max_attribute_records)`.
-    pub service_handle: ServiceHandle,
+    pub service_handle: ::gatt::ServiceHandle,
 }
 
-fn to_gatt_add_service(
-    bytes: &[u8],
-) -> Result<GattAddService, hci::event::Error<super::BlueNRGError>> {
+fn to_gatt_service(bytes: &[u8]) -> Result<GattService, hci::event::Error<super::BlueNRGError>> {
     require_len!(bytes, 3);
 
-    Ok(GattAddService {
+    Ok(GattService {
         status: to_status(&bytes)?,
-        service_handle: ServiceHandle(LittleEndian::read_u16(&bytes[1..3])),
+        service_handle: ::gatt::ServiceHandle(LittleEndian::read_u16(&bytes[1..3])),
     })
 }

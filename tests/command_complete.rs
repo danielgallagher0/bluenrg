@@ -119,7 +119,7 @@ fn gap_init() {
             match event.return_params {
                 HciParams::Vendor(BNRGParams::GapInit(params)) => {
                     assert_eq!(params.status, hci::Status::Success);
-                    assert_eq!(params.service_handle, ServiceHandle(0x0201));
+                    assert_eq!(params.service_handle, bluenrg::gatt::ServiceHandle(0x0201));
                     assert_eq!(params.dev_name_handle, CharacteristicHandle(0x0403));
                     assert_eq!(params.appearance_handle, CharacteristicHandle(0x0605));
                 }
@@ -323,7 +323,25 @@ fn gatt_add_service() {
             match event.return_params {
                 HciParams::Vendor(BNRGParams::GattAddService(params)) => {
                     assert_eq!(params.status, hci::Status::Success);
-                    assert_eq!(params.service_handle, ServiceHandle(0x0201));
+                    assert_eq!(params.service_handle, bluenrg::gatt::ServiceHandle(0x0201));
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
+fn gatt_include_service() {
+    let buffer = [0x0E, 6, 1, 0x03, 0xFD, 0x00, 0x01, 0x02];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 1);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::GattIncludeService(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(params.service_handle, bluenrg::gatt::ServiceHandle(0x0201));
                 }
                 other => panic!("Wrong return parameters: {:?}", other),
             }
