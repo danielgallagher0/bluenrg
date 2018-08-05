@@ -65,6 +65,7 @@ opcodes! {
     Gatt = 0x2;
     {
         pub const GATT_INIT = 0x01;
+        pub const GATT_ADD_SERVICE = 0x02;
     }
     L2Cap = 0x3;
     {

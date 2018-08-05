@@ -167,6 +167,9 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GATT Init](::gatt::Commands::init) command.
     GattInit(hci::Status),
 
+    /// Parameters returned by the [GATT Add Service](::gatt::Commands::add_service) command.
+    GattAddService(GattAddService),
+
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Request](::l2cap::Commands::connection_parameter_update_request) command.
     L2CapConnectionParameterUpdateRequest(hci::Status),
@@ -324,6 +327,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                 Ok(ReturnParameters::GapIsDeviceBonded(to_status(&bytes[3..])?))
             }
             ::opcode::GATT_INIT => Ok(ReturnParameters::GattInit(to_status(&bytes[3..])?)),
+            ::opcode::GATT_ADD_SERVICE => Ok(ReturnParameters::GattAddService(
+                to_gatt_add_service(&bytes[3..])?,
+            )),
             ::opcode::L2CAP_CONN_PARAM_UPDATE_REQ => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateRequest(to_status(&bytes[3..])?),
             ),
@@ -564,4 +570,30 @@ fn to_gap_bonded_devices(
             address_buffer: [hci::BdAddrType::Public(hci::BdAddr([0; 6])); MAX_ADDRESSES],
         }),
     }
+}
+
+/// Parameters returned by the [GATT Add Service](::gatt::Commands::add_service) command.
+#[derive(Copy, Clone, Debug)]
+pub struct GattAddService {
+    /// Did the command fail, and if so, how?
+    pub status: hci::Status,
+
+    /// Handle of the Service
+    ///
+    /// When this service is added to the server, a handle is allocated by the server to this
+    /// service. Also server allocates a range of handles for this service from `service_handle` to
+    /// `service_handle +
+    /// [max_attribute_records](::gatt::ServiceParameters::max_attribute_records)`.
+    pub service_handle: ServiceHandle,
+}
+
+fn to_gatt_add_service(
+    bytes: &[u8],
+) -> Result<GattAddService, hci::event::Error<super::BlueNRGError>> {
+    require_len!(bytes, 3);
+
+    Ok(GattAddService {
+        status: to_status(&bytes)?,
+        service_handle: ServiceHandle(LittleEndian::read_u16(&bytes[1..3])),
+    })
 }
