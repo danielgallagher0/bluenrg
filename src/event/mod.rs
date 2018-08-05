@@ -97,7 +97,7 @@ pub enum BlueNRGEvent {
 
     /// This event is generated when the central device responds to the L2CAP connection update
     /// request packet. For more info see
-    /// [ConnectionParameterUpdateResponse]($crate::command::L2CapConnectionParameterUpdateResponse)
+    /// [ConnectionParameterUpdateResponse](::l2cap::ConnectionParameterUpdateResponse)
     /// and CommandReject in Bluetooth Core v4.0 spec.
     L2CapConnectionUpdateResponse(L2CapConnectionUpdateResponse),
 
@@ -107,7 +107,7 @@ pub enum BlueNRGEvent {
 
     /// The event is given by the L2CAP layer when a connection update request is received from the
     /// peripheral. The application has to respond by calling
-    /// [`l2cap_connection_parameter_update_response`]($crate::ActiveBlueNRG::l2cap_connection_parameter_update_response).
+    /// [`l2cap_connection_parameter_update_response`](::l2cap::Commands::connection_parameter_update_response).
     L2CapConnectionUpdateRequest(L2CapConnectionUpdateRequest),
 
     /// This event is generated to the application by the ATT server when a client modifies any
@@ -381,7 +381,7 @@ pub enum BlueNRGError {
     /// event: The packet ends with a partial attribute handle.
     AttReadMultiplePermitRequestPartial,
 
-    /// For the [GAP Get Security Level](::ActiveBlueNRG::gap_get_security_level) command complete
+    /// For the [GAP Get Security Level](::gap::Commands::get_security_level) command complete
     /// [event](command::ReturnParameters::GapGetSecurityLevel): One of the boolean values
     /// ([`mitm_protection_required`](command::GapSecurityLevel::mitm_protection_required),
     /// [`bonding_required`](command::GapSecurityLevel::bonding_required), or
@@ -389,17 +389,17 @@ pub enum BlueNRGError {
     /// neither 0 nor 1. The unknown value is provided.
     BadBooleanValue(u8),
 
-    /// For the [GAP Get Security Level](::ActiveBlueNRG::gap_get_security_level) command complete
+    /// For the [GAP Get Security Level](::gap::Commands::get_security_level) command complete
     /// [event](command::ReturnParameters::GapGetSecurityLevel): the pass key requirement field was
     /// an invalid value. The unknown byte is provided.
     BadPassKeyRequirement(u8),
 
-    /// For the [GAP Get Bonded Devices](::ActiveBlueNRG::gap_get_bonded_devices) command complete
+    /// For the [GAP Get Bonded Devices](::gap::Commands::get_bonded_devices) command complete
     /// [event](command::ReturnParameters::GapGetBondedDevices): the packat was not long enough to
     /// contain the number of addresses it claimed to contain.
     PartialBondedDeviceAddress,
 
-    /// For the [GAP Get Bonded Devices](::ActiveBlueNRG::gap_get_bonded_devices) command complete
+    /// For the [GAP Get Bonded Devices](::gap::Commands::get_bonded_devices) command complete
     /// [event](command::ReturnParameters::GapGetBondedDevices): one of the address type bytes was
     /// invalid. Includes the invalid byte.
     BadBdAddrType(u8),
@@ -1059,21 +1059,21 @@ fn to_l2cap_procedure_timeout(
 /// peripheral.
 ///
 /// The application has to respond by calling
-/// [`l2cap_connection_parameter_update_response`]($crate::ActiveBlueNRG::l2cap_connection_parameter_update_response).
+/// [`l2cap_connection_parameter_update_response`](::l2cap::Commands::connection_parameter_update_response).
 ///
 /// Defined in Vol 3, Part A, section 4.20 of the Bluetooth specification.
 #[derive(Copy, Clone, Debug)]
 pub struct L2CapConnectionUpdateRequest {
     /// Handle of the connection for which the connection update request has been received.  The
-    /// [same handle](::command::L2CapConnectionParameterUpdateResponse::conn_handle) has to be
-    /// returned while responding to the event with the command
-    /// [`l2cap_connection_parameter_update_response`](::ActiveBlueNRG::l2cap_connection_parameter_update_response).
+    /// [same handle](::l2cap::ConnectionParameterUpdateResponse::conn_handle) has to be returned
+    /// while responding to the event with the command
+    /// [`l2cap_connection_parameter_update_response`](::l2cap::Commands::connection_parameter_update_response).
     pub conn_handle: ConnectionHandle,
 
     /// This is the identifier which associates the request to the response. The [same
-    /// identifier](::command::L2CapConnectionParameterUpdateResponse::identifier) has to be
-    /// returned by the upper layer in the command
-    /// [`l2cap_connection_parameter_update_response`](::ActiveBlueNRG::l2cap_connection_parameter_update_response).
+    /// identifier](::l2cap::ConnectionParameterUpdateResponse::identifier) has to be returned by
+    /// the upper layer in the command
+    /// [`l2cap_connection_parameter_update_response`](::l2cap::Commands::connection_parameter_update_response).
     pub identifier: u8,
 
     /// Defines the range of the connection interval, the latency, and the supervision timeout.

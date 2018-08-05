@@ -16,159 +16,159 @@ use core::fmt::{Debug, Formatter, Result as FmtResult};
 #[derive(Clone, Debug)]
 pub enum ReturnParameters {
     /// Status returned by the [L2CAP Connection Parameter Update
-    /// Request](::ActiveBlueNRG::l2cap_connection_parameter_update_request) command.
+    /// Request](::l2cap::Commands::connection_parameter_update_request) command.
     L2CapConnectionParameterUpdateRequest(hci::Status),
 
     /// Status returned by the [L2CAP Connection Parameter Update
-    /// Response](::ActiveBlueNRG::l2cap_connection_parameter_update_response) command.
+    /// Response](::l2cap::Commands::connection_parameter_update_response) command.
     L2CapConnectionParameterUpdateResponse(hci::Status),
 
-    /// Status returned by the [GAP Set Non-Discoverable](::ActiveBlueNRG::gap_set_nondiscoverable)
+    /// Status returned by the [GAP Set Non-Discoverable](::gap::Commands::set_nondiscoverable)
     /// command.
     GapSetNondiscoverable(hci::Status),
 
     /// Status returned by the [GAP Set Limited
-    /// Discoverable](::ActiveBlueNRG::gap_set_limited_discoverable) command.
+    /// Discoverable](::gap::Commands::set_limited_discoverable) command.
     GapSetLimitedDiscoverable(hci::Status),
 
-    /// Status returned by the [GAP Set Discoverable](::ActiveBlueNRG::gap_set_discoverable)
+    /// Status returned by the [GAP Set Discoverable](::gap::Commands::set_discoverable)
     /// command.
     GapSetDiscoverable(hci::Status),
 
     /// Status returned by the [GAP Set Direct
-    /// Connectable](::ActiveBlueNRG::gap_set_direct_connectable) command.
+    /// Connectable](::gap::Commands::set_direct_connectable) command.
     GapSetDirectConnectable(hci::Status),
 
-    /// Status returned by the [GAP Set IO Capability](::ActiveBlueNRG::gap_set_io_capability)
+    /// Status returned by the [GAP Set IO Capability](::gap::Commands::set_io_capability)
     /// command.
     GapSetIoCapability(hci::Status),
 
     /// Status returned by the [GAP Set Authentication
-    /// Requirement](::ActiveBlueNRG::gap_set_authentication_requirement) command.
+    /// Requirement](::gap::Commands::set_authentication_requirement) command.
     GapSetAuthenticationRequirement(hci::Status),
 
     /// Status returned by the [GAP Set Authorization
-    /// Requirement](::ActiveBlueNRG::gap_set_authorization_requirement) command.
+    /// Requirement](::gap::Commands::set_authorization_requirement) command.
     GapSetAuthorizationRequirement(hci::Status),
 
-    /// Status returned by the [GAP Pass Key Response](::ActiveBlueNRG::gap_pass_key_response)
+    /// Status returned by the [GAP Pass Key Response](::gap::Commands::pass_key_response)
     /// command.
     GapPassKeyResponse(hci::Status),
 
     /// Status returned by the [GAP Authorization
-    /// Response](::ActiveBlueNRG::gap_authorization_response) command.
+    /// Response](::gap::Commands::authorization_response) command.
     GapAuthorizationResponse(hci::Status),
 
-    /// Parameters returned by the [GAP Init](::ActiveBlueNRG::gap_init) command.
+    /// Parameters returned by the [GAP Init](::gap::Commands::init) command.
     GapInit(GapInit),
 
     /// Parameters returned by the [GAP Set
-    /// Non-Connectable](::ActiveBlueNRG::gap_set_nonconnectable) command.
+    /// Non-Connectable](::gap::Commands::set_nonconnectable) command.
     GapSetNonConnectable(hci::Status),
 
     /// Parameters returned by the [GAP Set
-    /// Undirected Connectable](::ActiveBlueNRG::gap_set_undirected_connectable) command.
+    /// Undirected Connectable](::gap::Commands::set_undirected_connectable) command.
     GapSetUndirectedConnectable(hci::Status),
 
     /// Parameters returned by the [GAP Peripheral Security
-    /// Request](::ActiveBlueNRG::gap_peripheral_security_request) command.
+    /// Request](::gap::Commands::peripheral_security_request) command.
     GapPeripheralSecurityRequest(hci::Status),
 
     /// Parameters returned by the [GAP Update Advertising
-    /// Data](::ActiveBlueNRG::gap_update_advertising_data) command.
+    /// Data](::gap::Commands::update_advertising_data) command.
     GapUpdateAdvertisingData(hci::Status),
 
-    /// Parameters returned by the [GAP Delete AD Type](::ActiveBlueNRG::gap_delete_ad_type)
+    /// Parameters returned by the [GAP Delete AD Type](::gap::Commands::delete_ad_type)
     /// command.
     GapDeleteAdType(hci::Status),
 
-    /// Parameters returned by the [GAP Get Security Level](::ActiveBlueNRG::gap_get_security_level)
+    /// Parameters returned by the [GAP Get Security Level](::gap::Commands::get_security_level)
     /// command.
     GapGetSecurityLevel(GapSecurityLevel),
 
-    /// Parameters returned by the [GAP Set Event Mask](::ActiveBlueNRG::gap_set_event_mask)
+    /// Parameters returned by the [GAP Set Event Mask](::gap::Commands::set_event_mask)
     /// command.
     GapSetEventMask(hci::Status),
 
     /// Parameters returned by the [GAP Configure
-    /// White List](::ActiveBlueNRG::gap_configure_white_list) command.
+    /// White List](::gap::Commands::configure_white_list) command.
     GapConfigureWhiteList(hci::Status),
 
-    /// Parameters returned by the [GAP Terminate](::ActiveBlueNRG::gap_terminate) command.
+    /// Parameters returned by the [GAP Terminate](::gap::Commands::terminate) command.
     GapTerminate(hci::Status),
 
     /// Parameters returned by the [GAP Clear Security
-    /// Database](::ActiveBlueNRG::gap_clear_security_database) command.
+    /// Database](::gap::Commands::clear_security_database) command.
     GapClearSecurityDatabase(hci::Status),
 
-    /// Parameters returned by the [GAP Allow Rebond](::ActiveBlueNRG::gap_allow_rebond) command.
+    /// Parameters returned by the [GAP Allow Rebond](::gap::Commands::allow_rebond) command.
     GapAllowRebond(hci::Status),
 
     /// Parameters returned by the [GAP Start Limited Discoverable
-    /// Procedure](::ActiveBlueNRG::gap_start_limited_discovery_procedure) command.
+    /// Procedure](::gap::Commands::start_limited_discovery_procedure) command.
     GapStartLimitedDiscoveryProcedure(hci::Status),
 
     /// Parameters returned by the [GAP Start General Discoverable
-    /// Procedure](::ActiveBlueNRG::gap_start_general_discovery_procedure) command.
+    /// Procedure](::gap::Commands::start_general_discovery_procedure) command.
     GapStartGeneralDiscoveryProcedure(hci::Status),
 
     /// Parameters returned by the [GAP Start Name Discoverable
-    /// Procedure](::ActiveBlueNRG::gap_start_name_discovery_procedure) command.
+    /// Procedure](::gap::Commands::start_name_discovery_procedure) command.
     GapStartNameDiscoveryProcedure(hci::Status),
 
     /// Parameters returned by the [GAP Start Auto Connection
-    /// Establishment](::ActiveBlueNRG::gap_start_auto_connection_establishment) command.
+    /// Establishment](::gap::Commands::start_auto_connection_establishment) command.
     GapStartAutoConnectionEstablishment(hci::Status),
 
     /// Parameters returned by the [GAP Start General Connection
-    /// Establishment](::ActiveBlueNRG::gap_start_general_connection_establishment) command.
+    /// Establishment](::gap::Commands::start_general_connection_establishment) command.
     GapStartGeneralConnectionEstablishment(hci::Status),
 
     /// Parameters returned by the [GAP Start Selective Connection
-    /// Establishment](::ActiveBlueNRG::gap_start_selective_connection_establishment) command.
+    /// Establishment](::gap::Commands::start_selective_connection_establishment) command.
     GapStartSelectiveConnectionEstablishment(hci::Status),
 
-    /// Parameters returned by the [GAP Create Connection](::ActiveBlueNRG::gap_create_connection)
+    /// Parameters returned by the [GAP Create Connection](::gap::Commands::create_connection)
     /// command.
     GapCreateConnection(hci::Status),
 
     /// Parameters returned by the [GAP Terminate
-    /// Procedure](::ActiveBlueNRG::gap_terminate_procedure) command.
+    /// Procedure](::gap::Commands::terminate_procedure) command.
     GapTerminateProcedure(hci::Status),
 
     /// Parameters returned by the [GAP Start Connection
-    /// Update](::ActiveBlueNRG::gap_start_connection_update) command.
+    /// Update](::gap::Commands::start_connection_update) command.
     GapStartConnectionUpdate(hci::Status),
 
     /// Parameters returned by the [GAP Send Pairing
-    /// Request](::ActiveBlueNRG::gap_send_pairing_request) command.
+    /// Request](::gap::Commands::send_pairing_request) command.
     GapSendPairingRequest(hci::Status),
 
     #[cfg(not(feature = "ms"))]
     /// Parameters returned by the [GAP Resolve Private
-    /// Address](::ActiveBlueNRG::gap_resolve_private_address) command.
+    /// Address](::gap::Commands::resolve_private_address) command.
     GapResolvePrivateAddress(hci::Status),
 
     #[cfg(feature = "ms")]
     /// Parameters returned by the [GAP Resolve Private
-    /// Address](::ActiveBlueNRG::gap_resolve_private_address) command.
+    /// Address](::gap::Commands::resolve_private_address) command.
     GapResolvePrivateAddress(GapResolvePrivateAddress),
 
-    /// Parameters returned by the [GAP Get Bonded Devices](::ActiveBlueNRG::gap_get_bonded_devices)
+    /// Parameters returned by the [GAP Get Bonded Devices](::gap::Commands::get_bonded_devices)
     /// command.
     GapGetBondedDevices(GapBondedDevices),
 
     #[cfg(feature = "ms")]
-    /// Parameters returned by the [GAP Set Broadcast Mode](::ActiveBlueNRG::gap_set_broadcast_mode)
+    /// Parameters returned by the [GAP Set Broadcast Mode](::gap::Commands::set_broadcast_mode)
     /// command.
     GapSetBroadcastMode(hci::Status),
 
     #[cfg(feature = "ms")]
     /// Parameters returned by the [GAP Start Observation
-    /// Procedure](::ActiveBlueNRG::gap_start_observation_procedure) command.
+    /// Procedure](::gap::Commands::start_observation_procedure) command.
     GapStartObservationProcedure(hci::Status),
 
-    /// Parameters returned by the [GAP Is Device Bonded](::ActiveBlueNRG::gap_is_device_bonded)
+    /// Parameters returned by the [GAP Is Device Bonded](::gap::Commands::is_device_bonded)
     /// command.
     GapIsDeviceBonded(hci::Status),
 }
@@ -347,7 +347,7 @@ fn to_status(bytes: &[u8]) -> Result<hci::Status, hci::event::Error<super::BlueN
     bytes[0].try_into().map_err(hci::event::rewrap_bad_status)
 }
 
-/// Parameters returned by the [GAP Init](::ActiveBlueNRG::gap_init) command.
+/// Parameters returned by the [GAP Init](::gap::Commands::init) command.
 #[derive(Copy, Clone, Debug)]
 pub struct GapInit {
     /// Did the command fail, and if so, how?
@@ -386,7 +386,7 @@ fn to_gap_init(bytes: &[u8]) -> Result<GapInit, hci::event::Error<super::BlueNRG
     })
 }
 
-/// Parameters returned by the [GAP Get Security Level](::ActiveBlueNRG::gap_get_security_level)
+/// Parameters returned by the [GAP Get Security Level](::gap::Commands::get_security_level)
 /// command.
 #[derive(Copy, Clone, Debug)]
 pub struct GapSecurityLevel {
@@ -454,7 +454,7 @@ fn to_gap_security_level(
 
 #[cfg(feature = "ms")]
 /// Parameters returned by the [GAP Resolve Private
-/// Address](::ActiveBlueNRG::gap_resolve_private_address) command.
+/// Address](::gap::Commands::resolve_private_address) command.
 #[derive(Copy, Clone, Debug)]
 pub struct GapResolvePrivateAddress {
     /// Did the command fail, and if so, how?
@@ -488,7 +488,7 @@ fn to_gap_resolve_private_address(
     }
 }
 
-/// Parameters returned by the [GAP Get Bonded Devices](::ActiveBlueNRG::gap_get_bonded_devices)
+/// Parameters returned by the [GAP Get Bonded Devices](::gap::Commands::get_bonded_devices)
 /// command.
 #[derive(Copy, Clone)]
 pub struct GapBondedDevices {
