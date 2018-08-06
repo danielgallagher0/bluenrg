@@ -826,72 +826,33 @@ where
         self.write_command(::opcode::GAP_SET_NONDISCOVERABLE, &[])
     }
 
-    fn set_limited_discoverable<'a, 'b>(
-        &mut self,
-        params: &DiscoverableParameters<'a, 'b>,
-    ) -> nb::Result<(), Error<Self::Error>> {
-        params.validate().map_err(nb::Error::Other)?;
+    impl_validate_variable_length_params!(
+        set_limited_discoverable<'a, 'b>,
+        DiscoverableParameters<'a, 'b>,
+        ::opcode::GAP_SET_LIMITED_DISCOVERABLE
+    );
 
-        let mut bytes = [0; DiscoverableParameters::MAX_LENGTH];
-        let len = params.into_bytes(&mut bytes);
+    impl_validate_variable_length_params!(
+        set_discoverable<'a, 'b>,
+        DiscoverableParameters<'a, 'b>,
+        ::opcode::GAP_SET_DISCOVERABLE
+    );
 
-        self.write_command(::opcode::GAP_SET_LIMITED_DISCOVERABLE, &bytes[..len])
-            .map_err(rewrap_error)
-    }
-
-    fn set_discoverable<'a, 'b>(
-        &mut self,
-        params: &DiscoverableParameters<'a, 'b>,
-    ) -> nb::Result<(), Error<Self::Error>> {
-        params.validate().map_err(nb::Error::Other)?;
-
-        let mut bytes = [0; DiscoverableParameters::MAX_LENGTH];
-        let len = params.into_bytes(&mut bytes);
-
-        self.write_command(::opcode::GAP_SET_DISCOVERABLE, &bytes[..len])
-            .map_err(rewrap_error)
-    }
-
-    fn set_direct_connectable(
-        &mut self,
-        params: &DirectConnectableParameters,
-    ) -> nb::Result<(), Error<Self::Error>> {
-        params.validate().map_err(nb::Error::Other)?;
-
-        let mut bytes = [0; DirectConnectableParameters::LENGTH];
-        params.into_bytes(&mut bytes);
-
-        self.write_command(::opcode::GAP_SET_DIRECT_CONNECTABLE, &bytes)
-            .map_err(rewrap_error)
-    }
+    impl_validate_params!(
+        set_direct_connectable,
+        DirectConnectableParameters,
+        ::opcode::GAP_SET_DIRECT_CONNECTABLE
+    );
 
     fn set_io_capability(&mut self, capability: IoCapability) -> nb::Result<(), Self::Error> {
         self.write_command(::opcode::GAP_SET_IO_CAPABILITY, &[capability as u8])
     }
 
-    fn set_authentication_requirement(
-        &mut self,
-        requirements: &AuthenticationRequirements,
-    ) -> nb::Result<(), Error<Self::Error>> {
-        if requirements.encryption_key_size_range.0 > requirements.encryption_key_size_range.1 {
-            return Err(nb::Error::Other(Error::BadEncryptionKeySizeRange(
-                requirements.encryption_key_size_range.0,
-                requirements.encryption_key_size_range.1,
-            )));
-        }
-
-        if let Pin::Fixed(pin) = requirements.fixed_pin {
-            if pin > 999999 {
-                return Err(nb::Error::Other(Error::BadFixedPin(pin)));
-            }
-        }
-
-        let mut bytes = [0; AuthenticationRequirements::LENGTH];
-        requirements.into_bytes(&mut bytes);
-
-        self.write_command(::opcode::GAP_SET_AUTHENTICATION_REQUIREMENT, &bytes)
-            .map_err(rewrap_error)
-    }
+    impl_validate_params!(
+        set_authentication_requirement,
+        AuthenticationRequirements,
+        ::opcode::GAP_SET_AUTHENTICATION_REQUIREMENT
+    );
 
     fn set_authorization_requirement(
         &mut self,
@@ -1014,17 +975,11 @@ where
         ).map_err(rewrap_error)
     }
 
-    fn peripheral_security_request(
-        &mut self,
-        params: &SecurityRequestParameters,
-    ) -> nb::Result<(), Self::Error> {
-        let mut bytes = [0; 4];
-        LittleEndian::write_u16(&mut bytes[0..2], params.conn_handle.0);
-        bytes[2] = params.bonding as u8;
-        bytes[3] = params.mitm_protection as u8;
-
-        self.write_command(::opcode::GAP_PERIPHERAL_SECURITY_REQUEST, &bytes)
-    }
+    impl_params!(
+        peripheral_security_request,
+        SecurityRequestParameters,
+        ::opcode::GAP_PERIPHERAL_SECURITY_REQUEST
+    );
 
     fn update_advertising_data(&mut self, data: &[u8]) -> nb::Result<(), Error<Self::Error>> {
         const MAX_LENGTH: usize = 31;
@@ -1103,92 +1058,46 @@ where
         self.write_command(::opcode::GAP_ALLOW_REBOND, &bytes)
     }
 
-    fn start_limited_discovery_procedure(
-        &mut self,
-        params: &DiscoveryProcedureParameters,
-    ) -> nb::Result<(), Self::Error> {
-        start_discovery_procedure(
-            self,
-            params,
-            ::opcode::GAP_START_LIMITED_DISCOVERY_PROCEDURE,
-        )
-    }
+    impl_params!(
+        start_limited_discovery_procedure,
+        DiscoveryProcedureParameters,
+        ::opcode::GAP_START_LIMITED_DISCOVERY_PROCEDURE
+    );
 
-    fn start_general_discovery_procedure(
-        &mut self,
-        params: &DiscoveryProcedureParameters,
-    ) -> nb::Result<(), Self::Error> {
-        start_discovery_procedure(
-            self,
-            params,
-            ::opcode::GAP_START_GENERAL_DISCOVERY_PROCEDURE,
-        )
-    }
+    impl_params!(
+        start_general_discovery_procedure,
+        DiscoveryProcedureParameters,
+        ::opcode::GAP_START_GENERAL_DISCOVERY_PROCEDURE
+    );
 
-    fn start_name_discovery_procedure(
-        &mut self,
-        params: &NameDiscoveryProcedureParameters,
-    ) -> nb::Result<(), Self::Error> {
-        let mut bytes = [0; NameDiscoveryProcedureParameters::LENGTH];
-        params.into_bytes(&mut bytes);
+    impl_params!(
+        start_name_discovery_procedure,
+        NameDiscoveryProcedureParameters,
+        ::opcode::GAP_START_NAME_DISCOVERY_PROCEDURE
+    );
 
-        self.write_command(::opcode::GAP_START_NAME_DISCOVERY_PROCEDURE, &bytes)
-    }
+    impl_validate_variable_length_params!(
+        start_auto_connection_establishment<'a>,
+        AutoConnectionEstablishmentParameters<'a>,
+        ::opcode::GAP_START_AUTO_CONNECTION_ESTABLISHMENT
+    );
 
-    fn start_auto_connection_establishment<'a>(
-        &mut self,
-        params: &AutoConnectionEstablishmentParameters<'a>,
-    ) -> nb::Result<(), Error<Self::Error>> {
-        const MAX_WHITE_LIST_LENGTH: usize = 33;
-        if params.white_list.len()
-            > MAX_WHITE_LIST_LENGTH - if cfg!(feature = "ms") { 0 } else { 1 }
-        {
-            return Err(nb::Error::Other(Error::WhiteListTooLong));
-        }
+    impl_params!(
+        start_general_connection_establishment,
+        GeneralConnectionEstablishmentParameters,
+        ::opcode::GAP_START_GENERAL_CONNECTION_ESTABLISHMENT
+    );
 
-        let mut bytes = [0; AutoConnectionEstablishmentParameters::MAX_LENGTH];
-        let len = params.into_bytes(&mut bytes);
-
-        self.write_command(
-            ::opcode::GAP_START_AUTO_CONNECTION_ESTABLISHMENT,
-            &bytes[..len],
-        ).map_err(rewrap_error)
-    }
-
-    fn start_general_connection_establishment(
-        &mut self,
-        params: &GeneralConnectionEstablishmentParameters,
-    ) -> nb::Result<(), Self::Error> {
-        let mut bytes = [0; GeneralConnectionEstablishmentParameters::LENGTH];
-        params.into_bytes(&mut bytes);
-
-        self.write_command(::opcode::GAP_START_GENERAL_CONNECTION_ESTABLISHMENT, &bytes)
-    }
-
-    fn start_selective_connection_establishment<'a>(
-        &mut self,
-        params: &SelectiveConnectionEstablishmentParameters<'a>,
-    ) -> nb::Result<(), Error<Self::Error>> {
-        const MAX_WHITE_LIST_LENGTH: usize = 35;
-        if params.white_list.len() > MAX_WHITE_LIST_LENGTH {
-            return Err(nb::Error::Other(Error::WhiteListTooLong));
-        }
-
-        let mut bytes = [0; SelectiveConnectionEstablishmentParameters::MAX_LENGTH];
-        let len = params.into_bytes(&mut bytes);
-
-        self.write_command(
-            ::opcode::GAP_START_SELECTIVE_CONNECTION_ESTABLISHMENT,
-            &bytes[..len],
-        ).map_err(rewrap_error)
-    }
-
-    fn create_connection(&mut self, params: &ConnectionParameters) -> nb::Result<(), Self::Error> {
-        let mut bytes = [0; ConnectionParameters::LENGTH];
-        params.into_bytes(&mut bytes);
-
-        self.write_command(::opcode::GAP_CREATE_CONNECTION, &bytes)
-    }
+    impl_validate_variable_length_params!(
+        start_selective_connection_establishment<'a>,
+        SelectiveConnectionEstablishmentParameters<'a>,
+        ::opcode::GAP_START_SELECTIVE_CONNECTION_ESTABLISHMENT
+    );
+    impl_params!(
+        create_connection,
+        ConnectionParameters,
+        ::opcode::GAP_CREATE_CONNECTION
+    );
 
     fn terminate_procedure(&mut self, procedure: Procedure) -> nb::Result<(), Error<Self::Error>> {
         if procedure.is_empty() {
@@ -1199,22 +1108,17 @@ where
             .map_err(rewrap_error)
     }
 
-    fn start_connection_update(
-        &mut self,
-        params: &ConnectionUpdateParameters,
-    ) -> nb::Result<(), Self::Error> {
-        let mut bytes = [0; ConnectionUpdateParameters::LENGTH];
-        params.into_bytes(&mut bytes);
+    impl_params!(
+        start_connection_update,
+        ConnectionUpdateParameters,
+        ::opcode::GAP_START_CONNECTION_UPDATE
+    );
 
-        self.write_command(::opcode::GAP_START_CONNECTION_UPDATE, &bytes)
-    }
-
-    fn send_pairing_request(&mut self, params: &PairingRequest) -> nb::Result<(), Self::Error> {
-        let mut bytes = [0; PairingRequest::LENGTH];
-        params.into_bytes(&mut bytes);
-
-        self.write_command(::opcode::GAP_SEND_PAIRING_REQUEST, &bytes)
-    }
+    impl_params!(
+        send_pairing_request,
+        PairingRequest,
+        ::opcode::GAP_SEND_PAIRING_REQUEST
+    );
 
     fn resolve_private_address(&mut self, addr: hci::BdAddr) -> nb::Result<(), Self::Error> {
         self.write_command(::opcode::GAP_RESOLVE_PRIVATE_ADDRESS, &addr.0)
@@ -1225,29 +1129,18 @@ where
     }
 
     #[cfg(feature = "ms")]
-    fn set_broadcast_mode(
-        &mut self,
-        params: &BroadcastModeParameters,
-    ) -> nb::Result<(), Error<Self::Error>> {
-        params.validate().map_err(nb::Error::Other)?;
-
-        let mut bytes = [0; BroadcastModeParameters::MAX_LENGTH];
-        let len = params.into_bytes(&mut bytes);
-
-        self.write_command(::opcode::GAP_SET_BROADCAST_MODE, &bytes[..len])
-            .map_err(rewrap_error)
-    }
+    impl_validate_variable_length_params!(
+        set_broadcast_mode,
+        BroadcastModeParameters,
+        ::opcode::GAP_SET_BROADCAST_MODE
+    );
 
     #[cfg(feature = "ms")]
-    fn start_observation_procedure(
-        &mut self,
-        params: &ObservationProcedureParameters,
-    ) -> nb::Result<(), Self::Error> {
-        let mut bytes = [0; ObservationProcedureParameters::LENGTH];
-        params.into_bytes(&mut bytes);
-
-        self.write_command(::opcode::GAP_START_OBSERVATION_PROCEDURE, &bytes)
-    }
+    impl_params!(
+        start_observation_procedure,
+        ObservationProcedureParameters,
+        ::opcode::GAP_START_OBSERVATION_PROCEDURE
+    );
 
     fn is_device_bonded(&mut self, addr: hci::host::PeerAddrType) -> nb::Result<(), Self::Error> {
         let mut bytes = [0; 7];
@@ -1634,6 +1527,23 @@ pub struct AuthenticationRequirements {
 impl AuthenticationRequirements {
     const LENGTH: usize = 26;
 
+    fn validate<E>(&self) -> Result<(), Error<E>> {
+        if self.encryption_key_size_range.0 > self.encryption_key_size_range.1 {
+            return Err(Error::BadEncryptionKeySizeRange(
+                self.encryption_key_size_range.0,
+                self.encryption_key_size_range.1,
+            ));
+        }
+
+        if let Pin::Fixed(pin) = self.fixed_pin {
+            if pin > 999999 {
+                return Err(Error::BadFixedPin(pin));
+            }
+        }
+
+        Ok(())
+    }
+
     fn into_bytes(&self, bytes: &mut [u8]) {
         assert_eq!(bytes.len(), Self::LENGTH);
 
@@ -1738,6 +1648,18 @@ pub struct SecurityRequestParameters {
     pub mitm_protection: bool,
 }
 
+impl SecurityRequestParameters {
+    const LENGTH: usize = 4;
+
+    fn into_bytes(&self, bytes: &mut [u8]) {
+        assert_eq!(bytes.len(), Self::LENGTH);
+
+        LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
+        bytes[2] = self.bonding as u8;
+        bytes[3] = self.mitm_protection as u8;
+    }
+}
+
 /// Available types of advertising data.
 #[repr(u8)]
 pub enum AdvertisingDataType {
@@ -1821,23 +1743,6 @@ impl DiscoveryProcedureParameters {
     }
 }
 
-fn start_discovery_procedure<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E>(
-    bnrg: &mut ::ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>,
-    params: &DiscoveryProcedureParameters,
-    opcode: hci::Opcode,
-) -> nb::Result<(), E>
-where
-    SPI: hal::blocking::spi::Transfer<u8, Error = E> + hal::blocking::spi::Write<u8, Error = E>,
-    OutputPin1: hal::digital::OutputPin,
-    OutputPin2: hal::digital::OutputPin,
-    InputPin: hal::digital::InputPin,
-{
-    let mut bytes = [0; DiscoveryProcedureParameters::LENGTH];
-    params.into_bytes(&mut bytes);
-
-    bnrg.write_command(opcode, &bytes)
-}
-
 /// Parameters for the [GAP Name Discovery](Commands::start_name_discovery_procedure)
 /// procedure.
 pub struct NameDiscoveryProcedureParameters {
@@ -1899,6 +1804,16 @@ pub struct AutoConnectionEstablishmentParameters<'a> {
 
 impl<'a> AutoConnectionEstablishmentParameters<'a> {
     const MAX_LENGTH: usize = 249;
+
+    fn validate<E>(&self) -> Result<(), Error<E>> {
+        const MAX_WHITE_LIST_LENGTH: usize = 33;
+        if self.white_list.len() > MAX_WHITE_LIST_LENGTH - if cfg!(feature = "ms") { 0 } else { 1 }
+        {
+            return Err(Error::WhiteListTooLong);
+        }
+
+        Ok(())
+    }
 
     fn into_bytes(&self, bytes: &mut [u8]) -> usize {
         let len = self.len();
@@ -2003,6 +1918,15 @@ pub struct SelectiveConnectionEstablishmentParameters<'a> {
 
 impl<'a> SelectiveConnectionEstablishmentParameters<'a> {
     const MAX_LENGTH: usize = 252;
+
+    fn validate<E>(&self) -> Result<(), Error<E>> {
+        const MAX_WHITE_LIST_LENGTH: usize = 35;
+        if self.white_list.len() > MAX_WHITE_LIST_LENGTH {
+            return Err(Error::WhiteListTooLong);
+        }
+
+        Ok(())
+    }
 
     fn into_bytes(&self, bytes: &mut [u8]) -> usize {
         let len = self.len();

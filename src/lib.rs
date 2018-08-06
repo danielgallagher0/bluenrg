@@ -59,11 +59,13 @@ use hci::host::HciHeader;
 use hci::Controller;
 
 mod cb;
+mod command;
 pub mod event;
-pub mod gap;
-pub mod gatt;
-pub mod l2cap;
 mod opcode;
+
+pub use command::gap;
+pub use command::gatt;
+pub use command::l2cap;
 
 pub use hci::host::{AdvertisingFilterPolicy, AdvertisingType, OwnAddressType};
 

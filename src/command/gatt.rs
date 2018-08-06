@@ -78,17 +78,6 @@ pub trait Commands {
     ) -> nb::Result<(), Self::Error>;
 }
 
-macro_rules! impl_variable_length_params {
-    ($method:ident, $param_type:ident, $opcode:path) => {
-        fn $method(&mut self, params: &$param_type) -> nb::Result<(), Self::Error> {
-            let mut bytes = [0; $param_type::MAX_LENGTH];
-            let len = params.into_bytes(&mut bytes);
-
-            self.write_command($opcode, &bytes[..len])
-        }
-    }
-}
-
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
     for ::ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
 where

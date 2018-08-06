@@ -60,25 +60,17 @@ where
 {
     type Error = E;
 
-    fn connection_parameter_update_request(
-        &mut self,
-        params: &ConnectionParameterUpdateRequest,
-    ) -> nb::Result<(), Self::Error> {
-        let mut bytes = [0; ConnectionParameterUpdateRequest::LENGTH];
-        params.into_bytes(&mut bytes);
+    impl_params!(
+        connection_parameter_update_request,
+        ConnectionParameterUpdateRequest,
+        ::opcode::L2CAP_CONN_PARAM_UPDATE_REQ
+    );
 
-        self.write_command(::opcode::L2CAP_CONN_PARAM_UPDATE_REQ, &bytes)
-    }
-
-    fn connection_parameter_update_response(
-        &mut self,
-        params: &ConnectionParameterUpdateResponse,
-    ) -> nb::Result<(), Self::Error> {
-        let mut bytes = [0; ConnectionParameterUpdateResponse::LENGTH];
-        params.into_bytes(&mut bytes);
-
-        self.write_command(::opcode::L2CAP_CONN_PARAM_UPDATE_RESP, &bytes)
-    }
+    impl_params!(
+        connection_parameter_update_response,
+        ConnectionParameterUpdateResponse,
+        ::opcode::L2CAP_CONN_PARAM_UPDATE_RESP
+    );
 }
 
 /// Parameters for the
