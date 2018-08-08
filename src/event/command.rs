@@ -178,6 +178,10 @@ pub enum ReturnParameters {
     /// command.
     GattAddCharacteristic(GattCharacteristic),
 
+    /// Parameters returned by the [GATT Add Characteristic
+    /// Descriptor](::gatt::Commands::add_characteristic_descriptor) command.
+    GattAddCharacteristicDescriptor(GattCharacteristicDescriptor),
+
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Request](::l2cap::Commands::connection_parameter_update_request) command.
     L2CapConnectionParameterUpdateRequest(hci::Status),
@@ -344,6 +348,11 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GATT_ADD_CHARACTERISTIC => Ok(ReturnParameters::GattAddCharacteristic(
                 to_gatt_characteristic(&bytes[3..])?,
             )),
+            ::opcode::GATT_ADD_CHARACTERISTIC_DESCRIPTOR => {
+                Ok(ReturnParameters::GattAddCharacteristicDescriptor(
+                    to_gatt_characteristic_descriptor(&bytes[3..])?,
+                ))
+            }
             ::opcode::L2CAP_CONN_PARAM_UPDATE_REQ => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateRequest(to_status(&bytes[3..])?),
             ),
@@ -622,5 +631,27 @@ fn to_gatt_characteristic(
     Ok(GattCharacteristic {
         status: to_status(&bytes)?,
         characteristic_handle: ::gatt::CharacteristicHandle(LittleEndian::read_u16(&bytes[1..3])),
+    })
+}
+
+/// Parameters returned by the [GATT Add Characteristic
+/// Descriptor](::gatt::Commands::add_characteristic_descriptor) command.
+#[derive(Copy, Clone, Debug)]
+pub struct GattCharacteristicDescriptor {
+    /// Did the command fail, and if so, how?
+    pub status: hci::Status,
+
+    /// Handle of the characteristic.
+    pub descriptor_handle: ::gatt::DescriptorHandle,
+}
+
+fn to_gatt_characteristic_descriptor(
+    bytes: &[u8],
+) -> Result<GattCharacteristicDescriptor, hci::event::Error<super::BlueNRGError>> {
+    require_len!(bytes, 3);
+
+    Ok(GattCharacteristicDescriptor {
+        status: to_status(&bytes)?,
+        descriptor_handle: ::gatt::DescriptorHandle(LittleEndian::read_u16(&bytes[1..3])),
     })
 }

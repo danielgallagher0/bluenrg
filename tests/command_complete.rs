@@ -376,3 +376,24 @@ fn gatt_add_characteristic() {
         other => panic!("Did not get command complete event: {:?}", other),
     }
 }
+
+#[test]
+fn gatt_add_characteristic_descriptor() {
+    let buffer = [0x0E, 6, 1, 0x05, 0xFD, 0x00, 0x01, 0x02];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 1);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::GattAddCharacteristicDescriptor(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(
+                        params.descriptor_handle,
+                        bluenrg::gatt::DescriptorHandle(0x0201)
+                    );
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
