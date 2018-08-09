@@ -72,6 +72,7 @@ opcodes! {
         pub const GATT_UPDATE_CHARACTERISTIC_VALUE = 0x06;
         pub const GATT_DELETE_CHARACTERISTIC = 0x07;
         pub const GATT_DELETE_SERVICE = 0x08;
+        pub const GATT_DELETE_INCLUDED_SERVICE = 0x09;
     }
     L2Cap = 0x3;
     {

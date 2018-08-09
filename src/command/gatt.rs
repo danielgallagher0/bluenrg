@@ -145,6 +145,21 @@ pub trait Commands {
     /// When the command has completed, the controller will generate a [command
     /// complete](::event::command::ReturnParameters::GattDeleteService) event.
     fn delete_service(&mut self, service: ServiceHandle) -> nb::Result<(), Self::Error>;
+
+    /// Delete the Include definition from the service.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// When the command has completed, the controller will generate a [command
+    /// complete](::event::command::ReturnParameters::GattDeleteIncludedService) event.
+    fn delete_included_service(
+        &mut self,
+        params: &DeleteIncludedServiceParameters,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -209,6 +224,12 @@ where
 
         self.write_command(::opcode::GATT_DELETE_SERVICE, &bytes)
     }
+
+    impl_params!(
+        delete_included_service,
+        DeleteIncludedServiceParameters,
+        ::opcode::GATT_DELETE_INCLUDED_SERVICE
+    );
 }
 
 /// Potential errors from parameter validation.
@@ -743,5 +764,25 @@ impl<'a> UpdateCharacteristicValueParameters<'a> {
         bytes[6..6 + self.value.len()].copy_from_slice(self.value);
 
         6 + self.value.len()
+    }
+}
+
+/// Parameters for the [GATT Delete Included Service](Commands::delete_included_service) command.
+pub struct DeleteIncludedServiceParameters {
+    /// Handle of the service to which Include definition belongs
+    pub service: ServiceHandle,
+
+    /// Handle of the Included definition to be deleted.
+    pub included_service: ServiceHandle,
+}
+
+impl DeleteIncludedServiceParameters {
+    const LENGTH: usize = 4;
+
+    fn into_bytes(&self, bytes: &mut [u8]) {
+        assert!(bytes.len() >= Self::LENGTH);
+
+        LittleEndian::write_u16(&mut bytes[0..2], self.service.0);
+        LittleEndian::write_u16(&mut bytes[2..4], self.included_service.0);
     }
 }

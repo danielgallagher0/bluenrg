@@ -328,3 +328,17 @@ fn delete_service() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x08, 0xFD, 2, 0x01, 0x02]));
 }
+
+#[test]
+fn delete_included_service() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.delete_included_service(&DeleteIncludedServiceParameters {
+                service: ServiceHandle(0x0201),
+                included_service: ServiceHandle(0x0403),
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x09, 0xFD, 4, 0x01, 0x02, 0x03, 0x04]));
+}

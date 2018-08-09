@@ -109,6 +109,7 @@ status_only! {
     gatt_update_characteristic_value(0x06, 0xFD, BNRGParams::GattUpdateCharacteristicValue);
     gatt_delete_characteristic(0x07, 0xFD, BNRGParams::GattDeleteCharacteristic);
     gatt_delete_service(0x08, 0xFD, BNRGParams::GattDeleteService);
+    gatt_delete_included_service(0x09, 0xFD, BNRGParams::GattDeleteIncludedService);
 }
 
 #[test]
