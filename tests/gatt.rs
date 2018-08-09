@@ -318,3 +318,13 @@ fn delete_characteristic() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x07, 0xFD, 4, 0x01, 0x02, 0x03, 0x04]));
 }
+
+#[test]
+fn delete_service() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.delete_service(ServiceHandle(0x0201)))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x08, 0xFD, 2, 0x01, 0x02]));
+}

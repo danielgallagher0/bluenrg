@@ -190,6 +190,9 @@ pub enum ReturnParameters {
     /// Characteristic](::gatt::Commands::delete_characteristic) command.
     GattDeleteCharacteristic(hci::Status),
 
+    /// Parameters returned by the [GATT Delete Service](::gatt::Commands::delete_service) command.
+    GattDeleteService(hci::Status),
+
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Request](::l2cap::Commands::connection_parameter_update_request) command.
     L2CapConnectionParameterUpdateRequest(hci::Status),
@@ -367,6 +370,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GATT_DELETE_CHARACTERISTIC => Ok(ReturnParameters::GattDeleteCharacteristic(
                 to_status(&bytes[3..])?,
             )),
+            ::opcode::GATT_DELETE_SERVICE => {
+                Ok(ReturnParameters::GattDeleteService(to_status(&bytes[3..])?))
+            }
             ::opcode::L2CAP_CONN_PARAM_UPDATE_REQ => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateRequest(to_status(&bytes[3..])?),
             ),
