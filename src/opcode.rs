@@ -70,6 +70,7 @@ opcodes! {
         pub const GATT_ADD_CHARACTERISTIC = 0x04;
         pub const GATT_ADD_CHARACTERISTIC_DESCRIPTOR = 0x05;
         pub const GATT_UPDATE_CHARACTERISTIC_VALUE = 0x06;
+        pub const GATT_DELETE_CHARACTERISTIC = 0x07;
     }
     L2Cap = 0x3;
     {

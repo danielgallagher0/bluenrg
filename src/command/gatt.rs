@@ -117,6 +117,22 @@ pub trait Commands {
         &mut self,
         params: &UpdateCharacteristicValueParameters<'a>,
     ) -> nb::Result<(), Error<Self::Error>>;
+
+    /// Delete the characteristic specified from the service.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// When the command has completed, the controller will generate a [command
+    /// complete](::event::command::ReturnParameters::GattDeleteCharacteristic) event.
+    fn delete_characteristic(
+        &mut self,
+        service: ServiceHandle,
+        characteristic: CharacteristicHandle,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -162,6 +178,18 @@ where
         UpdateCharacteristicValueParameters<'a>,
         ::opcode::GATT_UPDATE_CHARACTERISTIC_VALUE
     );
+
+    fn delete_characteristic(
+        &mut self,
+        service: ServiceHandle,
+        characteristic: CharacteristicHandle,
+    ) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 4];
+        LittleEndian::write_u16(&mut bytes[0..2], service.0);
+        LittleEndian::write_u16(&mut bytes[2..4], characteristic.0);
+
+        self.write_command(::opcode::GATT_DELETE_CHARACTERISTIC, &bytes)
+    }
 }
 
 /// Potential errors from parameter validation.

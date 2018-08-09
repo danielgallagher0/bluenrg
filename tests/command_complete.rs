@@ -107,6 +107,7 @@ status_only! {
 
     gatt_init(0x01, 0xFD, BNRGParams::GattInit);
     gatt_update_characteristic_value(0x06, 0xFD, BNRGParams::GattUpdateCharacteristicValue);
+    gatt_delete_characteristic(0x07, 0xFD, BNRGParams::GattDeleteCharacteristic);
 }
 
 #[test]
