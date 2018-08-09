@@ -99,6 +99,24 @@ pub trait Commands {
         &mut self,
         params: &AddDescriptorParameters<'a>,
     ) -> nb::Result<(), Error<Self::Error>>;
+
+    /// Update a characteristic value in a service.
+    ///
+    /// # Errors
+    ///
+    /// - [ValueBufferTooLong](Error::ValueBufferTooLong) if the [characteristic
+    ///   value](UpdateCharacteristicValueParameters::value] is so long that the command packet
+    ///   would exceed 255 bytes. The maximum allowed length is 249 bytes.
+    /// - Underlying communication errors.
+    ///
+    /// # Generated events
+    ///
+    /// When the command has completed, the controller will generate a [command
+    /// complete](::event::command::ReturnParameters::GattUpdateCharacteristicValue) event.
+    fn update_characteristic_value<'a>(
+        &mut self,
+        params: &UpdateCharacteristicValueParameters<'a>,
+    ) -> nb::Result<(), Error<Self::Error>>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -138,6 +156,12 @@ where
         AddDescriptorParameters<'a>,
         ::opcode::GATT_ADD_CHARACTERISTIC_DESCRIPTOR
     );
+
+    impl_validate_variable_length_params!(
+        update_characteristic_value<'a>,
+        UpdateCharacteristicValueParameters<'a>,
+        ::opcode::GATT_UPDATE_CHARACTERISTIC_VALUE
+    );
 }
 
 /// Potential errors from parameter validation.
@@ -156,6 +180,11 @@ pub enum Error<E> {
     /// the [descriptor value maximum length](AddDescriptorParameters::descriptor_value_max_len) is
     /// so large that the serialized structure may be more than 255 bytes. The maximum size is 227.
     DescriptorBufferTooLong,
+
+    /// For the [Update Characteristir Value](Commands::update_characteristic_value) command: the
+    /// length of the [characteristic value](UpdateCharacteristicValueParameters::value) is so large
+    /// that the serialized structure would be more than 255 bytes. The maximum size is 249.
+    ValueBufferTooLong,
 
     /// Underlying communication error.
     Comm(E),
@@ -622,3 +651,50 @@ bitflags! {
 /// Handle for GATT characteristic descriptors.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct DescriptorHandle(pub u16);
+
+/// Parameters for the [Update Characteristic Value](Commands::update_characteristic_value)
+/// command.
+pub struct UpdateCharacteristicValueParameters<'a> {
+    /// Handle of the service to which characteristic belongs.
+    pub service_handle: ServiceHandle,
+
+    /// Handle of the characteristic.
+    pub characteristic_handle: CharacteristicHandle,
+
+    /// The offset from which the attribute value has to be updated. If this is set to 0, and the
+    /// attribute value is of [variable length](AddCharacteristicParameters::is_variable), then the
+    /// length of the attribute will be set to the length of
+    /// [value](UpdateCharacteristicValueParameters::value). If the offset is set to a value greater
+    /// than 0, then the length of the attribute will be set to the [maximum
+    /// length](AddCharacteristicParameters::characteristic_value_len) as specified for the
+    /// attribute while adding the characteristic.
+    pub offset: usize,
+
+    /// The new characteristic value.
+    pub value: &'a [u8],
+}
+
+impl<'a> UpdateCharacteristicValueParameters<'a> {
+    const MAX_LENGTH: usize = 255;
+
+    fn validate<E>(&self) -> Result<(), Error<E>> {
+        const MAX_VALUE_LEN: usize = 249;
+        if self.value.len() > MAX_VALUE_LEN {
+            return Err(Error::ValueBufferTooLong);
+        }
+
+        Ok(())
+    }
+
+    fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+        assert!(bytes.len() >= 6 + self.value.len());
+
+        LittleEndian::write_u16(&mut bytes[0..2], self.service_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], self.characteristic_handle.0);
+        bytes[4] = self.offset as u8;
+        bytes[5] = self.value.len() as u8;
+        bytes[6..6 + self.value.len()].copy_from_slice(self.value);
+
+        6 + self.value.len()
+    }
+}

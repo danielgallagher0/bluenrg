@@ -291,3 +291,19 @@ fn add_characteristic_descriptor_buffer_too_long() {
     assert!(!fixture.wrote_header());
     assert_eq!(err, nb::Error::Other(Error::DescriptorBufferTooLong));
 }
+
+#[test]
+fn update_characteristic_value() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.update_characteristic_value(&UpdateCharacteristicValueParameters {
+                service_handle: ServiceHandle(0x0201),
+                characteristic_handle: CharacteristicHandle(0x0403),
+                offset: 0,
+                value: &[1, 2, 3, 4, 5],
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x06, 0xFD, 11, 0x01, 0x02, 0x03, 0x04, 0, 5, 1, 2, 3, 4, 5]));
+}

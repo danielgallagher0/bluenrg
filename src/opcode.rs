@@ -69,6 +69,7 @@ opcodes! {
         pub const GATT_INCLUDE_SERVICE = 0x03;
         pub const GATT_ADD_CHARACTERISTIC = 0x04;
         pub const GATT_ADD_CHARACTERISTIC_DESCRIPTOR = 0x05;
+        pub const GATT_UPDATE_CHARACTERISTIC_VALUE = 0x06;
     }
     L2Cap = 0x3;
     {

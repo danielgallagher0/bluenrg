@@ -106,6 +106,7 @@ status_only! {
     gap_is_device_bonded(0xA4, 0xFC, BNRGParams::GapIsDeviceBonded);
 
     gatt_init(0x01, 0xFD, BNRGParams::GattInit);
+    gatt_update_characteristic_value(0x06, 0xFD, BNRGParams::GattUpdateCharacteristicValue);
 }
 
 #[test]
