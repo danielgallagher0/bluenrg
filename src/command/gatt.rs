@@ -160,6 +160,20 @@ pub trait Commands {
         &mut self,
         params: &DeleteIncludedServiceParameters,
     ) -> nb::Result<(), Self::Error>;
+
+    /// Allows masking events from the GATT.
+    ///
+    /// The default configuration is all the events masked.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::GattSetEventMask) event is
+    /// generated on the completion of the command.
+    fn set_event_mask(&mut self, mask: Event) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -230,6 +244,8 @@ where
         DeleteIncludedServiceParameters,
         ::opcode::GATT_DELETE_INCLUDED_SERVICE
     );
+
+    impl_value_params!(set_event_mask, Event, ::opcode::GATT_SET_EVENT_MASK);
 }
 
 /// Potential errors from parameter validation.
@@ -784,5 +800,60 @@ impl DeleteIncludedServiceParameters {
 
         LittleEndian::write_u16(&mut bytes[0..2], self.service.0);
         LittleEndian::write_u16(&mut bytes[2..4], self.included_service.0);
+    }
+}
+
+bitflags! {
+    /// Flags for individual events that can be masked by the [GATT Set Event
+    /// Mask](Commands::set_event_mask) command.
+    pub struct Event: u32 {
+        /// [GATT Attribute Modified](::event::BlueNRGEvent::GattAttributeModified).
+        const ATTRIBUTE_MODIFIED = 0x00000001;
+        /// [GATT Procedure Timeout](::event::BlueNRGEvent::GattProcedureTimeout).
+        const PROCEDURE_TIMEOUT = 0x00000002;
+        /// [ATT Exchange MTU Response](::event::BlueNRGEvent::AttExchangeMtuResponse).
+        const EXCHANGE_MTU_RESPONSE = 0x00000004;
+        /// [ATT Find Information Response](::event::BlueNRGEvent::AttFindInformationResponse).
+        const FIND_INFORMATION_RESPONSE = 0x00000008;
+        /// [ATT Find By Type Value Response](::event::BlueNRGEvent::AttFindByTypeValueResponse).
+        const FIND_BY_TYPE_VALUE_RESPONSE = 0x00000010;
+        /// [ATT Find By Type Response](::event::BlueNRGEvent::AttFindByTypeResponse).
+        const READ_BY_TYPE_RESPONSE = 0x00000020;
+        /// [ATT Read Response](::event::BlueNRGEvent::AttReadResponse).
+        const READ_RESPONSE = 0x00000040;
+        /// [ATT Read Blob Response](::event::BlueNRGEvent::AttReadBlobResponse).
+        const READ_BLOB_RESPONSE = 0x00000080;
+        /// [ATT Read Multiple Response](::event::BlueNRGEvent::AttReadMultipleResponse).
+        const READ_MULTIPLE_RESPONSE = 0x00000100;
+        /// [ATT Read By Group](::event::BlueNRGEvent::AttReadByGroupTypeResponse).
+        const READ_BY_GROUP_RESPONSE = 0x00000200;
+        /// [ATT Prepare Write Response](::event::BlueNRGEvent::AttPrepareWriteResponse).
+        const PREPARE_WRITE_RESPONSE = 0x00000800;
+        /// [ATT Execute Write Response](::event::BlueNRGEvent::AttExecuteWriteResponse).
+        const EXECUTE_WRITE_RESPONSE = 0x00001000;
+        /// [GATT Indication](::event::BlueNRGEvent::GattIndication).
+        const INDICATION = 0x00002000;
+        /// [GATT Notification](::event::BlueNRGEvent::GattNotification).
+        const NOTIFICATION = 0x00004000;
+        /// [GATT Error Response](::event::BlueNRGEvent::AttErrorResponse).
+        const ERROR_RESPONSE = 0x00008000;
+        /// [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete).
+        const PROCEDURE_COMPLETE = 0x00010000;
+        /// [GATT Discover Characteristic by UUID or Read Using Characteristic
+        /// UUID](::event::BlueNRGEvent::GattDiscoverOrReadCharacteristicByUuidResponse).
+        const DISCOVER_OR_READ_CHARACTERISTIC_BY_UUID_RESPONSE = 0x00020000;
+        #[cfg(feature = "ms")]
+        /// [GATT Tx Pool Available](::event::BlueNRGEvent::GattTxPoolAvailable)
+        const TX_POOL_AVAILABLE = 0x00040000;
+    }
+}
+
+impl Event {
+    const LENGTH: usize = 4;
+
+    fn into_bytes(&self, bytes: &mut [u8]) {
+        assert!(bytes.len() >= Self::LENGTH);
+
+        LittleEndian::write_u32(bytes, self.bits());
     }
 }

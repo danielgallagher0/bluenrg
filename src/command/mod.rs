@@ -9,6 +9,17 @@ macro_rules! impl_params {
     }
 }
 
+macro_rules! impl_value_params {
+    ($method:ident, $param_type:ident, $opcode:path) => {
+        fn $method(&mut self, params: $param_type) -> nb::Result<(), Self::Error> {
+            let mut bytes = [0; $param_type::LENGTH];
+            params.into_bytes(&mut bytes);
+
+            self.write_command($opcode, &bytes)
+        }
+    }
+}
+
 macro_rules! impl_validate_params {
     ($method:ident, $param_type:ident, $opcode:path) => {
         fn $method(&mut self, params: &$param_type) -> nb::Result<(), Error<Self::Error>> {

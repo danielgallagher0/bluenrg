@@ -342,3 +342,19 @@ fn delete_included_service() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x09, 0xFD, 4, 0x01, 0x02, 0x03, 0x04]));
 }
+
+#[test]
+fn set_event_mask() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.set_event_mask(
+                Event::ATTRIBUTE_MODIFIED
+                    | Event::FIND_INFORMATION_RESPONSE
+                    | Event::INDICATION
+                    | Event::NOTIFICATION,
+            )
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x0A, 0xFD, 4, 0x09, 0x60, 0x00, 0x00]));
+}

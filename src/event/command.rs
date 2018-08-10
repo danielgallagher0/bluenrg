@@ -197,6 +197,9 @@ pub enum ReturnParameters {
     /// Service](::gatt::Commands::delete_included_service) command.
     GattDeleteIncludedService(hci::Status),
 
+    /// Parameters returned by the [GATT Set Event Mask](::gatt::Commands::set_event_mask) command.
+    GattSetEventMask(hci::Status),
+
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Request](::l2cap::Commands::connection_parameter_update_request) command.
     L2CapConnectionParameterUpdateRequest(hci::Status),
@@ -380,6 +383,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GATT_DELETE_INCLUDED_SERVICE => Ok(
                 ReturnParameters::GattDeleteIncludedService(to_status(&bytes[3..])?),
             ),
+            ::opcode::GATT_SET_EVENT_MASK => {
+                Ok(ReturnParameters::GattSetEventMask(to_status(&bytes[3..])?))
+            }
             ::opcode::L2CAP_CONN_PARAM_UPDATE_REQ => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateRequest(to_status(&bytes[3..])?),
             ),
