@@ -74,6 +74,7 @@ opcodes! {
         pub const GATT_DELETE_SERVICE = 0x08;
         pub const GATT_DELETE_INCLUDED_SERVICE = 0x09;
         pub const GATT_SET_EVENT_MASK = 0x0A;
+        pub const GATT_FIND_INFORMATION_REQUEST = 0x0C;
     }
     L2Cap = 0x3;
     {

@@ -111,6 +111,7 @@ status_only! {
     gatt_delete_service(0x08, 0xFD, BNRGParams::GattDeleteService);
     gatt_delete_included_service(0x09, 0xFD, BNRGParams::GattDeleteIncludedService);
     gatt_set_event_mask(0x0A, 0xFD, BNRGParams::GattSetEventMask);
+    gatt_find_information_request(0x0C, 0xFD, BNRGParams::GattFindInformationRequest);
 }
 
 #[test]

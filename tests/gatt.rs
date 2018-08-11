@@ -1,4 +1,5 @@
 extern crate bluenrg;
+extern crate bluetooth_hci as hci;
 extern crate nb;
 
 mod fixture;
@@ -53,7 +54,7 @@ fn include_service_16() {
         .act(|controller| {
             controller.include_service(&IncludeServiceParameters {
                 service_handle: ServiceHandle(0x0201),
-                include_handle_range: ServiceHandleRange::new(
+                include_handle_range: Range::<ServiceHandle>::new(
                     ServiceHandle(0x0403),
                     ServiceHandle(0x0605),
                 ).unwrap(),
@@ -73,7 +74,7 @@ fn include_service_128() {
         .act(|controller| {
             controller.include_service(&IncludeServiceParameters {
                 service_handle: ServiceHandle(0x0201),
-                include_handle_range: ServiceHandleRange::new(
+                include_handle_range: Range::<ServiceHandle>::new(
                     ServiceHandle(0x0403),
                     ServiceHandle(0x0605),
                 ).unwrap(),
@@ -91,14 +92,14 @@ fn include_service_128() {
 }
 
 #[test]
-fn bad_service_handle_range() {
-    let err = ServiceHandleRange::new(ServiceHandle(0x0201), ServiceHandle(0x0102))
+fn bad_range() {
+    let err = Range::<ServiceHandle>::new(ServiceHandle(0x0201), ServiceHandle(0x0102))
         .err()
         .unwrap();
-    assert_eq!(err, ServiceHandleRangeError::Inverted);
+    assert_eq!(err, RangeError::Inverted);
 
     // Both ends of the range may be equal
-    ServiceHandleRange::new(ServiceHandle(0x0201), ServiceHandle(0x0201)).unwrap();
+    Range::<ServiceHandle>::new(ServiceHandle(0x0201), ServiceHandle(0x0201)).unwrap();
 }
 
 #[test]
@@ -357,4 +358,19 @@ fn set_event_mask() {
         }).unwrap();
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x0A, 0xFD, 4, 0x09, 0x60, 0x00, 0x00]));
+}
+
+#[test]
+fn find_information_request() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.find_information_request(
+                hci::ConnectionHandle(0x0201),
+                Range::<AttributeHandle>::new(AttributeHandle(0x0403), AttributeHandle(0x0605))
+                    .unwrap(),
+            )
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x0C, 0xFD, 6, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06]));
 }

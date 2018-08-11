@@ -200,6 +200,10 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GATT Set Event Mask](::gatt::Commands::set_event_mask) command.
     GattSetEventMask(hci::Status),
 
+    /// Parameters returned by the [GATT Find Information
+    /// Request](::gatt::Commands::find_information_request) command.
+    GattFindInformationRequest(hci::Status),
+
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Request](::l2cap::Commands::connection_parameter_update_request) command.
     L2CapConnectionParameterUpdateRequest(hci::Status),
@@ -386,6 +390,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GATT_SET_EVENT_MASK => {
                 Ok(ReturnParameters::GattSetEventMask(to_status(&bytes[3..])?))
             }
+            ::opcode::GATT_FIND_INFORMATION_REQUEST => Ok(
+                ReturnParameters::GattFindInformationRequest(to_status(&bytes[3..])?),
+            ),
             ::opcode::L2CAP_CONN_PARAM_UPDATE_REQ => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateRequest(to_status(&bytes[3..])?),
             ),

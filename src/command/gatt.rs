@@ -174,6 +174,25 @@ pub trait Commands {
     /// A [command complete](::event::command::ReturnParameters::GattSetEventMask) event is
     /// generated on the completion of the command.
     fn set_event_mask(&mut self, mask: Event) -> nb::Result<(), Self::Error>;
+
+    /// Post the Find information request.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Find Information
+    /// Response](::event::BlueNRGEvent::AttFindInformationResponse) event. The end of the procedure
+    /// is indicated by a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete)
+    /// event.
+    fn find_information_request(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        attribute_range: AttributeHandleRange,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -246,6 +265,19 @@ where
     );
 
     impl_value_params!(set_event_mask, Event, ::opcode::GATT_SET_EVENT_MASK);
+
+    fn find_information_request(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        attribute_range: AttributeHandleRange,
+    ) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 6];
+        LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], attribute_range.from.0);
+        LittleEndian::write_u16(&mut bytes[4..6], attribute_range.to.0);
+
+        self.write_command(::opcode::GATT_FIND_INFORMATION_REQUEST, &bytes)
+    }
 }
 
 /// Potential errors from parameter validation.
@@ -371,57 +403,49 @@ impl IncludeServiceParameters {
         assert!(bytes.len() >= Self::MAX_LENGTH);
 
         LittleEndian::write_u16(&mut bytes[0..2], self.service_handle.0);
-        LittleEndian::write_u16(&mut bytes[2..4], self.include_handle_range.first().0);
-        LittleEndian::write_u16(&mut bytes[4..6], self.include_handle_range.last().0);
+        LittleEndian::write_u16(&mut bytes[2..4], self.include_handle_range.from.0);
+        LittleEndian::write_u16(&mut bytes[4..6], self.include_handle_range.to.0);
         let uuid_len = self.include_uuid.into_bytes(&mut bytes[6..]);
 
         6 + uuid_len
     }
 }
 
-/// Handle for GAP Services.
-#[derive(Copy, Clone, Debug, PartialEq)]
+/// Handle for GATT Services.
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
 pub struct ServiceHandle(pub u16);
 
-/// Range of service handles.
-pub struct ServiceHandleRange {
-    from: ServiceHandle,
-    to: ServiceHandle,
+/// Two ordered points that represent a range. The points may be identical to represent a range with
+/// only one value.
+pub struct Range<T> {
+    from: T,
+    to: T,
 }
 
-impl ServiceHandleRange {
-    /// Create and return a new [ServiceHandleRange].
+impl<T: PartialOrd> Range<T> {
+    /// Create and return a new [Range].
     ///
     /// # Errors
     ///
-    /// - [Inverted](ServiceHandleRangeError::Inverted) if the beginning handle is greater than the
-    ///   ending handle.
-    pub fn new(
-        from: ServiceHandle,
-        to: ServiceHandle,
-    ) -> Result<ServiceHandleRange, ServiceHandleRangeError> {
-        if from.0 > to.0 {
-            return Err(ServiceHandleRangeError::Inverted);
+    /// - [Inverted](RangeError::Inverted) if the beginning value is greater than the ending value.
+    pub fn new(from: T, to: T) -> Result<Range<T>, RangeError> {
+        if to < from {
+            return Err(RangeError::Inverted);
         }
 
-        Ok(ServiceHandleRange { from, to })
-    }
-
-    fn first(&self) -> ServiceHandle {
-        self.from
-    }
-
-    fn last(&self) -> ServiceHandle {
-        self.to
+        Ok(Range { from, to })
     }
 }
 
-/// Potential errors that can occer when creating a [ServiceHandleRange].
+/// Potential errors that can occer when creating a [Range].
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub enum ServiceHandleRangeError {
+pub enum RangeError {
     /// The beginning of the range came after the end.
     Inverted,
 }
+
+/// Range of service handles.
+type ServiceHandleRange = Range<ServiceHandle>;
 
 /// Parameters for the [GATT Add Characteristic](Commands::add_characteristic) command.
 pub struct AddCharacteristicParameters {
@@ -857,3 +881,10 @@ impl Event {
         LittleEndian::write_u32(bytes, self.bits());
     }
 }
+
+/// Handle for GATT Attributes.
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
+pub struct AttributeHandle(pub u16);
+
+/// Range of attribute handles.
+type AttributeHandleRange = Range<AttributeHandle>;
