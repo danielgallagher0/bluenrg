@@ -200,6 +200,10 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GATT Set Event Mask](::gatt::Commands::set_event_mask) command.
     GattSetEventMask(hci::Status),
 
+    /// Parameters returned by the [GATT Exchange
+    /// Configuration](::gatt::Commands::exchange_configuration) command.
+    GattExchangeConfiguration(hci::Status),
+
     /// Parameters returned by the [GATT Find Information
     /// Request](::gatt::Commands::find_information_request) command.
     GattFindInformationRequest(hci::Status),
@@ -390,6 +394,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GATT_SET_EVENT_MASK => {
                 Ok(ReturnParameters::GattSetEventMask(to_status(&bytes[3..])?))
             }
+            ::opcode::GATT_EXCHANGE_CONFIGURATION => Ok(
+                ReturnParameters::GattExchangeConfiguration(to_status(&bytes[3..])?),
+            ),
             ::opcode::GATT_FIND_INFORMATION_REQUEST => Ok(
                 ReturnParameters::GattFindInformationRequest(to_status(&bytes[3..])?),
             ),

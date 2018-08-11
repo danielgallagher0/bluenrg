@@ -361,6 +361,16 @@ fn set_event_mask() {
 }
 
 #[test]
+fn exchange_configuration() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.exchange_configuration(hci::ConnectionHandle(0x0201)))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x0B, 0xFD, 2, 0x01, 0x02]));
+}
+
+#[test]
 fn find_information_request() {
     let mut fixture = Fixture::new();
     fixture

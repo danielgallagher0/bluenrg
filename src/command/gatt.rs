@@ -175,6 +175,24 @@ pub trait Commands {
     /// generated on the completion of the command.
     fn set_event_mask(&mut self, mask: Event) -> nb::Result<(), Self::Error>;
 
+    /// Perform an ATT MTU exchange.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. When the ATT MTU exchange procedure is completed, an [Exchange MTU
+    /// Response](::event::BlueNRGEvent::AttExchangeMtuResponse) event is generated. Also, a
+    /// [procedure complete](::event::BlueNRGEvent::GattProcedureComplete) event is generated to
+    /// indicate end of procedure.
+    fn exchange_configuration(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+    ) -> nb::Result<(), Self::Error>;
+
     /// Post the Find information request.
     ///
     /// # Errors
@@ -265,6 +283,16 @@ where
     );
 
     impl_value_params!(set_event_mask, Event, ::opcode::GATT_SET_EVENT_MASK);
+
+    fn exchange_configuration(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+    ) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 2];
+        LittleEndian::write_u16(&mut bytes, conn_handle.0);
+
+        self.write_command(::opcode::GATT_EXCHANGE_CONFIGURATION, &bytes)
+    }
 
     fn find_information_request(
         &mut self,
