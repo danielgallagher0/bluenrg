@@ -77,6 +77,7 @@ opcodes! {
         pub const GATT_EXCHANGE_CONFIGURATION = 0x0B;
         pub const GATT_FIND_INFORMATION_REQUEST = 0x0C;
         pub const GATT_FIND_BY_TYPE_VALUE_REQUEST = 0x0D;
+        pub const GATT_READ_BY_TYPE_REQUEST = 0x0E;
         pub const GATT_READ_BY_GROUP_TYPE_REQUEST = 0x0F;
     }
     L2Cap = 0x3;

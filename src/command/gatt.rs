@@ -233,6 +233,24 @@ pub trait Commands {
         params: &FindByTypeValueParameters,
     ) -> nb::Result<(), Error<Self::Error>>;
 
+    /// Send a Read By Type Request.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Read by Type
+    /// Response](::event::BlueNRGEvent::AttReadByTypeResponse) event. The end of the procedure is
+    /// indicated by a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete)
+    /// event.
+    fn read_by_type_request(
+        &mut self,
+        params: &ReadByTypeParameters,
+    ) -> nb::Result<(), Self::Error>;
+
     /// Sends a Read By Group Type request.
     ///
     /// The Read By Group Type Request is used to obtain the values of grouping attributes where the
@@ -253,7 +271,7 @@ pub trait Commands {
     /// event.
     fn read_by_group_type_request(
         &mut self,
-        params: &ReadByGroupTypeParameters,
+        params: &ReadByTypeParameters,
     ) -> nb::Result<(), Self::Error>;
 }
 
@@ -358,8 +376,14 @@ where
     );
 
     impl_variable_length_params!(
+        read_by_type_request,
+        ReadByTypeParameters,
+        ::opcode::GATT_READ_BY_TYPE_REQUEST
+    );
+
+    impl_variable_length_params!(
         read_by_group_type_request,
-        ReadByGroupTypeParameters,
+        ReadByTypeParameters,
         ::opcode::GATT_READ_BY_GROUP_TYPE_REQUEST
     );
 }
@@ -1022,7 +1046,7 @@ impl<'a> FindByTypeValueParameters<'a> {
 pub struct Uuid16(pub u16);
 
 /// Parameters for the [Read by Group Type Request](Commands::read_by_group_type_request) command.
-pub struct ReadByGroupTypeParameters {
+pub struct ReadByTypeParameters {
     /// Connection handle for which the command is given.
     pub conn_handle: hci::ConnectionHandle,
 
@@ -1033,7 +1057,7 @@ pub struct ReadByGroupTypeParameters {
     pub uuid: Uuid,
 }
 
-impl ReadByGroupTypeParameters {
+impl ReadByTypeParameters {
     const MAX_LENGTH: usize = 23;
 
     fn into_bytes(&self, bytes: &mut [u8]) -> usize {

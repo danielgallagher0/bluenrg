@@ -114,6 +114,7 @@ status_only! {
     gatt_exchange_configuration(0x0B, 0xFD, BNRGParams::GattExchangeConfiguration);
     gatt_find_information_request(0x0C, 0xFD, BNRGParams::GattFindInformationRequest);
     gatt_find_by_type_value_request(0x0D, 0xFD, BNRGParams::GattFindByTypeValueRequest);
+    gatt_read_by_type_request(0x0E, 0xFD, BNRGParams::GattReadByTypeRequest);
     gatt_read_by_group_type_request(0x0F, 0xFD, BNRGParams::GattReadByGroupTypeRequest);
 }
 

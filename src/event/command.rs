@@ -212,6 +212,10 @@ pub enum ReturnParameters {
     /// Request](::gatt::Commands::find_by_type_value_request) command.
     GattFindByTypeValueRequest(hci::Status),
 
+    /// Parameters returned by the [GATT Read by Type
+    /// Request](::gatt::Commands::read_by_type_request) command.
+    GattReadByTypeRequest(hci::Status),
+
     /// Parameters returned by the [GATT Read by Group Type
     /// Request](::gatt::Commands::read_by_group_type_request) command.
     GattReadByGroupTypeRequest(hci::Status),
@@ -411,6 +415,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GATT_FIND_BY_TYPE_VALUE_REQUEST => Ok(
                 ReturnParameters::GattFindByTypeValueRequest(to_status(&bytes[3..])?),
             ),
+            ::opcode::GATT_READ_BY_TYPE_REQUEST => Ok(ReturnParameters::GattReadByTypeRequest(
+                to_status(&bytes[3..])?,
+            )),
             ::opcode::GATT_READ_BY_GROUP_TYPE_REQUEST => Ok(
                 ReturnParameters::GattReadByGroupTypeRequest(to_status(&bytes[3..])?),
             ),

@@ -422,11 +422,55 @@ fn find_by_type_value_request_value_too_long() {
 }
 
 #[test]
+fn read_by_type_request_16() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.read_by_type_request(&ReadByTypeParameters {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                attribute_handle_range: Range::new(
+                    AttributeHandle(0x0403),
+                    AttributeHandle(0x0605),
+                ).unwrap(),
+                uuid: Uuid::Uuid16(0x0807),
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(
+        fixture.wrote(&[1, 0x0E, 0xFD, 9, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x01, 0x07, 0x08,])
+    );
+}
+
+#[test]
+fn read_by_type_request_128() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.read_by_type_request(&ReadByTypeParameters {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                attribute_handle_range: Range::new(
+                    AttributeHandle(0x0403),
+                    AttributeHandle(0x0605),
+                ).unwrap(),
+                uuid: Uuid::Uuid128([
+                    0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C,
+                    0x1D, 0x1E, 0x1F,
+                ]),
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[
+        1, 0x0E, 0xFD, 23, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x02, 0x10, 0x11, 0x12, 0x13, 0x14,
+        0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
+    ]));
+}
+
+#[test]
 fn read_by_group_type_request_16() {
     let mut fixture = Fixture::new();
     fixture
         .act(|controller| {
-            controller.read_by_group_type_request(&ReadByGroupTypeParameters {
+            controller.read_by_group_type_request(&ReadByTypeParameters {
                 conn_handle: hci::ConnectionHandle(0x0201),
                 attribute_handle_range: Range::new(
                     AttributeHandle(0x0403),
@@ -446,7 +490,7 @@ fn read_by_group_type_request_128() {
     let mut fixture = Fixture::new();
     fixture
         .act(|controller| {
-            controller.read_by_group_type_request(&ReadByGroupTypeParameters {
+            controller.read_by_group_type_request(&ReadByTypeParameters {
                 conn_handle: hci::ConnectionHandle(0x0201),
                 attribute_handle_range: Range::new(
                     AttributeHandle(0x0403),
