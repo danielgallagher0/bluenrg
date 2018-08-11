@@ -79,6 +79,7 @@ opcodes! {
         pub const GATT_FIND_BY_TYPE_VALUE_REQUEST = 0x0D;
         pub const GATT_READ_BY_TYPE_REQUEST = 0x0E;
         pub const GATT_READ_BY_GROUP_TYPE_REQUEST = 0x0F;
+        pub const GATT_PREPARE_WRITE_REQUEST = 0x10;
     }
     L2Cap = 0x3;
     {

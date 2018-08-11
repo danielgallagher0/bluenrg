@@ -273,6 +273,26 @@ pub trait Commands {
         &mut self,
         params: &ReadByTypeParameters,
     ) -> nb::Result<(), Self::Error>;
+
+    /// Sends a Prepare Write request.
+    ///
+    /// # Errors
+    ///
+    /// - [ValueBufferTooLong](Error::ValueBufferTooLong) if the attribute value is so long that the
+    ///   serialized command would be longer than 255 bytes. The maximum length is 248 bytes.
+    /// - Underlying comminication errors
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Prepare Write
+    /// Response](::event::BlueNRGEvent::AttPrepareWriteResponse) event. The end of the procedure is
+    /// indicated by a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete)
+    /// event.
+    fn prepare_write_request<'a>(
+        &mut self,
+        params: &WriteRequest<'a>,
+    ) -> nb::Result<(), Error<Self::Error>>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -385,6 +405,12 @@ where
         read_by_group_type_request,
         ReadByTypeParameters,
         ::opcode::GATT_READ_BY_GROUP_TYPE_REQUEST
+    );
+
+    impl_validate_variable_length_params!(
+        prepare_write_request<'a>,
+        WriteRequest<'a>,
+        ::opcode::GATT_PREPARE_WRITE_REQUEST
     );
 }
 
@@ -1067,5 +1093,44 @@ impl ReadByTypeParameters {
         LittleEndian::write_u16(&mut bytes[2..4], self.attribute_handle_range.from.0);
         LittleEndian::write_u16(&mut bytes[4..6], self.attribute_handle_range.to.0);
         6 + self.uuid.into_bytes(&mut bytes[6..])
+    }
+}
+
+/// Parameters for the [Prepare Write Request](Commands::prepare_write_request) command.
+pub struct WriteRequest<'a> {
+    /// Connection handle for which the command is given.
+    pub conn_handle: hci::ConnectionHandle,
+
+    /// Handle of the attribute whose value has to be written
+    pub attribute_handle: AttributeHandle,
+
+    /// The offset at which value has to be written
+    pub offset: usize,
+
+    /// Value of the attribute to be written
+    pub value: &'a [u8],
+}
+
+impl<'a> WriteRequest<'a> {
+    const MAX_LENGTH: usize = 255;
+
+    fn validate<E>(&self) -> Result<(), Error<E>> {
+        if 9 + self.value.len() > 255 {
+            return Err(Error::ValueBufferTooLong);
+        }
+
+        Ok(())
+    }
+
+    fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+        assert!(bytes.len() >= 9 + self.value.len());
+
+        LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], self.attribute_handle.0);
+        LittleEndian::write_u16(&mut bytes[4..6], self.offset as u16);
+        bytes[6] = self.value.len() as u8;
+        bytes[7..7 + self.value.len()].copy_from_slice(&self.value);
+
+        7 + self.value.len()
     }
 }

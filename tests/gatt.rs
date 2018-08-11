@@ -508,3 +508,38 @@ fn read_by_group_type_request_128() {
         0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
     ]));
 }
+
+#[test]
+fn prepare_write_request() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.prepare_write_request(&WriteRequest {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                attribute_handle: AttributeHandle(0x0403),
+                offset: 0x0605,
+                value: &[8, 9, 10, 11, 12, 13, 14],
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[
+        1, 0x10, 0xFD, 14, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE,
+    ]));
+}
+
+#[test]
+fn prepare_write_request_too_long() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.prepare_write_request(&WriteRequest {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                attribute_handle: AttributeHandle(0x0403),
+                offset: 0x0605,
+                value: &[0; 248],
+            })
+        }).err()
+        .unwrap();
+    assert_eq!(err, nb::Error::Other(Error::ValueBufferTooLong));
+    assert!(!fixture.wrote_header());
+}

@@ -116,6 +116,7 @@ status_only! {
     gatt_find_by_type_value_request(0x0D, 0xFD, BNRGParams::GattFindByTypeValueRequest);
     gatt_read_by_type_request(0x0E, 0xFD, BNRGParams::GattReadByTypeRequest);
     gatt_read_by_group_type_request(0x0F, 0xFD, BNRGParams::GattReadByGroupTypeRequest);
+    gatt_prepare_write_request(0x10, 0xFD, BNRGParams::GattPrepareWriteRequest);
 }
 
 #[test]
