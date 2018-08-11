@@ -232,6 +232,29 @@ pub trait Commands {
         &mut self,
         params: &FindByTypeValueParameters,
     ) -> nb::Result<(), Error<Self::Error>>;
+
+    /// Sends a Read By Group Type request.
+    ///
+    /// The Read By Group Type Request is used to obtain the values of grouping attributes where the
+    /// attribute type is known but the handle is not known. Grouping attributes are defined at GATT
+    /// layer. The grouping attribute types are: Primary Service, Secondary Service and
+    /// Characteristic.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Read by Group Type
+    /// Response](::event::BlueNRGEvent::AttReadByGroupTypeResponse) event. The end of the procedure
+    /// is indicated by a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete)
+    /// event.
+    fn read_by_group_type_request(
+        &mut self,
+        params: &ReadByGroupTypeParameters,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -332,6 +355,12 @@ where
         find_by_type_value_request<'a>,
         FindByTypeValueParameters<'a>,
         ::opcode::GATT_FIND_BY_TYPE_VALUE_REQUEST
+    );
+
+    impl_variable_length_params!(
+        read_by_group_type_request,
+        ReadByGroupTypeParameters,
+        ::opcode::GATT_READ_BY_GROUP_TYPE_REQUEST
     );
 }
 
@@ -991,3 +1020,28 @@ impl<'a> FindByTypeValueParameters<'a> {
 
 /// 16-bit UUID
 pub struct Uuid16(pub u16);
+
+/// Parameters for the [Read by Group Type Request](Commands::read_by_group_type_request) command.
+pub struct ReadByGroupTypeParameters {
+    /// Connection handle for which the command is given.
+    pub conn_handle: hci::ConnectionHandle,
+
+    /// Range of values to be read on the server.
+    pub attribute_handle_range: Range<AttributeHandle>,
+
+    /// UUID of the attribute.
+    pub uuid: Uuid,
+}
+
+impl ReadByGroupTypeParameters {
+    const MAX_LENGTH: usize = 23;
+
+    fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+        assert!(bytes.len() >= Self::MAX_LENGTH);
+
+        LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], self.attribute_handle_range.from.0);
+        LittleEndian::write_u16(&mut bytes[4..6], self.attribute_handle_range.to.0);
+        6 + self.uuid.into_bytes(&mut bytes[6..])
+    }
+}
