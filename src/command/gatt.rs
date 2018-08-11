@@ -211,6 +211,27 @@ pub trait Commands {
         conn_handle: hci::ConnectionHandle,
         attribute_range: AttributeHandleRange,
     ) -> nb::Result<(), Self::Error>;
+
+    /// Post the Find by type value request.
+    ///
+    /// # Errors
+    ///
+    /// - [ValueBufferTooLong](Error::ValueBufferTooLong) if the [attribute
+    ///   value](FindByTypeValueParameters::value) to find is too long to fit in one command packet
+    ///   (255 bytes). The maximum length is 246 bytes.
+    /// - Underlying communication errors.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Find by Type Value
+    /// Response](::event::BlueNRGEvent::AttFindByTypeValueResponse) event. The end of the procedure
+    /// is indicated by a [Gatt Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete)
+    /// event.
+    fn find_by_type_value_request(
+        &mut self,
+        params: &FindByTypeValueParameters,
+    ) -> nb::Result<(), Error<Self::Error>>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -306,6 +327,12 @@ where
 
         self.write_command(::opcode::GATT_FIND_INFORMATION_REQUEST, &bytes)
     }
+
+    impl_validate_variable_length_params!(
+        find_by_type_value_request<'a>,
+        FindByTypeValueParameters<'a>,
+        ::opcode::GATT_FIND_BY_TYPE_VALUE_REQUEST
+    );
 }
 
 /// Potential errors from parameter validation.
@@ -916,3 +943,51 @@ pub struct AttributeHandle(pub u16);
 
 /// Range of attribute handles.
 type AttributeHandleRange = Range<AttributeHandle>;
+
+/// Parameters for the [GATT Find by Type Value Request](Commands::find_by_type_value_request)
+/// command.
+pub struct FindByTypeValueParameters<'a> {
+    /// Connection handle for which the command is given.
+    pub conn_handle: hci::ConnectionHandle,
+
+    /// Range of attributes to be discovered on the server.
+    pub attribute_handle_range: Range<AttributeHandle>,
+
+    /// UUID to find.
+    pub uuid: Uuid16,
+
+    /// Attribute value to find.
+    ///
+    /// Note: Though the max attribute value that is allowed according to the spec is 512 octets,
+    /// due to the limitation of the transport layer (command packet max length is 255 bytes) the
+    /// value is limited to 246 bytes.
+    pub value: &'a [u8],
+}
+
+impl<'a> FindByTypeValueParameters<'a> {
+    const MAX_LENGTH: usize = 255;
+
+    fn validate<E>(&self) -> Result<(), Error<E>> {
+        if 9 + self.value.len() > Self::MAX_LENGTH {
+            return Err(Error::ValueBufferTooLong);
+        }
+
+        Ok(())
+    }
+
+    fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+        assert!(bytes.len() >= 9 + self.value.len());
+
+        LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], self.attribute_handle_range.from.0);
+        LittleEndian::write_u16(&mut bytes[4..6], self.attribute_handle_range.to.0);
+        LittleEndian::write_u16(&mut bytes[6..8], self.uuid.0);
+        bytes[8] = self.value.len() as u8;
+        bytes[9..9 + self.value.len()].copy_from_slice(&self.value);
+
+        9 + self.value.len()
+    }
+}
+
+/// 16-bit UUID
+pub struct Uuid16(pub u16);

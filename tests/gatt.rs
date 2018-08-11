@@ -54,10 +54,8 @@ fn include_service_16() {
         .act(|controller| {
             controller.include_service(&IncludeServiceParameters {
                 service_handle: ServiceHandle(0x0201),
-                include_handle_range: Range::<ServiceHandle>::new(
-                    ServiceHandle(0x0403),
-                    ServiceHandle(0x0605),
-                ).unwrap(),
+                include_handle_range: Range::new(ServiceHandle(0x0403), ServiceHandle(0x0605))
+                    .unwrap(),
                 include_uuid: Uuid::Uuid16(0x0807),
             })
         }).unwrap();
@@ -74,10 +72,8 @@ fn include_service_128() {
         .act(|controller| {
             controller.include_service(&IncludeServiceParameters {
                 service_handle: ServiceHandle(0x0201),
-                include_handle_range: Range::<ServiceHandle>::new(
-                    ServiceHandle(0x0403),
-                    ServiceHandle(0x0605),
-                ).unwrap(),
+                include_handle_range: Range::new(ServiceHandle(0x0403), ServiceHandle(0x0605))
+                    .unwrap(),
                 include_uuid: Uuid::Uuid128([
                     0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C,
                     0x1D, 0x1E, 0x1F,
@@ -93,13 +89,13 @@ fn include_service_128() {
 
 #[test]
 fn bad_range() {
-    let err = Range::<ServiceHandle>::new(ServiceHandle(0x0201), ServiceHandle(0x0102))
+    let err = Range::new(ServiceHandle(0x0201), ServiceHandle(0x0102))
         .err()
         .unwrap();
     assert_eq!(err, RangeError::Inverted);
 
     // Both ends of the range may be equal
-    Range::<ServiceHandle>::new(ServiceHandle(0x0201), ServiceHandle(0x0201)).unwrap();
+    Range::new(ServiceHandle(0x0201), ServiceHandle(0x0201)).unwrap();
 }
 
 #[test]
@@ -377,10 +373,50 @@ fn find_information_request() {
         .act(|controller| {
             controller.find_information_request(
                 hci::ConnectionHandle(0x0201),
-                Range::<AttributeHandle>::new(AttributeHandle(0x0403), AttributeHandle(0x0605))
-                    .unwrap(),
+                Range::new(AttributeHandle(0x0403), AttributeHandle(0x0605)).unwrap(),
             )
         }).unwrap();
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x0C, 0xFD, 6, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06]));
+}
+
+#[test]
+fn find_by_type_value_request() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.find_by_type_value_request(&FindByTypeValueParameters {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                attribute_handle_range: Range::new(
+                    AttributeHandle(0x0403),
+                    AttributeHandle(0x0605),
+                ).unwrap(),
+                uuid: Uuid16(0x0807),
+                value: &[9, 10, 11, 12],
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[
+        1, 0x0D, 0xFD, 13, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 4, 9, 10, 11, 12,
+    ]));
+}
+
+#[test]
+fn find_by_type_value_request_value_too_long() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.find_by_type_value_request(&FindByTypeValueParameters {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                attribute_handle_range: Range::new(
+                    AttributeHandle(0x0403),
+                    AttributeHandle(0x0605),
+                ).unwrap(),
+                uuid: Uuid16(0x0807),
+                value: &[0; 247],
+            })
+        }).err()
+        .unwrap();
+    assert_eq!(err, nb::Error::Other(Error::ValueBufferTooLong));
+    assert!(!fixture.wrote_header());
 }

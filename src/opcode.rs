@@ -76,6 +76,7 @@ opcodes! {
         pub const GATT_SET_EVENT_MASK = 0x0A;
         pub const GATT_EXCHANGE_CONFIGURATION = 0x0B;
         pub const GATT_FIND_INFORMATION_REQUEST = 0x0C;
+        pub const GATT_FIND_BY_TYPE_VALUE_REQUEST = 0x0D;
     }
     L2Cap = 0x3;
     {

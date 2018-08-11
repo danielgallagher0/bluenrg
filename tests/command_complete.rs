@@ -113,6 +113,7 @@ status_only! {
     gatt_set_event_mask(0x0A, 0xFD, BNRGParams::GattSetEventMask);
     gatt_exchange_configuration(0x0B, 0xFD, BNRGParams::GattExchangeConfiguration);
     gatt_find_information_request(0x0C, 0xFD, BNRGParams::GattFindInformationRequest);
+    gatt_find_by_type_value_request(0x0D, 0xFD, BNRGParams::GattFindByTypeValueRequest);
 }
 
 #[test]

@@ -208,6 +208,10 @@ pub enum ReturnParameters {
     /// Request](::gatt::Commands::find_information_request) command.
     GattFindInformationRequest(hci::Status),
 
+    /// Parameters returned by the [GATT Find by Type Value
+    /// Request](::gatt::Commands::find_by_type_value_request) command.
+    GattFindByTypeValueRequest(hci::Status),
+
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Request](::l2cap::Commands::connection_parameter_update_request) command.
     L2CapConnectionParameterUpdateRequest(hci::Status),
@@ -399,6 +403,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ),
             ::opcode::GATT_FIND_INFORMATION_REQUEST => Ok(
                 ReturnParameters::GattFindInformationRequest(to_status(&bytes[3..])?),
+            ),
+            ::opcode::GATT_FIND_BY_TYPE_VALUE_REQUEST => Ok(
+                ReturnParameters::GattFindByTypeValueRequest(to_status(&bytes[3..])?),
             ),
             ::opcode::L2CAP_CONN_PARAM_UPDATE_REQ => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateRequest(to_status(&bytes[3..])?),
