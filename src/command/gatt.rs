@@ -486,6 +486,24 @@ pub trait Commands {
         characteristic_handle_range: Range<CharacteristicHandle>,
         uuid: Uuid,
     ) -> nb::Result<(), Self::Error>;
+
+    /// Start the procedure to read a long characteristic value.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Read Blob
+    /// Response](::event::BlueNRGEvent::AttReadBlobResponse) event. The end of the procedure is
+    /// indicated by a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete)
+    /// event.
+    fn read_long_characteristic_value(
+        &mut self,
+        params: &LongCharacteristicReadParameters,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -745,6 +763,12 @@ where
             &bytes[..6 + uuid_len],
         )
     }
+
+    impl_params!(
+        read_long_characteristic_value,
+        LongCharacteristicReadParameters,
+        ::opcode::GATT_READ_LONG_CHARACTERISTIC_VALUE
+    );
 }
 
 /// Potential errors from parameter validation.
@@ -1465,5 +1489,28 @@ impl<'a> WriteRequest<'a> {
         bytes[7..7 + self.value.len()].copy_from_slice(&self.value);
 
         7 + self.value.len()
+    }
+}
+
+/// Parameters for the [Read long characteristic value](Commands::read_long_characteristic_value)
+/// command.
+pub struct LongCharacteristicReadParameters {
+    /// Connection handle for which the command is given.
+    pub conn_handle: hci::ConnectionHandle,
+
+    /// Handle of the characteristic to be read
+    pub attribute: AttributeHandle,
+
+    /// Offset from which the value needs to be read.
+    pub offset: usize,
+}
+
+impl LongCharacteristicReadParameters {
+    const LENGTH: usize = 6;
+
+    fn into_bytes(&self, bytes: &mut [u8]) {
+        LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], self.attribute.0);
+        LittleEndian::write_u16(&mut bytes[4..6], self.offset as u16);
     }
 }

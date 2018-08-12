@@ -737,3 +737,18 @@ fn read_characteristic_using_uuid_128() {
         0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
     ]));
 }
+
+#[test]
+fn read_long_characteristic_value() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.read_long_characteristic_value(&LongCharacteristicReadParameters {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                attribute: AttributeHandle(0x0403),
+                offset: 0x0605,
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x1A, 0xFD, 6, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6]));
+}
