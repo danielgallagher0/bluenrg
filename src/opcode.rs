@@ -88,6 +88,7 @@ opcodes! {
         pub const GATT_DISCOVER_CHARACTERISTICS_BY_UUID = 0x16;
         pub const GATT_DISCOVER_ALL_CHARACTERISTIC_DESCRIPTORS = 0x17;
         pub const GATT_READ_CHARACTERISTIC_VALUE = 0x18;
+        pub const GATT_READ_CHARACTERISTIC_BY_UUID = 0x19;
     }
     L2Cap = 0x3;
     {

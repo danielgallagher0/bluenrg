@@ -701,3 +701,39 @@ fn read_characteristic_value() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x18, 0xFD, 4, 0x01, 0x02, 0x03, 0x04]));
 }
+
+#[test]
+fn read_characteristic_using_uuid_16() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.read_characteristic_using_uuid(
+                hci::ConnectionHandle(0x0201),
+                Range::new(CharacteristicHandle(0x0403), CharacteristicHandle(0x0605)).unwrap(),
+                Uuid::Uuid16(0x0807),
+            )
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x19, 0xFD, 9, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x1, 0x7, 0x8]));
+}
+
+#[test]
+fn read_characteristic_using_uuid_128() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.read_characteristic_using_uuid(
+                hci::ConnectionHandle(0x0201),
+                Range::new(CharacteristicHandle(0x0403), CharacteristicHandle(0x0605)).unwrap(),
+                Uuid::Uuid128([
+                    0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C,
+                    0x1D, 0x1E, 0x1F,
+                ]),
+            )
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[
+        1, 0x19, 0xFD, 23, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x2, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
+        0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
+    ]));
+}
