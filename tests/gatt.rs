@@ -933,3 +933,34 @@ fn read_long_characteristic_descriptor() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x20, 0xFD, 6, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6]));
 }
+
+#[test]
+fn write_characteristic_descriptor() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.write_characteristic_descriptor(&CharacteristicValue {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                characteristic_handle: CharacteristicHandle(0x0403),
+                value: &[1, 2, 3, 4],
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x21, 0xFD, 9, 0x1, 0x2, 0x3, 0x4, 4, 1, 2, 3, 4]));
+}
+
+#[test]
+fn write_characteristic_descriptor_too_long() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.write_characteristic_descriptor(&CharacteristicValue {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                characteristic_handle: CharacteristicHandle(0x0403),
+                value: &[0; 251],
+            })
+        }).err()
+        .unwrap();
+    assert_eq!(err, nb::Error::Other(Error::ValueBufferTooLong));
+    assert!(!fixture.wrote_header());
+}

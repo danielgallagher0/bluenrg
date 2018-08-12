@@ -630,6 +630,24 @@ pub trait Commands {
         &mut self,
         params: &LongCharacteristicReadParameters,
     ) -> nb::Result<(), Self::Error>;
+
+    /// Start the procedure to write a characteristic descriptor value.
+    ///
+    /// # Errors
+    ///
+    /// - [ValueBufferTooLong](Error::ValueBufferTooLong) if the [value](CharacteristicValue::value)
+    ///   is too long to fit in one command packet. The maximum length is 250 bytes.
+    /// - Underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. When the procedure is completed, a [GATT Procedure
+    /// Complete](::event::BlueNRGEvent::GattProcedureComplete) event is generated.
+    fn write_characteristic_descriptor<'a>(
+        &mut self,
+        params: &CharacteristicValue<'a>,
+    ) -> nb::Result<(), Error<Self::Error>>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -930,6 +948,12 @@ where
         read_long_characteristic_descriptor,
         LongCharacteristicReadParameters,
         ::opcode::GATT_READ_LONG_CHARACTERISTIC_DESCRIPTOR
+    );
+
+    impl_validate_variable_length_params!(
+        write_characteristic_descriptor<'a>,
+        CharacteristicValue<'a>,
+        ::opcode::GATT_WRITE_CHARACTERISTIC_DESCRIPTOR
     );
 }
 
