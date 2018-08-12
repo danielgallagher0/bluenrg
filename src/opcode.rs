@@ -97,6 +97,7 @@ opcodes! {
         pub const GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR = 0x1F;
         pub const GATT_READ_LONG_CHARACTERISTIC_DESCRIPTOR = 0x20;
         pub const GATT_WRITE_CHARACTERISTIC_DESCRIPTOR = 0x21;
+        pub const GATT_READ_CHARACTERISTIC_DESCRIPTOR = 0x22;
     }
     L2Cap = 0x3;
     {

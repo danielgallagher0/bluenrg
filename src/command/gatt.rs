@@ -648,6 +648,25 @@ pub trait Commands {
         &mut self,
         params: &CharacteristicValue<'a>,
     ) -> nb::Result<(), Error<Self::Error>>;
+
+    /// Start the procedure to read a characteristic descriptor.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Read
+    /// Response](::event::BlueNRGEvent::AttReadResponse) event. The end of the procedure is
+    /// indicated by a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete)
+    /// event.
+    fn read_characteristic_descriptor(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        characteristic_handle: CharacteristicHandle,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -955,6 +974,18 @@ where
         CharacteristicValue<'a>,
         ::opcode::GATT_WRITE_CHARACTERISTIC_DESCRIPTOR
     );
+
+    fn read_characteristic_descriptor(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        characteristic_handle: CharacteristicHandle,
+    ) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 4];
+        LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], characteristic_handle.0);
+
+        self.write_command(::opcode::GATT_READ_CHARACTERISTIC_DESCRIPTOR, &bytes)
+    }
 }
 
 /// Potential errors from parameter validation.
