@@ -528,6 +528,24 @@ pub trait Commands {
         &mut self,
         params: &MultipleCharacteristicReadParameters<'a>,
     ) -> nb::Result<(), Error<Self::Error>>;
+
+    /// Start the procedure to write a characteristic value.
+    ///
+    /// # Errors
+    ///
+    /// - [ValueBufferTooLong](Error::ValueBufferTooLong) if the [value](CharacteristicValue::value)
+    ///   is too long to fit in one command packet. The maximum length is 250 bytes.
+    /// - Underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. When the procedure is completed, a [GATT Procedure
+    /// Complete](::event::BlueNRGEvent::GattProcedureComplete) event is generated.
+    fn write_characteristic_value<'a>(
+        &mut self,
+        params: &CharacteristicValue<'a>,
+    ) -> nb::Result<(), Error<Self::Error>>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -798,6 +816,12 @@ where
         read_multiple_characteristic_values<'a>,
         MultipleCharacteristicReadParameters<'a>,
         ::opcode::GATT_READ_MULTIPLE_CHARACTERISTIC_VALUES
+    );
+
+    impl_validate_variable_length_params!(
+        write_characteristic_value<'a>,
+        CharacteristicValue<'a>,
+        ::opcode::GATT_WRITE_CHARACTERISTIC_VALUE
     );
 }
 
@@ -1586,5 +1610,44 @@ impl<'a> MultipleCharacteristicReadParameters<'a> {
         }
 
         next
+    }
+}
+
+/// Parameters for the [Write Characteristic Value](Commands::write_characteristic_value) command.
+pub struct CharacteristicValue<'a> {
+    /// Connection handle for which the command is given.
+    pub conn_handle: hci::ConnectionHandle,
+
+    /// Handle of the characteristic to be written.
+    pub characteristic_handle: CharacteristicHandle,
+
+    /// Value to be written. The maximum length is 250 bytes.
+    pub value: &'a [u8],
+}
+
+impl<'a> CharacteristicValue<'a> {
+    const MAX_LENGTH: usize = 255;
+
+    fn validate<E>(&self) -> Result<(), Error<E>> {
+        if self.len() > Self::MAX_LENGTH {
+            return Err(Error::ValueBufferTooLong);
+        }
+
+        Ok(())
+    }
+
+    fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+        assert!(bytes.len() >= self.len());
+
+        LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], self.characteristic_handle.0);
+        bytes[4] = self.value.len() as u8;
+        bytes[5..self.len()].copy_from_slice(self.value);
+
+        self.len()
+    }
+
+    fn len(&self) -> usize {
+        5 + self.value.len()
     }
 }
