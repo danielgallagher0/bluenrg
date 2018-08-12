@@ -406,6 +406,27 @@ pub trait Commands {
         conn_handle: hci::ConnectionHandle,
         attribute_handle_range: Range<AttributeHandle>,
     ) -> nb::Result<(), Self::Error>;
+
+    /// Start the procedure to discover all the characteristics specified by the UUID.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Discover or Read
+    /// Characteristic By
+    /// UUID](::event::BlueNRGEvent::GattDiscoverOrReadCharacteristicByUuidResponse) event. The end
+    /// of the procedure is indicated by a [GATT Procedure
+    /// Complete](::event::BlueNRGEvent::GattProcedureComplete) event.
+    fn discover_characteristics_by_uuid(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        attribute_handle_range: Range<AttributeHandle>,
+        uuid: Uuid,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -599,6 +620,24 @@ where
         self.write_command(
             ::opcode::GATT_DISCOVER_ALL_CHARACTERISTICS_OF_SERVICE,
             &bytes,
+        )
+    }
+
+    fn discover_characteristics_by_uuid(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        attribute_handle_range: Range<AttributeHandle>,
+        uuid: Uuid,
+    ) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 23];
+        LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], attribute_handle_range.from.0);
+        LittleEndian::write_u16(&mut bytes[4..6], attribute_handle_range.to.0);
+        let uuid_len = uuid.into_bytes(&mut bytes[6..]);
+
+        self.write_command(
+            ::opcode::GATT_DISCOVER_CHARACTERISTICS_BY_UUID,
+            &bytes[..6 + uuid_len],
         )
     }
 }
