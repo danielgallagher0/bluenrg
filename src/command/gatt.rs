@@ -667,6 +667,24 @@ pub trait Commands {
         conn_handle: hci::ConnectionHandle,
         characteristic_handle: CharacteristicHandle,
     ) -> nb::Result<(), Self::Error>;
+
+    /// Start the procedure to write a characteristic value without waiting for any response from
+    /// the server.
+    ///
+    /// # Errors
+    ///
+    /// - [ValueBufferTooLong](Error::ValueBufferTooLong) if the [value](CharacteristicValue::value)
+    ///   is too long to fit in one command packet. The maximum length is 250 bytes.
+    /// - Underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::GattWriteWithoutResponse) event is
+    /// generated when this command is processed.
+    fn write_without_response<'a>(
+        &mut self,
+        params: &CharacteristicValue<'a>,
+    ) -> nb::Result<(), Error<Self::Error>>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -986,6 +1004,12 @@ where
 
         self.write_command(::opcode::GATT_READ_CHARACTERISTIC_DESCRIPTOR, &bytes)
     }
+
+    impl_validate_variable_length_params!(
+        write_without_response<'a>,
+        CharacteristicValue<'a>,
+        ::opcode::GATT_WRITE_WITHOUT_RESPONSE
+    );
 }
 
 /// Potential errors from parameter validation.
