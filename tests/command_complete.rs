@@ -124,6 +124,7 @@ status_only! {
         0xFD,
         BNRGParams::GattDiscoverPrimaryServicesByUuid
     );
+    gatt_find_included_services(0x14, 0xFD, BNRGParams::GattFindIncludedServices);
 }
 
 #[test]

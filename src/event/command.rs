@@ -236,6 +236,10 @@ pub enum ReturnParameters {
     /// UUID](::gatt::Commands::discover_primary_services_by_uuid) command.
     GattDiscoverPrimaryServicesByUuid(hci::Status),
 
+    /// Parameters returned by the [GATT Find Included
+    /// Services](::gatt::Commands::find_included_services) command.
+    GattFindIncludedServices(hci::Status),
+
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Request](::l2cap::Commands::connection_parameter_update_request) command.
     L2CapConnectionParameterUpdateRequest(hci::Status),
@@ -448,6 +452,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ),
             ::opcode::GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID => Ok(
                 ReturnParameters::GattDiscoverPrimaryServicesByUuid(to_status(&bytes[3..])?),
+            ),
+            ::opcode::GATT_FIND_INCLUDED_SERVICES => Ok(
+                ReturnParameters::GattFindIncludedServices(to_status(&bytes[3..])?),
             ),
             ::opcode::L2CAP_CONN_PARAM_UPDATE_REQ => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateRequest(to_status(&bytes[3..])?),

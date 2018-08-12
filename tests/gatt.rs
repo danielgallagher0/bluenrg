@@ -607,3 +607,17 @@ fn discovery_primary_services_by_uuid_128() {
         0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
     ]));
 }
+
+#[test]
+fn find_included_services() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.find_included_services(
+                hci::ConnectionHandle(0x0201),
+                Range::new(ServiceHandle(0x0403), ServiceHandle(0x0605)).unwrap(),
+            )
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x14, 0xFD, 6, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06]));
+}
