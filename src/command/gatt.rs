@@ -387,6 +387,25 @@ pub trait Commands {
         conn_handle: hci::ConnectionHandle,
         service_handle_range: Range<ServiceHandle>,
     ) -> nb::Result<(), Self::Error>;
+
+    /// Start the procedure to discover all the characteristics of a given service.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Read By Type
+    /// Response](::event::BlueNRGEvent::AttReadByTypeResponse) event. The end of the procedure is
+    /// indicated by a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete)
+    /// event.
+    fn discover_all_characteristics_of_service(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        attribute_handle_range: Range<AttributeHandle>,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -565,6 +584,22 @@ where
         LittleEndian::write_u16(&mut bytes[4..6], service_handle_range.to.0);
 
         self.write_command(::opcode::GATT_FIND_INCLUDED_SERVICES, &bytes)
+    }
+
+    fn discover_all_characteristics_of_service(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        attribute_handle_range: Range<AttributeHandle>,
+    ) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 6];
+        LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], attribute_handle_range.from.0);
+        LittleEndian::write_u16(&mut bytes[4..6], attribute_handle_range.to.0);
+
+        self.write_command(
+            ::opcode::GATT_DISCOVER_ALL_CHARACTERISTICS_OF_SERVICE,
+            &bytes,
+        )
     }
 }
 

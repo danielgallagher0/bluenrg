@@ -621,3 +621,17 @@ fn find_included_services() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x14, 0xFD, 6, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06]));
 }
+
+#[test]
+fn discover_all_characteristics_of_service() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.discover_all_characteristics_of_service(
+                hci::ConnectionHandle(0x0201),
+                Range::new(AttributeHandle(0x0403), AttributeHandle(0x0605)).unwrap(),
+            )
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x15, 0xFD, 6, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06]));
+}
