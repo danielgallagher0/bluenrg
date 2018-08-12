@@ -37,19 +37,13 @@ macro_rules! status_only {
 }
 
 status_only! {
-    l2cap_connection_parameter_update_request(
-        0x81,
-        0xFD,
-        BNRGParams::L2CapConnectionParameterUpdateRequest
-    );
     l2cap_connection_parameter_update_response(
         0x82,
         0xFD,
         BNRGParams::L2CapConnectionParameterUpdateResponse
     );
 
-    gap_set_nondiscoverable(0x81, 0xFC, BNRGParams::GapSetNondiscoverable);
-    gap_set_limited_discoverable(0x82, 0xFC, BNRGParams::GapSetLimitedDiscoverable);
+    gap_set_nondiscoverable(0x81, 0xFC, BNRGParams::GapSetNonDiscoverable);
     gap_set_discoverable(0x83, 0xFC, BNRGParams::GapSetDiscoverable);
     gap_set_direct_connectable(0x84, 0xFC, BNRGParams::GapSetDirectConnectable);
     gap_set_io_capability(0x85, 0xFC, BNRGParams::GapSetIoCapability);
@@ -59,44 +53,13 @@ status_only! {
     gap_authorization_response(0x89, 0xFC, BNRGParams::GapAuthorizationResponse);
     gap_set_nonconnectable(0x8B, 0xFC, BNRGParams::GapSetNonConnectable);
     gap_set_undirected_connectable(0x8C, 0xFC, BNRGParams::GapSetUndirectedConnectable);
-    gap_peripheral_security_request(0x8D, 0xFC, BNRGParams::GapPeripheralSecurityRequest);
     gap_update_advertising_data(0x8E, 0xFC, BNRGParams::GapUpdateAdvertisingData);
     gap_delete_ad_type(0x8F, 0xFC, BNRGParams::GapDeleteAdType);
     gap_set_event_mask(0x91, 0xFC, BNRGParams::GapSetEventMask);
     gap_configure_white_list(0x92, 0xFC, BNRGParams::GapConfigureWhiteList);
-    gap_terminate(0x93, 0xFC, BNRGParams::GapTerminate);
     gap_clear_security_database(0x94, 0xFC, BNRGParams::GapClearSecurityDatabase);
     gap_allow_rebond(0x95, 0xFC, BNRGParams::GapAllowRebond);
-    gap_start_limited_discovery_procedure(
-        0x96,
-        0xFC,
-        BNRGParams::GapStartLimitedDiscoveryProcedure
-    );
-    gap_start_general_discovery_procedure(
-        0x97,
-        0xFC,
-        BNRGParams::GapStartGeneralDiscoveryProcedure
-    );
-    gap_start_name_discovery_procedure(0x98, 0xFC, BNRGParams::GapStartNameDiscoveryProcedure);
-    gap_start_auto_connection_establishment(
-        0x99,
-        0xFC,
-        BNRGParams::GapStartAutoConnectionEstablishment
-    );
-    gap_start_general_connection_establishment(
-        0x9A,
-        0xFC,
-        BNRGParams::GapStartGeneralConnectionEstablishment
-    );
-    gap_start_selective_connection_establishment(
-        0x9B,
-        0xFC,
-        BNRGParams::GapStartSelectiveConnectionEstablishment
-    );
-    gap_create_connection(0x9C, 0xFC, BNRGParams::GapCreateConnection);
     gap_terminate_procedure(0x9D, 0xFC, BNRGParams::GapTerminateProcedure);
-    gap_start_connection_update(0x9E, 0xFC, BNRGParams::GapStartConnectionUpdate);
-    gap_send_pairing_request(0x9F, 0xFC, BNRGParams::GapSendPairingRequest);
     #[cfg(not(feature = "ms"))]
     gap_resolve_private_address(0xA0, 0xFC, BNRGParams::GapResolvePrivateAddress);
     #[cfg(feature = "ms")]
@@ -111,20 +74,6 @@ status_only! {
     gatt_delete_service(0x08, 0xFD, BNRGParams::GattDeleteService);
     gatt_delete_included_service(0x09, 0xFD, BNRGParams::GattDeleteIncludedService);
     gatt_set_event_mask(0x0A, 0xFD, BNRGParams::GattSetEventMask);
-    gatt_exchange_configuration(0x0B, 0xFD, BNRGParams::GattExchangeConfiguration);
-    gatt_find_information_request(0x0C, 0xFD, BNRGParams::GattFindInformationRequest);
-    gatt_find_by_type_value_request(0x0D, 0xFD, BNRGParams::GattFindByTypeValueRequest);
-    gatt_read_by_type_request(0x0E, 0xFD, BNRGParams::GattReadByTypeRequest);
-    gatt_read_by_group_type_request(0x0F, 0xFD, BNRGParams::GattReadByGroupTypeRequest);
-    gatt_prepare_write_request(0x10, 0xFD, BNRGParams::GattPrepareWriteRequest);
-    gatt_execute_write_request(0x11, 0xFD, BNRGParams::GattExecuteWriteRequest);
-    gatt_discover_all_primary_services(0x12, 0xFD, BNRGParams::GattDiscoverAllPrimaryServices);
-    gatt_discover_primary_services_by_uuid(
-        0x13,
-        0xFD,
-        BNRGParams::GattDiscoverPrimaryServicesByUuid
-    );
-    gatt_find_included_services(0x14, 0xFD, BNRGParams::GattFindIncludedServices);
 }
 
 #[test]

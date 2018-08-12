@@ -17,11 +17,7 @@ use core::fmt::{Debug, Formatter, Result as FmtResult};
 pub enum ReturnParameters {
     /// Status returned by the [GAP Set Non-Discoverable](::gap::Commands::set_nondiscoverable)
     /// command.
-    GapSetNondiscoverable(hci::Status),
-
-    /// Status returned by the [GAP Set Limited
-    /// Discoverable](::gap::Commands::set_limited_discoverable) command.
-    GapSetLimitedDiscoverable(hci::Status),
+    GapSetNonDiscoverable(hci::Status),
 
     /// Status returned by the [GAP Set Discoverable](::gap::Commands::set_discoverable)
     /// command.
@@ -62,10 +58,6 @@ pub enum ReturnParameters {
     /// Undirected Connectable](::gap::Commands::set_undirected_connectable) command.
     GapSetUndirectedConnectable(hci::Status),
 
-    /// Parameters returned by the [GAP Peripheral Security
-    /// Request](::gap::Commands::peripheral_security_request) command.
-    GapPeripheralSecurityRequest(hci::Status),
-
     /// Parameters returned by the [GAP Update Advertising
     /// Data](::gap::Commands::update_advertising_data) command.
     GapUpdateAdvertisingData(hci::Status),
@@ -86,9 +78,6 @@ pub enum ReturnParameters {
     /// White List](::gap::Commands::configure_white_list) command.
     GapConfigureWhiteList(hci::Status),
 
-    /// Parameters returned by the [GAP Terminate](::gap::Commands::terminate) command.
-    GapTerminate(hci::Status),
-
     /// Parameters returned by the [GAP Clear Security
     /// Database](::gap::Commands::clear_security_database) command.
     GapClearSecurityDatabase(hci::Status),
@@ -96,45 +85,9 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GAP Allow Rebond](::gap::Commands::allow_rebond) command.
     GapAllowRebond(hci::Status),
 
-    /// Parameters returned by the [GAP Start Limited Discoverable
-    /// Procedure](::gap::Commands::start_limited_discovery_procedure) command.
-    GapStartLimitedDiscoveryProcedure(hci::Status),
-
-    /// Parameters returned by the [GAP Start General Discoverable
-    /// Procedure](::gap::Commands::start_general_discovery_procedure) command.
-    GapStartGeneralDiscoveryProcedure(hci::Status),
-
-    /// Parameters returned by the [GAP Start Name Discoverable
-    /// Procedure](::gap::Commands::start_name_discovery_procedure) command.
-    GapStartNameDiscoveryProcedure(hci::Status),
-
-    /// Parameters returned by the [GAP Start Auto Connection
-    /// Establishment](::gap::Commands::start_auto_connection_establishment) command.
-    GapStartAutoConnectionEstablishment(hci::Status),
-
-    /// Parameters returned by the [GAP Start General Connection
-    /// Establishment](::gap::Commands::start_general_connection_establishment) command.
-    GapStartGeneralConnectionEstablishment(hci::Status),
-
-    /// Parameters returned by the [GAP Start Selective Connection
-    /// Establishment](::gap::Commands::start_selective_connection_establishment) command.
-    GapStartSelectiveConnectionEstablishment(hci::Status),
-
-    /// Parameters returned by the [GAP Create Connection](::gap::Commands::create_connection)
-    /// command.
-    GapCreateConnection(hci::Status),
-
     /// Parameters returned by the [GAP Terminate
     /// Procedure](::gap::Commands::terminate_procedure) command.
     GapTerminateProcedure(hci::Status),
-
-    /// Parameters returned by the [GAP Start Connection
-    /// Update](::gap::Commands::start_connection_update) command.
-    GapStartConnectionUpdate(hci::Status),
-
-    /// Parameters returned by the [GAP Send Pairing
-    /// Request](::gap::Commands::send_pairing_request) command.
-    GapSendPairingRequest(hci::Status),
 
     #[cfg(not(feature = "ms"))]
     /// Parameters returned by the [GAP Resolve Private
@@ -200,50 +153,6 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GATT Set Event Mask](::gatt::Commands::set_event_mask) command.
     GattSetEventMask(hci::Status),
 
-    /// Parameters returned by the [GATT Exchange
-    /// Configuration](::gatt::Commands::exchange_configuration) command.
-    GattExchangeConfiguration(hci::Status),
-
-    /// Parameters returned by the [GATT Find Information
-    /// Request](::gatt::Commands::find_information_request) command.
-    GattFindInformationRequest(hci::Status),
-
-    /// Parameters returned by the [GATT Find by Type Value
-    /// Request](::gatt::Commands::find_by_type_value_request) command.
-    GattFindByTypeValueRequest(hci::Status),
-
-    /// Parameters returned by the [GATT Read by Type
-    /// Request](::gatt::Commands::read_by_type_request) command.
-    GattReadByTypeRequest(hci::Status),
-
-    /// Parameters returned by the [GATT Read by Group Type
-    /// Request](::gatt::Commands::read_by_group_type_request) command.
-    GattReadByGroupTypeRequest(hci::Status),
-
-    /// Parameters returned by the [GATT Prepare Write
-    /// Request](::gatt::Commands::prepare_write_request) command.
-    GattPrepareWriteRequest(hci::Status),
-
-    /// Parameters returned by the [GATT Execute Write
-    /// Request](::gatt::Commands::execute_write_request) command.
-    GattExecuteWriteRequest(hci::Status),
-
-    /// Parameters returned by the [GATT Discover All Primary
-    /// Services](::gatt::Commands::discover_all_primary_services) command.
-    GattDiscoverAllPrimaryServices(hci::Status),
-
-    /// Parameters returned by the [GATT Discover Primary Services by
-    /// UUID](::gatt::Commands::discover_primary_services_by_uuid) command.
-    GattDiscoverPrimaryServicesByUuid(hci::Status),
-
-    /// Parameters returned by the [GATT Find Included
-    /// Services](::gatt::Commands::find_included_services) command.
-    GattFindIncludedServices(hci::Status),
-
-    /// Status returned by the [L2CAP Connection Parameter Update
-    /// Request](::l2cap::Commands::connection_parameter_update_request) command.
-    L2CapConnectionParameterUpdateRequest(hci::Status),
-
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Response](::l2cap::Commands::connection_parameter_update_response) command.
     L2CapConnectionParameterUpdateResponse(hci::Status),
@@ -256,12 +165,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
         check_len_at_least(bytes, 3)?;
 
         match hci::Opcode(LittleEndian::read_u16(&bytes[1..])) {
-            ::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNondiscoverable(
+            ::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNonDiscoverable(
                 to_status(&bytes[3..])?,
             )),
-            ::opcode::GAP_SET_LIMITED_DISCOVERABLE => Ok(
-                ReturnParameters::GapSetLimitedDiscoverable(to_status(&bytes[3..])?),
-            ),
             ::opcode::GAP_SET_DISCOVERABLE => Ok(ReturnParameters::GapSetDiscoverable(to_status(
                 &bytes[3..],
             )?)),
@@ -290,9 +196,6 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_SET_UNDIRECTED_CONNECTABLE => Ok(
                 ReturnParameters::GapSetUndirectedConnectable(to_status(&bytes[3..])?),
             ),
-            ::opcode::GAP_PERIPHERAL_SECURITY_REQUEST => Ok(
-                ReturnParameters::GapPeripheralSecurityRequest(to_status(&bytes[3..])?),
-            ),
             ::opcode::GAP_UPDATE_ADVERTISING_DATA => Ok(
                 ReturnParameters::GapUpdateAdvertisingData(to_status(&bytes[3..])?),
             ),
@@ -308,41 +211,13 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GAP_CONFIGURE_WHITE_LIST => Ok(ReturnParameters::GapConfigureWhiteList(
                 to_status(&bytes[3..])?,
             )),
-            ::opcode::GAP_TERMINATE => Ok(ReturnParameters::GapTerminate(to_status(&bytes[3..])?)),
             ::opcode::GAP_CLEAR_SECURITY_DATABASE => Ok(
                 ReturnParameters::GapClearSecurityDatabase(to_status(&bytes[3..])?),
             ),
             ::opcode::GAP_ALLOW_REBOND => {
                 Ok(ReturnParameters::GapAllowRebond(to_status(&bytes[3..])?))
             }
-            ::opcode::GAP_START_LIMITED_DISCOVERY_PROCEDURE => Ok(
-                ReturnParameters::GapStartLimitedDiscoveryProcedure(to_status(&bytes[3..])?),
-            ),
-            ::opcode::GAP_START_GENERAL_DISCOVERY_PROCEDURE => Ok(
-                ReturnParameters::GapStartGeneralDiscoveryProcedure(to_status(&bytes[3..])?),
-            ),
-            ::opcode::GAP_START_NAME_DISCOVERY_PROCEDURE => Ok(
-                ReturnParameters::GapStartNameDiscoveryProcedure(to_status(&bytes[3..])?),
-            ),
-            ::opcode::GAP_START_AUTO_CONNECTION_ESTABLISHMENT => Ok(
-                ReturnParameters::GapStartAutoConnectionEstablishment(to_status(&bytes[3..])?),
-            ),
-            ::opcode::GAP_START_GENERAL_CONNECTION_ESTABLISHMENT => Ok(
-                ReturnParameters::GapStartGeneralConnectionEstablishment(to_status(&bytes[3..])?),
-            ),
-            ::opcode::GAP_START_SELECTIVE_CONNECTION_ESTABLISHMENT => Ok(
-                ReturnParameters::GapStartSelectiveConnectionEstablishment(to_status(&bytes[3..])?),
-            ),
-            ::opcode::GAP_CREATE_CONNECTION => Ok(ReturnParameters::GapCreateConnection(
-                to_status(&bytes[3..])?,
-            )),
             ::opcode::GAP_TERMINATE_PROCEDURE => Ok(ReturnParameters::GapTerminateProcedure(
-                to_status(&bytes[3..])?,
-            )),
-            ::opcode::GAP_START_CONNECTION_UPDATE => Ok(
-                ReturnParameters::GapStartConnectionUpdate(to_status(&bytes[3..])?),
-            ),
-            ::opcode::GAP_SEND_PAIRING_REQUEST => Ok(ReturnParameters::GapSendPairingRequest(
                 to_status(&bytes[3..])?,
             )),
             ::opcode::GAP_RESOLVE_PRIVATE_ADDRESS => {
@@ -426,39 +301,6 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GATT_SET_EVENT_MASK => {
                 Ok(ReturnParameters::GattSetEventMask(to_status(&bytes[3..])?))
             }
-            ::opcode::GATT_EXCHANGE_CONFIGURATION => Ok(
-                ReturnParameters::GattExchangeConfiguration(to_status(&bytes[3..])?),
-            ),
-            ::opcode::GATT_FIND_INFORMATION_REQUEST => Ok(
-                ReturnParameters::GattFindInformationRequest(to_status(&bytes[3..])?),
-            ),
-            ::opcode::GATT_FIND_BY_TYPE_VALUE_REQUEST => Ok(
-                ReturnParameters::GattFindByTypeValueRequest(to_status(&bytes[3..])?),
-            ),
-            ::opcode::GATT_READ_BY_TYPE_REQUEST => Ok(ReturnParameters::GattReadByTypeRequest(
-                to_status(&bytes[3..])?,
-            )),
-            ::opcode::GATT_READ_BY_GROUP_TYPE_REQUEST => Ok(
-                ReturnParameters::GattReadByGroupTypeRequest(to_status(&bytes[3..])?),
-            ),
-            ::opcode::GATT_PREPARE_WRITE_REQUEST => Ok(ReturnParameters::GattPrepareWriteRequest(
-                to_status(&bytes[3..])?,
-            )),
-            ::opcode::GATT_EXECUTE_WRITE_REQUEST => Ok(ReturnParameters::GattExecuteWriteRequest(
-                to_status(&bytes[3..])?,
-            )),
-            ::opcode::GATT_DISCOVER_ALL_PRIMARY_SERVICES => Ok(
-                ReturnParameters::GattDiscoverAllPrimaryServices(to_status(&bytes[3..])?),
-            ),
-            ::opcode::GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID => Ok(
-                ReturnParameters::GattDiscoverPrimaryServicesByUuid(to_status(&bytes[3..])?),
-            ),
-            ::opcode::GATT_FIND_INCLUDED_SERVICES => Ok(
-                ReturnParameters::GattFindIncludedServices(to_status(&bytes[3..])?),
-            ),
-            ::opcode::L2CAP_CONN_PARAM_UPDATE_REQ => Ok(
-                ReturnParameters::L2CapConnectionParameterUpdateRequest(to_status(&bytes[3..])?),
-            ),
             ::opcode::L2CAP_CONN_PARAM_UPDATE_RESP => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateResponse(to_status(&bytes[3..])?),
             ),

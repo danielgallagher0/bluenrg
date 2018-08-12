@@ -22,9 +22,9 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command
-    /// Complete](::event::command::ReturnParameters::L2CapConnectionParameterUpdateRequest) event
-    /// is generated.
+    /// A [command status](hci::event::Event::CommandStatus) event on the receipt of the command and
+    /// an [L2CAP Connection Update Response](::event::BlueNRGEvent::L2CapConnectionUpdateResponse)
+    /// event when the master responds to the request (accepts or rejects).
     fn connection_parameter_update_request(
         &mut self,
         params: &ConnectionParameterUpdateRequest,

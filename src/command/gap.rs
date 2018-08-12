@@ -25,7 +25,7 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapSetNondiscoverable) event is
+    /// A [Command Complete](::event::command::ReturnParameters::GapSetNonDiscoverable) event is
     /// generated.
     fn set_nondiscoverable(&mut self) -> nb::Result<(), Self::Error>;
 
@@ -53,8 +53,12 @@ pub trait Commands {
     ///
     /// # Generated evenst
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapSetLimitedDiscoverable) event is
-    /// generated.
+    /// When the controller receives the command, it will generate a [command
+    /// status](hci::event::Event::CommandStatus) event. The controller starts the advertising after
+    /// this and when advertising timeout happens (i.e. limited discovery period has elapsed),
+    /// the controller generates an [GAP Limited Discoverable
+    /// Complete](::event::BlueNRGEvent::GapLimitedDiscoverableTimeout) event.
+
     fn set_limited_discoverable<'a, 'b>(
         &mut self,
         params: &DiscoverableParameters<'a, 'b>,
@@ -343,8 +347,11 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapPeripheralSecurityRequest) event
-    /// is generated.
+    /// A [command status](hci::event::Event::CommandStatus) event will be generated when a valid
+    /// command is received. On completion of the command, i.e. when the security request is
+    /// successfully transmitted to the master, a [GAP Peripheral Security
+    /// Initiated](::event::BlueNRGEvent::GapPeripheralSecurityInitiated) vendor-specific event will
+    /// be generated.
     fn peripheral_security_request(
         &mut self,
         params: &SecurityRequestParameters,
@@ -436,7 +443,10 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapTerminate) event is generated.
+    /// The controller will generate a [command status](hci::event::Event::CommandStatus) event when
+    /// the command is received and a [Disconnection
+    /// Complete](hci::event::Event::DisconnectionComplete) event will be generated when the link is
+    /// disconnected.
     fn terminate(
         &mut self,
         conn_handle: hci::ConnectionHandle,
