@@ -687,3 +687,17 @@ fn discover_all_characteristic_descriptors() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x17, 0xFD, 6, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06]));
 }
+
+#[test]
+fn read_characteristic_value() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.read_characteristic_value(
+                hci::ConnectionHandle(0x0201),
+                CharacteristicHandle(0x0403),
+            )
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x18, 0xFD, 4, 0x01, 0x02, 0x03, 0x04]));
+}
