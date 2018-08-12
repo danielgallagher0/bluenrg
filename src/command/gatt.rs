@@ -546,6 +546,28 @@ pub trait Commands {
         &mut self,
         params: &CharacteristicValue<'a>,
     ) -> nb::Result<(), Error<Self::Error>>;
+
+    /// Start the procedure to write a long characteristic value.
+    ///
+    /// # Errors
+    ///
+    /// - [ValueBufferTooLong](Error::ValueBufferTooLong) if the
+    ///   [value](LongCharacteristicValue::value) is too long to fit in one command packet. The
+    ///   maximum length is 248 bytes.
+    /// - Underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Prepare Write
+    /// Response](::event::BlueNRGEvent::AttPrepareWriteResponse) and [Execute Write
+    /// Response](::event::BlueNRGEvent::AttExecuteWriteResponse) events. When the procedure is
+    /// completed, a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete) event
+    /// is generated.
+    fn write_long_characteristic_value<'a>(
+        &mut self,
+        params: &LongCharacteristicValue<'a>,
+    ) -> nb::Result<(), Error<Self::Error>>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -822,6 +844,12 @@ where
         write_characteristic_value<'a>,
         CharacteristicValue<'a>,
         ::opcode::GATT_WRITE_CHARACTERISTIC_VALUE
+    );
+
+    impl_validate_variable_length_params!(
+        write_long_characteristic_value<'a>,
+        LongCharacteristicValue<'a>,
+        ::opcode::GATT_WRITE_LONG_CHARACTERISTIC_VALUE
     );
 }
 
@@ -1649,5 +1677,49 @@ impl<'a> CharacteristicValue<'a> {
 
     fn len(&self) -> usize {
         5 + self.value.len()
+    }
+}
+
+/// Parameters for the [Write Long Characteristic Value](Commands::write_long_characteristic_value)
+/// command.
+pub struct LongCharacteristicValue<'a> {
+    /// Connection handle for which the command is given.
+    pub conn_handle: hci::ConnectionHandle,
+
+    /// Handle of the characteristic to be written.
+    pub characteristic_handle: CharacteristicHandle,
+
+    /// Offset at which the attribute has to be written.
+    pub offset: usize,
+
+    /// Value to be written. The maximum length is 248 bytes.
+    pub value: &'a [u8],
+}
+
+impl<'a> LongCharacteristicValue<'a> {
+    const MAX_LENGTH: usize = 255;
+
+    fn validate<E>(&self) -> Result<(), Error<E>> {
+        if self.len() > Self::MAX_LENGTH {
+            return Err(Error::ValueBufferTooLong);
+        }
+
+        Ok(())
+    }
+
+    fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+        assert!(bytes.len() >= self.len());
+
+        LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], self.characteristic_handle.0);
+        LittleEndian::write_u16(&mut bytes[4..6], self.offset as u16);
+        bytes[6] = self.value.len() as u8;
+        bytes[7..self.len()].copy_from_slice(self.value);
+
+        self.len()
+    }
+
+    fn len(&self) -> usize {
+        7 + self.value.len()
     }
 }
