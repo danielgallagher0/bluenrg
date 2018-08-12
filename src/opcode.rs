@@ -82,6 +82,7 @@ opcodes! {
         pub const GATT_PREPARE_WRITE_REQUEST = 0x10;
         pub const GATT_EXECUTE_WRITE_REQUEST = 0x11;
         pub const GATT_DISCOVER_ALL_PRIMARY_SERVICES = 0x12;
+        pub const GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID = 0x13;
     }
     L2Cap = 0x3;
     {

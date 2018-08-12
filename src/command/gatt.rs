@@ -348,6 +348,26 @@ pub trait Commands {
         &mut self,
         conn_handle: hci::ConnectionHandle,
     ) -> nb::Result<(), Self::Error>;
+
+    /// This command will start the procedure to discover the primary services of the specified
+    /// UUID on the server.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Find By Type Value
+    /// Response](::event::BlueNRGEvent::AttFindByTypeValueResponse) event. The end of the procedure
+    /// is indicated by a [Gatt Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete)
+    /// event.
+    fn discover_primary_services_by_uuid(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        uuid: Uuid,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -498,6 +518,21 @@ where
         LittleEndian::write_u16(&mut bytes, conn_handle.0);
 
         self.write_command(::opcode::GATT_DISCOVER_ALL_PRIMARY_SERVICES, &bytes)
+    }
+
+    fn discover_primary_services_by_uuid(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        uuid: Uuid,
+    ) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 19];
+        LittleEndian::write_u16(&mut bytes, conn_handle.0);
+        let end = 2 + uuid.into_bytes(&mut bytes[2..]);
+
+        self.write_command(
+            ::opcode::GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID,
+            &bytes[..end],
+        )
     }
 }
 
