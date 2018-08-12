@@ -590,6 +590,46 @@ pub trait Commands {
         &mut self,
         params: &LongCharacteristicValue<'a>,
     ) -> nb::Result<(), Error<Self::Error>>;
+
+    /// Start the procedure to write a long characteristic descriptor.
+    ///
+    /// # Errors
+    ///
+    /// - [ValueBufferTooLong](Error::ValueBufferTooLong) if the
+    ///   [value](LongCharacteristicValue::value) is too long to fit in one command packet. The
+    ///   maximum length is 248 bytes.
+    /// - Underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Prepare Write
+    /// Response](::event::BlueNRGEvent::AttPrepareWriteResponse) and [Execute Write
+    /// Response](::event::BlueNRGEvent::AttExecuteWriteResponse) events. When the procedure is
+    /// completed, a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete) event
+    /// is generated.
+    fn write_long_characteristic_descriptor<'a>(
+        &mut self,
+        params: &LongCharacteristicValue<'a>,
+    ) -> nb::Result<(), Error<Self::Error>>;
+
+    /// Start the procedure to read a long characteristic descriptor.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Read Blob
+    /// Response](::event::BlueNRGEvent::AttReadBlobResponse) event. The end of the procedure is
+    /// indicated by a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete)
+    /// event.
+    fn read_long_characteristic_descriptor(
+        &mut self,
+        params: &LongCharacteristicReadParameters,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -878,6 +918,18 @@ where
         write_characteristic_value_reliably<'a>,
         LongCharacteristicValue<'a>,
         ::opcode::GATT_WRITE_CHARACTERISTIC_VALUE_RELIABLY
+    );
+
+    impl_validate_variable_length_params!(
+        write_long_characteristic_descriptor<'a>,
+        LongCharacteristicValue<'a>,
+        ::opcode::GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR
+    );
+
+    impl_params!(
+        read_long_characteristic_descriptor,
+        LongCharacteristicReadParameters,
+        ::opcode::GATT_READ_LONG_CHARACTERISTIC_DESCRIPTOR
     );
 }
 
