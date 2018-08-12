@@ -329,6 +329,25 @@ pub trait Commands {
         &mut self,
         conn_handle: hci::ConnectionHandle,
     ) -> nb::Result<(), Self::Error>;
+
+    /// This command will start the GATT client procedure to discover all primary services on the
+    /// server.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Read By Group
+    /// Response](::event::BlueNRGEvent::AttReadByGroupTypeResponse) event. The end of the procedure
+    /// is indicated by a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete)
+    /// event.
+    fn discover_all_primary_services(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -469,6 +488,16 @@ where
         bytes[2] = false as u8;
 
         self.write_command(::opcode::GATT_EXECUTE_WRITE_REQUEST, &bytes)
+    }
+
+    fn discover_all_primary_services(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+    ) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 2];
+        LittleEndian::write_u16(&mut bytes, conn_handle.0);
+
+        self.write_command(::opcode::GATT_DISCOVER_ALL_PRIMARY_SERVICES, &bytes)
     }
 }
 

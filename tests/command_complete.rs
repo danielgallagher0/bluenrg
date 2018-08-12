@@ -118,6 +118,7 @@ status_only! {
     gatt_read_by_group_type_request(0x0F, 0xFD, BNRGParams::GattReadByGroupTypeRequest);
     gatt_prepare_write_request(0x10, 0xFD, BNRGParams::GattPrepareWriteRequest);
     gatt_execute_write_request(0x11, 0xFD, BNRGParams::GattExecuteWriteRequest);
+    gatt_discover_all_primary_services(0x12, 0xFD, BNRGParams::GattDiscoverAllPrimaryServices);
 }
 
 #[test]

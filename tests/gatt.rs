@@ -563,3 +563,13 @@ fn cancel_write_request() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x11, 0xFD, 3, 0x1, 0x2, 0]));
 }
+
+#[test]
+fn discover_all_primary_services() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.discover_all_primary_services(hci::ConnectionHandle(0x0201)))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x12, 0xFD, 2, 0x1, 0x2]));
+}

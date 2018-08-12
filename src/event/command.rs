@@ -228,6 +228,10 @@ pub enum ReturnParameters {
     /// Request](::gatt::Commands::execute_write_request) command.
     GattExecuteWriteRequest(hci::Status),
 
+    /// Parameters returned by the [GATT Discover All Primary
+    /// Services](::gatt::Commands::discover_all_primary_services) command.
+    GattDiscoverAllPrimaryServices(hci::Status),
+
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Request](::l2cap::Commands::connection_parameter_update_request) command.
     L2CapConnectionParameterUpdateRequest(hci::Status),
@@ -435,6 +439,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GATT_EXECUTE_WRITE_REQUEST => Ok(ReturnParameters::GattExecuteWriteRequest(
                 to_status(&bytes[3..])?,
             )),
+            ::opcode::GATT_DISCOVER_ALL_PRIMARY_SERVICES => Ok(
+                ReturnParameters::GattDiscoverAllPrimaryServices(to_status(&bytes[3..])?),
+            ),
             ::opcode::L2CAP_CONN_PARAM_UPDATE_REQ => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateRequest(to_status(&bytes[3..])?),
             ),
