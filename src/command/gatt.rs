@@ -427,6 +427,25 @@ pub trait Commands {
         attribute_handle_range: Range<AttributeHandle>,
         uuid: Uuid,
     ) -> nb::Result<(), Self::Error>;
+
+    /// Start the procedure to discover all characteristic descriptors on the server.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Find Information
+    /// Response](::event::BlueNRGEvent::AttFindInformationResponse) event. The end of the procedure
+    /// is indicated by a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete)
+    /// event.
+    fn discover_all_characteristic_descriptors(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        characteristic_handle_range: Range<CharacteristicHandle>,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -638,6 +657,22 @@ where
         self.write_command(
             ::opcode::GATT_DISCOVER_CHARACTERISTICS_BY_UUID,
             &bytes[..6 + uuid_len],
+        )
+    }
+
+    fn discover_all_characteristic_descriptors(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+        characteristic_handle_range: Range<CharacteristicHandle>,
+    ) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 6];
+        LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], characteristic_handle_range.from.0);
+        LittleEndian::write_u16(&mut bytes[4..6], characteristic_handle_range.to.0);
+
+        self.write_command(
+            ::opcode::GATT_DISCOVER_ALL_CHARACTERISTIC_DESCRIPTORS,
+            &bytes,
         )
     }
 }
@@ -989,7 +1024,7 @@ pub enum EncryptionKeySizeError {
 }
 
 /// Handle for GATT characteristics.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
 pub struct CharacteristicHandle(pub u16);
 
 /// Parameters for the [GATT Add Characteristic Descriptor](Commands::add_characteristic_descriptor)

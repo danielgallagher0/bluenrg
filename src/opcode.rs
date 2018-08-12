@@ -86,6 +86,7 @@ opcodes! {
         pub const GATT_FIND_INCLUDED_SERVICES = 0x14;
         pub const GATT_DISCOVER_ALL_CHARACTERISTICS_OF_SERVICE = 0x15;
         pub const GATT_DISCOVER_CHARACTERISTICS_BY_UUID = 0x16;
+        pub const GATT_DISCOVER_ALL_CHARACTERISTIC_DESCRIPTORS = 0x17;
     }
     L2Cap = 0x3;
     {

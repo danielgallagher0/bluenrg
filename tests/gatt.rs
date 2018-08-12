@@ -673,3 +673,17 @@ fn discover_characteristics_by_uuid_128() {
         0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
     ]));
 }
+
+#[test]
+fn discover_all_characteristic_descriptors() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.discover_all_characteristic_descriptors(
+                hci::ConnectionHandle(0x0201),
+                Range::new(CharacteristicHandle(0x0403), CharacteristicHandle(0x0605)).unwrap(),
+            )
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x17, 0xFD, 6, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06]));
+}
