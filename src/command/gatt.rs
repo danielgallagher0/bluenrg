@@ -568,6 +568,28 @@ pub trait Commands {
         &mut self,
         params: &LongCharacteristicValue<'a>,
     ) -> nb::Result<(), Error<Self::Error>>;
+
+    /// Start the procedure to write a characteristic reliably.
+    ///
+    /// # Errors
+    ///
+    /// - [ValueBufferTooLong](Error::ValueBufferTooLong) if the
+    ///   [value](LongCharacteristicValue::value) is too long to fit in one command packet. The
+    ///   maximum length is 248 bytes.
+    /// - Underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Prepare Write
+    /// Response](::event::BlueNRGEvent::AttPrepareWriteResponse) and [Execute Write
+    /// Response](::event::BlueNRGEvent::AttExecuteWriteResponse) events. When the procedure is
+    /// completed, a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete) event
+    /// is generated.
+    fn write_characteristic_value_reliably<'a>(
+        &mut self,
+        params: &LongCharacteristicValue<'a>,
+    ) -> nb::Result<(), Error<Self::Error>>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -850,6 +872,12 @@ where
         write_long_characteristic_value<'a>,
         LongCharacteristicValue<'a>,
         ::opcode::GATT_WRITE_LONG_CHARACTERISTIC_VALUE
+    );
+
+    impl_validate_variable_length_params!(
+        write_characteristic_value_reliably<'a>,
+        LongCharacteristicValue<'a>,
+        ::opcode::GATT_WRITE_CHARACTERISTIC_VALUE_RELIABLY
     );
 }
 
