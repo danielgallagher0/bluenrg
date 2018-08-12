@@ -752,3 +752,39 @@ fn read_long_characteristic_value() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x1A, 0xFD, 6, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6]));
 }
+
+#[test]
+fn read_multiple_characteristic_values() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.read_multiple_characteristic_values(&MultipleCharacteristicReadParameters {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                handles: &[
+                    AttributeHandle(0x0403),
+                    AttributeHandle(0x0605),
+                    AttributeHandle(0x0807),
+                    AttributeHandle(0x0A09),
+                ],
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(
+        fixture.wrote(&[1, 0x1B, 0xFD, 11, 0x1, 0x2, 4, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA])
+    );
+}
+
+#[test]
+fn read_multiple_characteristic_values_too_many_handles() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.read_multiple_characteristic_values(&MultipleCharacteristicReadParameters {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                handles: &[AttributeHandle(0x0403); 127],
+            })
+        }).err()
+        .unwrap();
+    assert_eq!(err, nb::Error::Other(Error::TooManyHandlesToRead));
+    assert!(!fixture.wrote_header());
+}

@@ -504,6 +504,30 @@ pub trait Commands {
         &mut self,
         params: &LongCharacteristicReadParameters,
     ) -> nb::Result<(), Self::Error>;
+
+    /// Start a procedure to read multiple characteristic values from a server.
+    ///
+    /// This sub-procedure is used to read multiple Characteristic Values from a server when the
+    /// client knows the Characteristic Value Handles.
+    ///
+    /// # Errors
+    ///
+    /// - [TooManyHandlesToRead](Error::TooManyHandlesToRead) if the number of handles to read would
+    ///   cause the length of the serialized command to exceed 255 bytes. The maximum number of
+    ///   handles is 126.
+    /// - Underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The responses of the procedure are given through the [Read Multiple
+    /// Response](::event::BlueNRGEvent::AttReadMultipleResponse) event. The end of the procedure is
+    /// indicated by a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete)
+    /// event.
+    fn read_multiple_characteristic_values<'a>(
+        &mut self,
+        params: &MultipleCharacteristicReadParameters<'a>,
+    ) -> nb::Result<(), Error<Self::Error>>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -769,6 +793,12 @@ where
         LongCharacteristicReadParameters,
         ::opcode::GATT_READ_LONG_CHARACTERISTIC_VALUE
     );
+
+    impl_validate_variable_length_params!(
+        read_multiple_characteristic_values<'a>,
+        MultipleCharacteristicReadParameters<'a>,
+        ::opcode::GATT_READ_MULTIPLE_CHARACTERISTIC_VALUES
+    );
 }
 
 /// Potential errors from parameter validation.
@@ -792,6 +822,11 @@ pub enum Error<E> {
     /// length of the [characteristic value](UpdateCharacteristicValueParameters::value) is so large
     /// that the serialized structure would be more than 255 bytes. The maximum size is 249.
     ValueBufferTooLong,
+
+    /// For the [Read Multiple Characteristic Values](Commands::read_multiple_characteristic_values)
+    /// command: the number of [handles](MultipleCharacteristicReadParameters::handles) would cause
+    /// the serialized command to be more than 255 bytes. The maximum length is 126 handles.
+    TooManyHandlesToRead,
 
     /// Underlying communication error.
     Comm(E),
@@ -1512,5 +1547,44 @@ impl LongCharacteristicReadParameters {
         LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
         LittleEndian::write_u16(&mut bytes[2..4], self.attribute.0);
         LittleEndian::write_u16(&mut bytes[4..6], self.offset as u16);
+    }
+}
+
+/// Parameters for the [Read Multiple Characteristic
+/// Values](Commands::read_multiple_characteristic_values) command.
+pub struct MultipleCharacteristicReadParameters<'a> {
+    /// Connection handle for which the command is given.
+    pub conn_handle: hci::ConnectionHandle,
+
+    /// The handles for which the attribute value has to be read.
+    ///
+    /// The maximum length is 126 handles.
+    pub handles: &'a [AttributeHandle],
+}
+
+impl<'a> MultipleCharacteristicReadParameters<'a> {
+    const MAX_LENGTH: usize = 255;
+
+    fn validate<E>(&self) -> Result<(), Error<E>> {
+        const MAX_HANDLE_COUNT: usize = 126;
+        if self.handles.len() > MAX_HANDLE_COUNT {
+            return Err(Error::TooManyHandlesToRead);
+        }
+
+        Ok(())
+    }
+
+    fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+        assert!(bytes.len() >= 3 + 2 * self.handles.len());
+
+        LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
+        bytes[2] = self.handles.len() as u8;
+        let mut next = 3;
+        for handle in self.handles.iter() {
+            LittleEndian::write_u16(&mut bytes[next..next + 2], handle.0);
+            next += 2
+        }
+
+        next
     }
 }

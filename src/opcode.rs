@@ -90,6 +90,7 @@ opcodes! {
         pub const GATT_READ_CHARACTERISTIC_VALUE = 0x18;
         pub const GATT_READ_CHARACTERISTIC_BY_UUID = 0x19;
         pub const GATT_READ_LONG_CHARACTERISTIC_VALUE = 0x1A;
+        pub const GATT_READ_MULTIPLE_CHARACTERISTIC_VALUES = 0x1B;
     }
     L2Cap = 0x3;
     {
