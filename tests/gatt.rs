@@ -543,3 +543,23 @@ fn prepare_write_request_too_long() {
     assert_eq!(err, nb::Error::Other(Error::ValueBufferTooLong));
     assert!(!fixture.wrote_header());
 }
+
+#[test]
+fn execute_write_request() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.execute_write_request(hci::ConnectionHandle(0x0201)))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x11, 0xFD, 3, 0x1, 0x2, 1]));
+}
+
+#[test]
+fn cancel_write_request() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.cancel_write_request(hci::ConnectionHandle(0x0201)))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x11, 0xFD, 3, 0x1, 0x2, 0]));
+}

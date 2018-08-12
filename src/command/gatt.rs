@@ -293,6 +293,42 @@ pub trait Commands {
         &mut self,
         params: &WriteRequest<'a>,
     ) -> nb::Result<(), Error<Self::Error>>;
+
+    /// Sends an Execute Write Request to write all pending prepared writes.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The result of the procedure is given through the [Execute Write
+    /// Response](::event::BlueNRGEvent::AttExecuteWriteResponse) event. The end of the procedure is
+    /// indicated by a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete)
+    /// event.
+    fn execute_write_request(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+    ) -> nb::Result<(), Self::Error>;
+
+    /// Sends an Execute Write Request to discard prepared writes.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command status](hci::event::Event::CommandStatus) event is generated on the receipt of
+    /// the command. The result of the procedure is given through the [Execute Write
+    /// Response](::event::BlueNRGEvent::AttExecuteWriteResponse) event. The end of the procedure is
+    /// indicated by a [GATT Procedure Complete](::event::BlueNRGEvent::GattProcedureComplete)
+    /// event.
+    fn cancel_write_request(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -412,6 +448,28 @@ where
         WriteRequest<'a>,
         ::opcode::GATT_PREPARE_WRITE_REQUEST
     );
+
+    fn execute_write_request(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+    ) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 3];
+        LittleEndian::write_u16(&mut bytes, conn_handle.0);
+        bytes[2] = true as u8;
+
+        self.write_command(::opcode::GATT_EXECUTE_WRITE_REQUEST, &bytes)
+    }
+
+    fn cancel_write_request(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+    ) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 3];
+        LittleEndian::write_u16(&mut bytes, conn_handle.0);
+        bytes[2] = false as u8;
+
+        self.write_command(::opcode::GATT_EXECUTE_WRITE_REQUEST, &bytes)
+    }
 }
 
 /// Potential errors from parameter validation.

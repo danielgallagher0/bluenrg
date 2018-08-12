@@ -224,6 +224,10 @@ pub enum ReturnParameters {
     /// Request](::gatt::Commands::prepare_write_request) command.
     GattPrepareWriteRequest(hci::Status),
 
+    /// Parameters returned by the [GATT Execute Write
+    /// Request](::gatt::Commands::execute_write_request) command.
+    GattExecuteWriteRequest(hci::Status),
+
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Request](::l2cap::Commands::connection_parameter_update_request) command.
     L2CapConnectionParameterUpdateRequest(hci::Status),
@@ -426,6 +430,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                 ReturnParameters::GattReadByGroupTypeRequest(to_status(&bytes[3..])?),
             ),
             ::opcode::GATT_PREPARE_WRITE_REQUEST => Ok(ReturnParameters::GattPrepareWriteRequest(
+                to_status(&bytes[3..])?,
+            )),
+            ::opcode::GATT_EXECUTE_WRITE_REQUEST => Ok(ReturnParameters::GattExecuteWriteRequest(
                 to_status(&bytes[3..])?,
             )),
             ::opcode::L2CAP_CONN_PARAM_UPDATE_REQ => Ok(
