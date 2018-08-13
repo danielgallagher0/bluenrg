@@ -719,6 +719,27 @@ pub trait Commands {
         &mut self,
         conn_handle: hci::ConnectionHandle,
     ) -> nb::Result<(), Self::Error>;
+
+    /// Allows or rejects a write request from a client.
+    ///
+    /// This command has to be sent by the application when it receives the [GATT Write Permit
+    /// Request](::event::BlueNRGEvent::AttWritePermitRequest) event.
+    ///
+    /// # Errors
+    ///
+    /// - [ValueBufferTooLong](Error::ValueBufferTooLong) if the [attribute
+    ///   value](WriteResponseParameters::value) is so long that the serialized command cannot fit
+    ///   in one packet. The maximum length is 250 bytes.
+    /// - Underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::GattWriteResponse) event is
+    /// generated when this command is processed.
+    fn write_response<'a>(
+        &mut self,
+        params: &WriteResponseParameters<'a>,
+    ) -> nb::Result<(), Error<Self::Error>>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -1060,6 +1081,12 @@ where
 
         self.write_command(::opcode::GATT_CONFIRM_INDICATION, &bytes)
     }
+
+    impl_validate_variable_length_params!(
+        write_response<'a>,
+        WriteResponseParameters<'a>,
+        ::opcode::GATT_WRITE_RESPONSE
+    );
 }
 
 /// Potential errors from parameter validation.
@@ -1922,6 +1949,59 @@ impl<'a> LongCharacteristicValue<'a> {
         LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
         LittleEndian::write_u16(&mut bytes[2..4], self.characteristic_handle.0);
         LittleEndian::write_u16(&mut bytes[4..6], self.offset as u16);
+        bytes[6] = self.value.len() as u8;
+        bytes[7..self.len()].copy_from_slice(self.value);
+
+        self.len()
+    }
+
+    fn len(&self) -> usize {
+        7 + self.value.len()
+    }
+}
+
+/// Parameters for the [Write Response](Commands::write_response) command.
+pub struct WriteResponseParameters<'a> {
+    /// Connection handle for which the command is given
+    pub conn_handle: hci::ConnectionHandle,
+
+    /// Handle of the attribute that was passed in the [Write Permit
+    /// Request](::event::BlueNRGEvent::AttWritePermitRequest) event.
+    pub attribute_handle: AttributeHandle,
+
+    /// Is the command rejected, and if so, why?
+    pub status: Result<(), hci::Status>,
+
+    /// Value as passed in the [Write Permit Request](::event::BlueNRGEvent::AttWritePermitRequest)
+    /// event.
+    pub value: &'a [u8],
+}
+
+impl<'a> WriteResponseParameters<'a> {
+    const MAX_LENGTH: usize = 255;
+
+    fn validate<E>(&self) -> Result<(), Error<E>> {
+        if self.len() > Self::MAX_LENGTH {
+            return Err(Error::ValueBufferTooLong);
+        }
+
+        Ok(())
+    }
+
+    fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+        assert!(bytes.len() >= self.len());
+        LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], self.attribute_handle.0);
+        match self.status {
+            Ok(_) => {
+                bytes[4] = 0;
+                bytes[5] = 0;
+            }
+            Err(code) => {
+                bytes[4] = 1;
+                bytes[5] = code as u8;
+            }
+        }
         bytes[6] = self.value.len() as u8;
         bytes[7..self.len()].copy_from_slice(self.value);
 

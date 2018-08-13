@@ -1050,3 +1050,38 @@ fn confirm_indication() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x25, 0xFD, 2, 0x1, 0x2]));
 }
+
+#[test]
+fn write_response() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.write_response(&WriteResponseParameters {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                attribute_handle: AttributeHandle(0x0403),
+                status: Ok(()),
+                value: &[1, 2, 3, 4, 5, 6],
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(
+        fixture.wrote(&[1, 0x26, 0xFD, 13, 0x01, 0x02, 0x03, 0x04, 0, 0, 6, 1, 2, 3, 4, 5, 6,])
+    );
+}
+
+#[test]
+fn write_response_too_long() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.write_response(&WriteResponseParameters {
+                conn_handle: hci::ConnectionHandle(0x0201),
+                attribute_handle: AttributeHandle(0x0403),
+                status: Err(hci::Status::InvalidParameters),
+                value: &[0; 250],
+            })
+        }).err()
+        .unwrap();
+    assert_eq!(err, nb::Error::Other(Error::ValueBufferTooLong));
+    assert!(!fixture.wrote_header());
+}

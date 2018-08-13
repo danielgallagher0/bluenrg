@@ -101,6 +101,7 @@ opcodes! {
         pub const GATT_WRITE_WITHOUT_RESPONSE = 0x23;
         pub const GATT_SIGNED_WRITE_WITHOUT_RESPONSE = 0x24;
         pub const GATT_CONFIRM_INDICATION = 0x25;
+        pub const GATT_WRITE_RESPONSE = 0x26;
     }
     L2Cap = 0x3;
     {
