@@ -685,6 +685,24 @@ pub trait Commands {
         &mut self,
         params: &CharacteristicValue<'a>,
     ) -> nb::Result<(), Error<Self::Error>>;
+
+    /// Start the procedure to write a characteristic value with an authentication signature without
+    /// waiting for any response from the server. It cannot be used when the link is encrypted.
+    ///
+    /// # Errors
+    ///
+    /// - [ValueBufferTooLong](Error::ValueBufferTooLong) if the [value](CharacteristicValue::value)
+    ///   is too long to fit in one command packet. The maximum length is 250 bytes.
+    /// - Underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::GattSignedWriteWithoutResponse)
+    /// event is generated when this command is processed.
+    fn signed_write_without_response<'a>(
+        &mut self,
+        params: &CharacteristicValue<'a>,
+    ) -> nb::Result<(), Error<Self::Error>>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -1009,6 +1027,12 @@ where
         write_without_response<'a>,
         CharacteristicValue<'a>,
         ::opcode::GATT_WRITE_WITHOUT_RESPONSE
+    );
+
+    impl_validate_variable_length_params!(
+        signed_write_without_response<'a>,
+        CharacteristicValue<'a>,
+        ::opcode::GATT_SIGNED_WRITE_WITHOUT_RESPONSE
     );
 }
 

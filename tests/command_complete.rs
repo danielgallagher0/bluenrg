@@ -75,6 +75,7 @@ status_only! {
     gatt_delete_included_service(0x09, 0xFD, BNRGParams::GattDeleteIncludedService);
     gatt_set_event_mask(0x0A, 0xFD, BNRGParams::GattSetEventMask);
     gatt_write_without_response(0x23, 0xFD, BNRGParams::GattWriteWithoutResponse);
+    gatt_signed_write_without_response(0x24, 0xFD, BNRGParams::GattSignedWriteWithoutResponse);
 }
 
 #[test]

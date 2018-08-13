@@ -99,6 +99,7 @@ opcodes! {
         pub const GATT_WRITE_CHARACTERISTIC_DESCRIPTOR = 0x21;
         pub const GATT_READ_CHARACTERISTIC_DESCRIPTOR = 0x22;
         pub const GATT_WRITE_WITHOUT_RESPONSE = 0x23;
+        pub const GATT_SIGNED_WRITE_WITHOUT_RESPONSE = 0x24;
     }
     L2Cap = 0x3;
     {
