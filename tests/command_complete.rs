@@ -76,6 +76,7 @@ status_only! {
     gatt_set_event_mask(0x0A, 0xFD, BNRGParams::GattSetEventMask);
     gatt_write_without_response(0x23, 0xFD, BNRGParams::GattWriteWithoutResponse);
     gatt_signed_write_without_response(0x24, 0xFD, BNRGParams::GattSignedWriteWithoutResponse);
+    gatt_confirm_indication(0x25, 0xFD, BNRGParams::GattConfirmIndication);
 }
 
 #[test]

@@ -161,6 +161,10 @@ pub enum ReturnParameters {
     /// Response](::gatt::Commands::signed_write_without_response) command.
     GattSignedWriteWithoutResponse(hci::Status),
 
+    /// Parameters returned by the [GATT Confirm Indication](::gatt::Commands::confirm_indication)
+    /// command.
+    GattConfirmIndication(hci::Status),
+
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Response](::l2cap::Commands::connection_parameter_update_response) command.
     L2CapConnectionParameterUpdateResponse(hci::Status),
@@ -315,6 +319,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GATT_SIGNED_WRITE_WITHOUT_RESPONSE => Ok(
                 ReturnParameters::GattSignedWriteWithoutResponse(to_status(&bytes[3..])?),
             ),
+            ::opcode::GATT_CONFIRM_INDICATION => Ok(ReturnParameters::GattConfirmIndication(
+                to_status(&bytes[3..])?,
+            )),
             ::opcode::L2CAP_CONN_PARAM_UPDATE_RESP => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateResponse(to_status(&bytes[3..])?),
             ),

@@ -703,6 +703,22 @@ pub trait Commands {
         &mut self,
         params: &CharacteristicValue<'a>,
     ) -> nb::Result<(), Error<Self::Error>>;
+
+    /// Allow application to confirm indication. This command has to be sent when the application
+    /// receives the [GATT Indication](::event::BlueNRGEvent::GattIndication) event.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::GattConfirmIndication) event is
+    /// generated when this command is processed.
+    fn confirm_indication(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -1034,6 +1050,16 @@ where
         CharacteristicValue<'a>,
         ::opcode::GATT_SIGNED_WRITE_WITHOUT_RESPONSE
     );
+
+    fn confirm_indication(
+        &mut self,
+        conn_handle: hci::ConnectionHandle,
+    ) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 2];
+        LittleEndian::write_u16(&mut bytes, conn_handle.0);
+
+        self.write_command(::opcode::GATT_CONFIRM_INDICATION, &bytes)
+    }
 }
 
 /// Potential errors from parameter validation.

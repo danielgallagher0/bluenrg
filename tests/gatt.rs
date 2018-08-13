@@ -1040,3 +1040,13 @@ fn signed_write_without_response_too_long() {
     assert_eq!(err, nb::Error::Other(Error::ValueBufferTooLong));
     assert!(!fixture.wrote_header());
 }
+
+#[test]
+fn confirm_indication() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.confirm_indication(hci::ConnectionHandle(0x0201)))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x25, 0xFD, 2, 0x1, 0x2]));
+}
