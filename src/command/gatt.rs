@@ -762,6 +762,22 @@ pub trait Commands {
     /// A [command complete](::event::command::ReturnParameters::GattAllowRead) event is generated
     /// when this command is processed.
     fn allow_read(&mut self, conn_handle: hci::ConnectionHandle) -> nb::Result<(), Self::Error>;
+
+    /// This command sets the security permission for the attribute handle specified. Currently the
+    /// setting of security permission is allowed only for client configuration descriptor.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::GattSetSecurityPermission) event is
+    /// generated when this command is processed.
+    fn set_security_permission(
+        &mut self,
+        params: &SecurityPermissionParameters,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -1116,6 +1132,12 @@ where
 
         self.write_command(::opcode::GATT_ALLOW_READ, &bytes)
     }
+
+    impl_params!(
+        set_security_permission,
+        SecurityPermissionParameters,
+        ::opcode::GATT_SET_SECURITY_PERMISSION
+    );
 }
 
 /// Potential errors from parameter validation.
@@ -2039,5 +2061,30 @@ impl<'a> WriteResponseParameters<'a> {
 
     fn len(&self) -> usize {
         7 + self.value.len()
+    }
+}
+
+/// Parameters for the [Set Security Permission](Commands::set_security_permission) command.
+pub struct SecurityPermissionParameters {
+    /// Handle of the service which contains the attribute whose security permission has to be
+    /// modified.
+    pub service_handle: ServiceHandle,
+
+    /// Handle of the attribute whose security permission has to be modified.
+    pub attribute_handle: CharacteristicHandle,
+
+    /// Security requirements for the attribute.
+    pub permission: CharacteristicPermission,
+}
+
+impl SecurityPermissionParameters {
+    const LENGTH: usize = 5;
+
+    fn into_bytes(&self, bytes: &mut [u8]) {
+        assert!(bytes.len() >= Self::LENGTH);
+
+        LittleEndian::write_u16(&mut bytes[0..2], self.service_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], self.attribute_handle.0);
+        bytes[4] = self.permission.bits();
     }
 }

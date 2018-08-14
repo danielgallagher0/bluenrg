@@ -171,6 +171,10 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GATT Allow Read](::gatt::Commands::allow_read) command.
     GattAllowRead(hci::Status),
 
+    /// Parameters returned by the [GATT Set Security
+    /// Permission](::gatt::Commands::set_security_permission) command.
+    GattSetSecurityPermission(hci::Status),
+
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Response](::l2cap::Commands::connection_parameter_update_response) command.
     L2CapConnectionParameterUpdateResponse(hci::Status),
@@ -334,6 +338,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GATT_ALLOW_READ => {
                 Ok(ReturnParameters::GattAllowRead(to_status(&bytes[3..])?))
             }
+            ::opcode::GATT_SET_SECURITY_PERMISSION => Ok(
+                ReturnParameters::GattSetSecurityPermission(to_status(&bytes[3..])?),
+            ),
             ::opcode::L2CAP_CONN_PARAM_UPDATE_RESP => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateResponse(to_status(&bytes[3..])?),
             ),

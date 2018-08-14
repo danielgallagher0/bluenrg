@@ -1095,3 +1095,19 @@ fn allow_read() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x27, 0xFD, 2, 0x1, 0x2]));
 }
+
+#[test]
+fn set_security_permission() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.set_security_permission(&SecurityPermissionParameters {
+                service_handle: ServiceHandle(0x0201),
+                attribute_handle: CharacteristicHandle(0x0403),
+                permission: CharacteristicPermission::AUTHORIZED_READ
+                    | CharacteristicPermission::ENCRYPTED_WRITE,
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x28, 0xFD, 5, 0x1, 0x2, 0x3, 0x4, 0x22]));
+}
