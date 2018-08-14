@@ -778,6 +778,24 @@ pub trait Commands {
         &mut self,
         params: &SecurityPermissionParameters,
     ) -> nb::Result<(), Self::Error>;
+
+    /// This command sets the value of a descriptor.
+    ///
+    /// # Errors
+    ///
+    /// - [ValueBufferTooLong](Error::ValueBufferTooLong) if the length of the descriptor value is
+    ///   so long that the serialized command would not fit in one packet. The maximum length is 246
+    ///   bytes.
+    /// - Underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::GattSetDescriptorValue) event is
+    /// generated when this command is processed.
+    fn set_descriptor_value<'a>(
+        &mut self,
+        params: &DescriptorValueParameters<'a>,
+    ) -> nb::Result<(), Error<Self::Error>>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -1137,6 +1155,12 @@ where
         set_security_permission,
         SecurityPermissionParameters,
         ::opcode::GATT_SET_SECURITY_PERMISSION
+    );
+
+    impl_validate_variable_length_params!(
+        set_descriptor_value<'a>,
+        DescriptorValueParameters<'a>,
+        ::opcode::GATT_SET_DESCRIPTOR_VALUE
     );
 }
 
@@ -2076,5 +2100,51 @@ impl SecurityPermissionParameters {
         LittleEndian::write_u16(&mut bytes[0..2], self.service_handle.0);
         LittleEndian::write_u16(&mut bytes[2..4], self.attribute_handle.0);
         bytes[4] = self.permission.bits();
+    }
+}
+
+/// Parameters for the [Set Descriptor Value](Commands::set_descriptor_value) command.
+pub struct DescriptorValueParameters<'a> {
+    /// Handle of the service which contains the descriptor.
+    pub service_handle: ServiceHandle,
+
+    /// Handle of the characteristic which contains the descriptor.
+    pub characteristic_handle: CharacteristicHandle,
+
+    /// Handle of the descriptor whose value has to be set.
+    pub descriptor_handle: DescriptorHandle,
+
+    /// Offset from which the descriptor value has to be updated.
+    pub offset: usize,
+
+    /// Descriptor value
+    pub value: &'a [u8],
+}
+
+impl<'a> DescriptorValueParameters<'a> {
+    const MAX_LENGTH: usize = 255;
+
+    fn validate<E>(&self) -> Result<(), Error<E>> {
+        if self.len() > Self::MAX_LENGTH {
+            return Err(Error::ValueBufferTooLong);
+        }
+
+        Ok(())
+    }
+
+    fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+        assert!(bytes.len() >= self.len());
+        LittleEndian::write_u16(&mut bytes[0..2], self.service_handle.0);
+        LittleEndian::write_u16(&mut bytes[2..4], self.characteristic_handle.0);
+        LittleEndian::write_u16(&mut bytes[4..6], self.descriptor_handle.0);
+        LittleEndian::write_u16(&mut bytes[6..8], self.offset as u16);
+        bytes[8] = self.value.len() as u8;
+        bytes[9..self.len()].copy_from_slice(self.value);
+
+        self.len()
+    }
+
+    fn len(&self) -> usize {
+        9 + self.value.len()
     }
 }

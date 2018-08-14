@@ -1111,3 +1111,40 @@ fn set_security_permission() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x28, 0xFD, 5, 0x1, 0x2, 0x3, 0x4, 0x22]));
 }
+
+#[test]
+fn set_descriptor_value() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.set_descriptor_value(&DescriptorValueParameters {
+                service_handle: ServiceHandle(0x0201),
+                characteristic_handle: CharacteristicHandle(0x0403),
+                descriptor_handle: DescriptorHandle(0x0605),
+                offset: 0x0009,
+                value: &[1, 2, 3, 4],
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[
+        1, 0x29, 0xFD, 13, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x09, 0x00, 4, 1, 2, 3, 4
+    ]));
+}
+
+#[test]
+fn set_descriptor_value_too_long() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.set_descriptor_value(&DescriptorValueParameters {
+                service_handle: ServiceHandle(0x0201),
+                characteristic_handle: CharacteristicHandle(0x0403),
+                descriptor_handle: DescriptorHandle(0x0605),
+                offset: 0,
+                value: &[0; 247],
+            })
+        }).err()
+        .unwrap();
+    assert_eq!(err, nb::Error::Other(Error::ValueBufferTooLong));
+    assert!(!fixture.wrote_header());
+}

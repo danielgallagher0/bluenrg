@@ -80,6 +80,7 @@ status_only! {
     gatt_write_response(0x26, 0xFD, BNRGParams::GattWriteResponse);
     gatt_allow_read(0x27, 0xFD, BNRGParams::GattAllowRead);
     gatt_set_security_permission(0x28, 0xFD, BNRGParams::GattSetSecurityPermission);
+    gatt_set_descriptor_value(0x29, 0xFD, BNRGParams::GattSetDescriptorValue);
 }
 
 #[test]
