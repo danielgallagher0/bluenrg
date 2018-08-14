@@ -740,6 +740,28 @@ pub trait Commands {
         &mut self,
         params: &WriteResponseParameters<'a>,
     ) -> nb::Result<(), Error<Self::Error>>;
+
+    /// Allows the GATT server to send a response to a read request from a client.
+    ///
+    /// The application has to send this command when it receives the [Read Permit
+    /// Request](::event::BlueNRGEvent::AttReadPermitRequest) or [Read Multiple Permit
+    /// Request](::event::BlueNRGEvent::AttReadMultiplePermitRequest). This command indicates to the
+    /// stack that the response can be sent to the client. So if the application wishes to update
+    /// any of the attributes before they are read by the client, it has to update the
+    /// characteristic values using the
+    /// [`update_characteristic_value`](Commands::update_characteristic_value) and then give this
+    /// command. The application should perform the required operations within 30 seconds.
+    /// Otherwise the GATT procedure will timeout.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::GattAllowRead) event is generated
+    /// when this command is processed.
+    fn allow_read(&mut self, conn_handle: hci::ConnectionHandle) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -1087,6 +1109,13 @@ where
         WriteResponseParameters<'a>,
         ::opcode::GATT_WRITE_RESPONSE
     );
+
+    fn allow_read(&mut self, conn_handle: hci::ConnectionHandle) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 2];
+        LittleEndian::write_u16(&mut bytes, conn_handle.0);
+
+        self.write_command(::opcode::GATT_ALLOW_READ, &bytes)
+    }
 }
 
 /// Potential errors from parameter validation.

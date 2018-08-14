@@ -1085,3 +1085,13 @@ fn write_response_too_long() {
     assert_eq!(err, nb::Error::Other(Error::ValueBufferTooLong));
     assert!(!fixture.wrote_header());
 }
+
+#[test]
+fn allow_read() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.allow_read(hci::ConnectionHandle(0x0201)))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x27, 0xFD, 2, 0x1, 0x2]));
+}

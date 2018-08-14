@@ -78,6 +78,7 @@ status_only! {
     gatt_signed_write_without_response(0x24, 0xFD, BNRGParams::GattSignedWriteWithoutResponse);
     gatt_confirm_indication(0x25, 0xFD, BNRGParams::GattConfirmIndication);
     gatt_write_response(0x26, 0xFD, BNRGParams::GattWriteResponse);
+    gatt_allow_read(0x27, 0xFD, BNRGParams::GattAllowRead);
 }
 
 #[test]
