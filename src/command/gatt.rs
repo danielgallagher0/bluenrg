@@ -209,7 +209,7 @@ pub trait Commands {
     fn find_information_request(
         &mut self,
         conn_handle: hci::ConnectionHandle,
-        attribute_range: AttributeHandleRange,
+        attribute_range: Range<CharacteristicHandle>,
     ) -> nb::Result<(), Self::Error>;
 
     /// Post the Find by type value request.
@@ -404,7 +404,7 @@ pub trait Commands {
     fn discover_all_characteristics_of_service(
         &mut self,
         conn_handle: hci::ConnectionHandle,
-        attribute_handle_range: Range<AttributeHandle>,
+        attribute_handle_range: Range<CharacteristicHandle>,
     ) -> nb::Result<(), Self::Error>;
 
     /// Start the procedure to discover all the characteristics specified by the UUID.
@@ -424,7 +424,7 @@ pub trait Commands {
     fn discover_characteristics_by_uuid(
         &mut self,
         conn_handle: hci::ConnectionHandle,
-        attribute_handle_range: Range<AttributeHandle>,
+        attribute_handle_range: Range<CharacteristicHandle>,
         uuid: Uuid,
     ) -> nb::Result<(), Self::Error>;
 
@@ -864,7 +864,7 @@ where
     fn find_information_request(
         &mut self,
         conn_handle: hci::ConnectionHandle,
-        attribute_range: AttributeHandleRange,
+        attribute_range: Range<CharacteristicHandle>,
     ) -> nb::Result<(), Self::Error> {
         let mut bytes = [0; 6];
         LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
@@ -961,7 +961,7 @@ where
     fn discover_all_characteristics_of_service(
         &mut self,
         conn_handle: hci::ConnectionHandle,
-        attribute_handle_range: Range<AttributeHandle>,
+        attribute_handle_range: Range<CharacteristicHandle>,
     ) -> nb::Result<(), Self::Error> {
         let mut bytes = [0; 6];
         LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
@@ -977,7 +977,7 @@ where
     fn discover_characteristics_by_uuid(
         &mut self,
         conn_handle: hci::ConnectionHandle,
-        attribute_handle_range: Range<AttributeHandle>,
+        attribute_handle_range: Range<CharacteristicHandle>,
         uuid: Uuid,
     ) -> nb::Result<(), Self::Error> {
         let mut bytes = [0; 23];
@@ -1255,7 +1255,7 @@ pub struct IncludeServiceParameters {
     pub service_handle: ServiceHandle,
 
     /// Range of handles of the service which has to be included in the service.
-    pub include_handle_range: ServiceHandleRange,
+    pub include_handle_range: Range<ServiceHandle>,
 
     /// UUID of the included service
     pub include_uuid: Uuid,
@@ -1308,9 +1308,6 @@ pub enum RangeError {
     /// The beginning of the range came after the end.
     Inverted,
 }
-
-/// Range of service handles.
-type ServiceHandleRange = Range<ServiceHandle>;
 
 /// Parameters for the [GATT Add Characteristic](Commands::add_characteristic) command.
 pub struct AddCharacteristicParameters {
@@ -1747,13 +1744,6 @@ impl Event {
     }
 }
 
-/// Handle for GATT Attributes.
-#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
-pub struct AttributeHandle(pub u16);
-
-/// Range of attribute handles.
-type AttributeHandleRange = Range<AttributeHandle>;
-
 /// Parameters for the [GATT Find by Type Value Request](Commands::find_by_type_value_request)
 /// command.
 pub struct FindByTypeValueParameters<'a> {
@@ -1761,7 +1751,7 @@ pub struct FindByTypeValueParameters<'a> {
     pub conn_handle: hci::ConnectionHandle,
 
     /// Range of attributes to be discovered on the server.
-    pub attribute_handle_range: Range<AttributeHandle>,
+    pub attribute_handle_range: Range<CharacteristicHandle>,
 
     /// UUID to find.
     pub uuid: Uuid16,
@@ -1808,7 +1798,7 @@ pub struct ReadByTypeParameters {
     pub conn_handle: hci::ConnectionHandle,
 
     /// Range of values to be read on the server.
-    pub attribute_handle_range: Range<AttributeHandle>,
+    pub attribute_handle_range: Range<CharacteristicHandle>,
 
     /// UUID of the attribute.
     pub uuid: Uuid,
@@ -1833,7 +1823,7 @@ pub struct WriteRequest<'a> {
     pub conn_handle: hci::ConnectionHandle,
 
     /// Handle of the attribute whose value has to be written
-    pub attribute_handle: AttributeHandle,
+    pub attribute_handle: CharacteristicHandle,
 
     /// The offset at which value has to be written
     pub offset: usize,
@@ -1873,7 +1863,7 @@ pub struct LongCharacteristicReadParameters {
     pub conn_handle: hci::ConnectionHandle,
 
     /// Handle of the characteristic to be read
-    pub attribute: AttributeHandle,
+    pub attribute: CharacteristicHandle,
 
     /// Offset from which the value needs to be read.
     pub offset: usize,
@@ -1898,7 +1888,7 @@ pub struct MultipleCharacteristicReadParameters<'a> {
     /// The handles for which the attribute value has to be read.
     ///
     /// The maximum length is 126 handles.
-    pub handles: &'a [AttributeHandle],
+    pub handles: &'a [CharacteristicHandle],
 }
 
 impl<'a> MultipleCharacteristicReadParameters<'a> {
@@ -2018,7 +2008,7 @@ pub struct WriteResponseParameters<'a> {
 
     /// Handle of the attribute that was passed in the [Write Permit
     /// Request](::event::BlueNRGEvent::AttWritePermitRequest) event.
-    pub attribute_handle: AttributeHandle,
+    pub attribute_handle: CharacteristicHandle,
 
     /// Is the command rejected, and if so, why?
     pub status: Result<(), hci::Status>,

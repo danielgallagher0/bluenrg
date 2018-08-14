@@ -373,7 +373,7 @@ fn find_information_request() {
         .act(|controller| {
             controller.find_information_request(
                 hci::ConnectionHandle(0x0201),
-                Range::new(AttributeHandle(0x0403), AttributeHandle(0x0605)).unwrap(),
+                Range::new(CharacteristicHandle(0x0403), CharacteristicHandle(0x0605)).unwrap(),
             )
         }).unwrap();
     assert!(fixture.wrote_header());
@@ -388,8 +388,8 @@ fn find_by_type_value_request() {
             controller.find_by_type_value_request(&FindByTypeValueParameters {
                 conn_handle: hci::ConnectionHandle(0x0201),
                 attribute_handle_range: Range::new(
-                    AttributeHandle(0x0403),
-                    AttributeHandle(0x0605),
+                    CharacteristicHandle(0x0403),
+                    CharacteristicHandle(0x0605),
                 ).unwrap(),
                 uuid: Uuid16(0x0807),
                 value: &[9, 10, 11, 12],
@@ -409,8 +409,8 @@ fn find_by_type_value_request_value_too_long() {
             controller.find_by_type_value_request(&FindByTypeValueParameters {
                 conn_handle: hci::ConnectionHandle(0x0201),
                 attribute_handle_range: Range::new(
-                    AttributeHandle(0x0403),
-                    AttributeHandle(0x0605),
+                    CharacteristicHandle(0x0403),
+                    CharacteristicHandle(0x0605),
                 ).unwrap(),
                 uuid: Uuid16(0x0807),
                 value: &[0; 247],
@@ -429,8 +429,8 @@ fn read_by_type_request_16() {
             controller.read_by_type_request(&ReadByTypeParameters {
                 conn_handle: hci::ConnectionHandle(0x0201),
                 attribute_handle_range: Range::new(
-                    AttributeHandle(0x0403),
-                    AttributeHandle(0x0605),
+                    CharacteristicHandle(0x0403),
+                    CharacteristicHandle(0x0605),
                 ).unwrap(),
                 uuid: Uuid::Uuid16(0x0807),
             })
@@ -449,8 +449,8 @@ fn read_by_type_request_128() {
             controller.read_by_type_request(&ReadByTypeParameters {
                 conn_handle: hci::ConnectionHandle(0x0201),
                 attribute_handle_range: Range::new(
-                    AttributeHandle(0x0403),
-                    AttributeHandle(0x0605),
+                    CharacteristicHandle(0x0403),
+                    CharacteristicHandle(0x0605),
                 ).unwrap(),
                 uuid: Uuid::Uuid128([
                     0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C,
@@ -473,8 +473,8 @@ fn read_by_group_type_request_16() {
             controller.read_by_group_type_request(&ReadByTypeParameters {
                 conn_handle: hci::ConnectionHandle(0x0201),
                 attribute_handle_range: Range::new(
-                    AttributeHandle(0x0403),
-                    AttributeHandle(0x0605),
+                    CharacteristicHandle(0x0403),
+                    CharacteristicHandle(0x0605),
                 ).unwrap(),
                 uuid: Uuid::Uuid16(0x0807),
             })
@@ -493,8 +493,8 @@ fn read_by_group_type_request_128() {
             controller.read_by_group_type_request(&ReadByTypeParameters {
                 conn_handle: hci::ConnectionHandle(0x0201),
                 attribute_handle_range: Range::new(
-                    AttributeHandle(0x0403),
-                    AttributeHandle(0x0605),
+                    CharacteristicHandle(0x0403),
+                    CharacteristicHandle(0x0605),
                 ).unwrap(),
                 uuid: Uuid::Uuid128([
                     0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C,
@@ -516,7 +516,7 @@ fn prepare_write_request() {
         .act(|controller| {
             controller.prepare_write_request(&WriteRequest {
                 conn_handle: hci::ConnectionHandle(0x0201),
-                attribute_handle: AttributeHandle(0x0403),
+                attribute_handle: CharacteristicHandle(0x0403),
                 offset: 0x0605,
                 value: &[8, 9, 10, 11, 12, 13, 14],
             })
@@ -534,7 +534,7 @@ fn prepare_write_request_too_long() {
         .act(|controller| {
             controller.prepare_write_request(&WriteRequest {
                 conn_handle: hci::ConnectionHandle(0x0201),
-                attribute_handle: AttributeHandle(0x0403),
+                attribute_handle: CharacteristicHandle(0x0403),
                 offset: 0x0605,
                 value: &[0; 248],
             })
@@ -629,7 +629,7 @@ fn discover_all_characteristics_of_service() {
         .act(|controller| {
             controller.discover_all_characteristics_of_service(
                 hci::ConnectionHandle(0x0201),
-                Range::new(AttributeHandle(0x0403), AttributeHandle(0x0605)).unwrap(),
+                Range::new(CharacteristicHandle(0x0403), CharacteristicHandle(0x0605)).unwrap(),
             )
         }).unwrap();
     assert!(fixture.wrote_header());
@@ -643,7 +643,7 @@ fn discover_characteristics_by_uuid_16() {
         .act(|controller| {
             controller.discover_characteristics_by_uuid(
                 hci::ConnectionHandle(0x0201),
-                Range::new(AttributeHandle(0x0403), AttributeHandle(0x0605)).unwrap(),
+                Range::new(CharacteristicHandle(0x0403), CharacteristicHandle(0x0605)).unwrap(),
                 Uuid::Uuid16(0x0807),
             )
         }).unwrap();
@@ -660,7 +660,7 @@ fn discover_characteristics_by_uuid_128() {
         .act(|controller| {
             controller.discover_characteristics_by_uuid(
                 hci::ConnectionHandle(0x0201),
-                Range::new(AttributeHandle(0x0403), AttributeHandle(0x0605)).unwrap(),
+                Range::new(CharacteristicHandle(0x0403), CharacteristicHandle(0x0605)).unwrap(),
                 Uuid::Uuid128([
                     0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C,
                     0x1D, 0x1E, 0x1F,
@@ -745,7 +745,7 @@ fn read_long_characteristic_value() {
         .act(|controller| {
             controller.read_long_characteristic_value(&LongCharacteristicReadParameters {
                 conn_handle: hci::ConnectionHandle(0x0201),
-                attribute: AttributeHandle(0x0403),
+                attribute: CharacteristicHandle(0x0403),
                 offset: 0x0605,
             })
         }).unwrap();
@@ -761,10 +761,10 @@ fn read_multiple_characteristic_values() {
             controller.read_multiple_characteristic_values(&MultipleCharacteristicReadParameters {
                 conn_handle: hci::ConnectionHandle(0x0201),
                 handles: &[
-                    AttributeHandle(0x0403),
-                    AttributeHandle(0x0605),
-                    AttributeHandle(0x0807),
-                    AttributeHandle(0x0A09),
+                    CharacteristicHandle(0x0403),
+                    CharacteristicHandle(0x0605),
+                    CharacteristicHandle(0x0807),
+                    CharacteristicHandle(0x0A09),
                 ],
             })
         }).unwrap();
@@ -781,7 +781,7 @@ fn read_multiple_characteristic_values_too_many_handles() {
         .act(|controller| {
             controller.read_multiple_characteristic_values(&MultipleCharacteristicReadParameters {
                 conn_handle: hci::ConnectionHandle(0x0201),
-                handles: &[AttributeHandle(0x0403); 127],
+                handles: &[CharacteristicHandle(0x0403); 127],
             })
         }).err()
         .unwrap();
@@ -926,7 +926,7 @@ fn read_long_characteristic_descriptor() {
         .act(|controller| {
             controller.read_long_characteristic_descriptor(&LongCharacteristicReadParameters {
                 conn_handle: hci::ConnectionHandle(0x0201),
-                attribute: AttributeHandle(0x0403),
+                attribute: CharacteristicHandle(0x0403),
                 offset: 0x0605,
             })
         }).unwrap();
@@ -1058,7 +1058,7 @@ fn write_response() {
         .act(|controller| {
             controller.write_response(&WriteResponseParameters {
                 conn_handle: hci::ConnectionHandle(0x0201),
-                attribute_handle: AttributeHandle(0x0403),
+                attribute_handle: CharacteristicHandle(0x0403),
                 status: Ok(()),
                 value: &[1, 2, 3, 4, 5, 6],
             })
@@ -1076,7 +1076,7 @@ fn write_response_too_long() {
         .act(|controller| {
             controller.write_response(&WriteResponseParameters {
                 conn_handle: hci::ConnectionHandle(0x0201),
-                attribute_handle: AttributeHandle(0x0403),
+                attribute_handle: CharacteristicHandle(0x0403),
                 status: Err(hci::Status::InvalidParameters),
                 value: &[0; 250],
             })
