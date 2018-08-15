@@ -1148,3 +1148,13 @@ fn set_descriptor_value_too_long() {
     assert_eq!(err, nb::Error::Other(Error::ValueBufferTooLong));
     assert!(!fixture.wrote_header());
 }
+
+#[test]
+fn read_handle_value() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| controller.read_handle_value(CharacteristicHandle(0x0201)))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x2A, 0xFD, 2, 0x01, 0x02]));
+}

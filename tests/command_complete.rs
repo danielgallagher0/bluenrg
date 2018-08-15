@@ -372,3 +372,21 @@ fn gatt_add_characteristic_descriptor() {
         other => panic!("Did not get command complete event: {:?}", other),
     }
 }
+
+#[test]
+fn gatt_read_handle_value() {
+    let buffer = [0x0E, 9, 1, 0x2A, 0xFD, 0x00, 0x03, 0x00, 1, 2, 3];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 1);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::GattReadHandleValue(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(params.value(), &[1, 2, 3]);
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}

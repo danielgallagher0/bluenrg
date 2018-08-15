@@ -796,6 +796,18 @@ pub trait Commands {
         &mut self,
         params: &DescriptorValueParameters<'a>,
     ) -> nb::Result<(), Error<Self::Error>>;
+
+    /// Reads the value of the attribute handle specified from the local GATT database.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::GattReadHandleValue) event is
+    /// generated when this command is processed.
+    fn read_handle_value(&mut self, handle: CharacteristicHandle) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -1162,6 +1174,13 @@ where
         DescriptorValueParameters<'a>,
         ::opcode::GATT_SET_DESCRIPTOR_VALUE
     );
+
+    fn read_handle_value(&mut self, handle: CharacteristicHandle) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 2];
+        LittleEndian::write_u16(&mut bytes, handle.0);
+
+        self.write_command(::opcode::GATT_READ_HANDLE_VALUE, &bytes)
+    }
 }
 
 /// Potential errors from parameter validation.

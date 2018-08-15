@@ -179,6 +179,10 @@ pub enum ReturnParameters {
     /// Value](::gatt::Commands::set_descriptor_value) command.
     GattSetDescriptorValue(hci::Status),
 
+    /// Parameters returned by the [GATT Read Handle Value](::gatt::Commands::read_handle_value)
+    /// command.
+    GattReadHandleValue(GattHandleValue),
+
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Response](::l2cap::Commands::connection_parameter_update_response) command.
     L2CapConnectionParameterUpdateResponse(hci::Status),
@@ -347,6 +351,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ),
             ::opcode::GATT_SET_DESCRIPTOR_VALUE => Ok(ReturnParameters::GattSetDescriptorValue(
                 to_status(&bytes[3..])?,
+            )),
+            ::opcode::GATT_READ_HANDLE_VALUE => Ok(ReturnParameters::GattReadHandleValue(
+                to_gatt_handle_value(&bytes[3..])?,
             )),
             ::opcode::L2CAP_CONN_PARAM_UPDATE_RESP => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateResponse(to_status(&bytes[3..])?),
@@ -646,4 +653,57 @@ fn to_gatt_characteristic_descriptor(
         status: to_status(&bytes)?,
         descriptor_handle: ::gatt::DescriptorHandle(LittleEndian::read_u16(&bytes[1..3])),
     })
+}
+
+/// Parameters returned by the [GATT Read Handle Value](::gatt::Commands::read_handle_value)
+/// command.
+#[derive(Copy, Clone)]
+pub struct GattHandleValue {
+    /// Did the command fail, and if so, how?
+    pub status: hci::Status,
+
+    value_buf: [u8; GattHandleValue::MAX_VALUE_BUF],
+    value_len: usize,
+}
+
+impl Debug for GattHandleValue {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "{{")?;
+        write!(f, "status: {:?}; value: {{", self.status);
+        for addr in self.value().iter() {
+            write!(f, "{:?}, ", addr)?;
+        }
+        write!(f, "}}}}")
+    }
+}
+
+impl GattHandleValue {
+    // Maximum length of the handle value. The spec says the length can be 2 bytes (up to 65535),
+    // but the communication layer is limited to 255 bytes in a packet. There are 6 bytes reserved
+    // for data other than the value, so the maximum length of the value buffer is 249 bytes.
+    const MAX_VALUE_BUF: usize = 249;
+
+    /// Return the handle value. Only valid bytes are returned.
+    pub fn value(&self) -> &[u8] {
+        &self.value_buf[..self.value_len]
+    }
+}
+
+fn to_gatt_handle_value(
+    bytes: &[u8],
+) -> Result<GattHandleValue, hci::event::Error<super::BlueNRGError>> {
+    require_len_at_least!(bytes, 3);
+
+    let status = to_status(bytes)?;
+    let value_len = LittleEndian::read_u16(&bytes[1..3]) as usize;
+    require_len!(bytes, 3 + value_len);
+
+    let mut handle_value = GattHandleValue {
+        status,
+        value_buf: [0; GattHandleValue::MAX_VALUE_BUF],
+        value_len,
+    };
+    handle_value.value_buf[..value_len].copy_from_slice(&bytes[3..]);
+
+    Ok(handle_value)
 }
