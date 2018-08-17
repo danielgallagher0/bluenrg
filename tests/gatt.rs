@@ -1169,3 +1169,44 @@ fn read_handle_value_offset() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x2B, 0xFD, 3, 0x01, 0x02, 0x03]));
 }
+
+#[cfg(feature = "ms")]
+#[test]
+fn update_long_characteristic_value() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| {
+            controller.update_long_characteristic_value(&UpdateLongCharacteristicValueParameters {
+                service_handle: ServiceHandle(0x0201),
+                characteristic_handle: CharacteristicHandle(0x0403),
+                update_type: UpdateType::INDICATION | UpdateType::NOTIFICATION,
+                total_len: 0x0605,
+                offset: 0x0807,
+                value: &[0x9, 0xA, 0xB, 0xC],
+            })
+        }).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[
+        1, 0x2C, 0xFD, 14, 0x1, 0x2, 0x3, 0x4, 0x3, 0x5, 0x6, 0x7, 0x8, 4, 0x9, 0xA, 0xB, 0xC,
+    ]));
+}
+
+#[cfg(feature = "ms")]
+#[test]
+fn update_long_characteristic_value_too_long() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| {
+            controller.update_long_characteristic_value(&UpdateLongCharacteristicValueParameters {
+                service_handle: ServiceHandle(0x0201),
+                characteristic_handle: CharacteristicHandle(0x0403),
+                update_type: UpdateType::INDICATION | UpdateType::NOTIFICATION,
+                total_len: 0x0605,
+                offset: 0x0807,
+                value: &[0; 246],
+            })
+        }).err()
+        .unwrap();
+    assert_eq!(err, nb::Error::Other(Error::ValueBufferTooLong));
+    assert!(!fixture.wrote_header());
+}

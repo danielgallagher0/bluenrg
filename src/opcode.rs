@@ -107,6 +107,7 @@ opcodes! {
         pub const GATT_SET_DESCRIPTOR_VALUE = 0x29;
         pub const GATT_READ_HANDLE_VALUE = 0x2A;
         pub const GATT_READ_HANDLE_VALUE_OFFSET = 0x2B;
+        pub const GATT_UPDATE_LONG_CHARACTERISTIC_VALUE = 0x2C;
     }
     L2Cap = 0x3;
     {

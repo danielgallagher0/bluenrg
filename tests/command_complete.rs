@@ -81,6 +81,12 @@ status_only! {
     gatt_allow_read(0x27, 0xFD, BNRGParams::GattAllowRead);
     gatt_set_security_permission(0x28, 0xFD, BNRGParams::GattSetSecurityPermission);
     gatt_set_descriptor_value(0x29, 0xFD, BNRGParams::GattSetDescriptorValue);
+    #[cfg(feature = "ms")]
+    gatt_update_long_characteristic_value(
+        0x2C,
+        0xFD,
+        BNRGParams::GattUpdateLongCharacteristicValue
+    );
 }
 
 #[test]

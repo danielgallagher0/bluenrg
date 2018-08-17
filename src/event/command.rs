@@ -188,6 +188,11 @@ pub enum ReturnParameters {
     #[cfg(feature = "ms")]
     GattReadHandleValueOffset(GattHandleValue),
 
+    /// Parameters returned by the [GATT Update Long Characteristic
+    /// Value](::gatt::Commands::update_long_characteristic_value) command.
+    #[cfg(feature = "ms")]
+    GattUpdateLongCharacteristicValue(hci::Status),
+
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Response](::l2cap::Commands::connection_parameter_update_response) command.
     L2CapConnectionParameterUpdateResponse(hci::Status),
@@ -372,6 +377,21 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                 {
                     Err(hci::event::Error::UnknownOpcode(
                         ::opcode::GATT_READ_HANDLE_VALUE_OFFSET,
+                    ))
+                }
+            }
+            ::opcode::GATT_UPDATE_LONG_CHARACTERISTIC_VALUE => {
+                #[cfg(feature = "ms")]
+                {
+                    Ok(ReturnParameters::GattUpdateLongCharacteristicValue(
+                        to_status(&bytes[3..])?,
+                    ))
+                }
+
+                #[cfg(not(feature = "ms"))]
+                {
+                    Err(hci::event::Error::UnknownOpcode(
+                        ::opcode::GATT_UPDATE_LONG_CHARACTERISTIC_VALUE,
                     ))
                 }
             }
