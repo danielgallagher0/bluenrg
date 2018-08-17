@@ -808,6 +808,28 @@ pub trait Commands {
     /// A [command complete](::event::command::ReturnParameters::GattReadHandleValue) event is
     /// generated when this command is processed.
     fn read_handle_value(&mut self, handle: CharacteristicHandle) -> nb::Result<(), Self::Error>;
+
+    /// The command returns the value of the attribute handle from the specified offset.
+    ///
+    /// If the length to be returned is greater than 128, then only 128 bytes are
+    /// [returned](::event::command::ReturnParameters::GattReadHandleValueOffset). The application
+    /// should send this command with incremented offsets until it gets an error with the offset it
+    /// specified or the number of byes of attribute value returned is less than 128.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// A [command complete](::event::command::ReturnParameters::GattReadHandleValueOffset) event is
+    /// generated when this command is processed.
+    #[cfg(feature = "ms")]
+    fn read_handle_value_offset(
+        &mut self,
+        handle: CharacteristicHandle,
+        offset: usize,
+    ) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -1180,6 +1202,19 @@ where
         LittleEndian::write_u16(&mut bytes, handle.0);
 
         self.write_command(::opcode::GATT_READ_HANDLE_VALUE, &bytes)
+    }
+
+    #[cfg(feature = "ms")]
+    fn read_handle_value_offset(
+        &mut self,
+        handle: CharacteristicHandle,
+        offset: usize,
+    ) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 3];
+        LittleEndian::write_u16(&mut bytes, handle.0);
+        bytes[2] = offset as u8;
+
+        self.write_command(::opcode::GATT_READ_HANDLE_VALUE_OFFSET, &bytes)
     }
 }
 

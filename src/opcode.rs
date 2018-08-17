@@ -106,6 +106,7 @@ opcodes! {
         pub const GATT_SET_SECURITY_PERMISSION = 0x28;
         pub const GATT_SET_DESCRIPTOR_VALUE = 0x29;
         pub const GATT_READ_HANDLE_VALUE = 0x2A;
+        pub const GATT_READ_HANDLE_VALUE_OFFSET = 0x2B;
     }
     L2Cap = 0x3;
     {

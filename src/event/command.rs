@@ -183,6 +183,11 @@ pub enum ReturnParameters {
     /// command.
     GattReadHandleValue(GattHandleValue),
 
+    /// Parameters returned by the [GATT Read Handle
+    /// Value](::gatt::Commands::read_handle_value_offset) command.
+    #[cfg(feature = "ms")]
+    GattReadHandleValueOffset(GattHandleValue),
+
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Response](::l2cap::Commands::connection_parameter_update_response) command.
     L2CapConnectionParameterUpdateResponse(hci::Status),
@@ -355,6 +360,21 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::GATT_READ_HANDLE_VALUE => Ok(ReturnParameters::GattReadHandleValue(
                 to_gatt_handle_value(&bytes[3..])?,
             )),
+            ::opcode::GATT_READ_HANDLE_VALUE_OFFSET => {
+                #[cfg(feature = "ms")]
+                {
+                    Ok(ReturnParameters::GattReadHandleValueOffset(
+                        to_gatt_handle_value(&bytes[3..])?,
+                    ))
+                }
+
+                #[cfg(not(feature = "ms"))]
+                {
+                    Err(hci::event::Error::UnknownOpcode(
+                        ::opcode::GATT_READ_HANDLE_VALUE_OFFSET,
+                    ))
+                }
+            }
             ::opcode::L2CAP_CONN_PARAM_UPDATE_RESP => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateResponse(to_status(&bytes[3..])?),
             ),
