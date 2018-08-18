@@ -203,8 +203,8 @@ pub enum BlueNRGEvent {
     /// by the server from the client. This event will be given to the application only if the event
     /// bit for this event generation is set when the characteristic was added. On receiving this
     /// event, the application can update the value of the handle if it desires and when done it has
-    /// to use the `aci_gatt_allow_read` command to indicate to the stack that it can send the
-    /// response to the client.
+    /// to use the [`allow_read`](::gatt::Commands::allow_read) command to indicate to the stack
+    /// that it can send the response to the client.
     ///
     /// See the Bluetooth Core v4.1 spec, Vol 3, Part F, section 3.4.4.
     AttReadPermitRequest(AttReadPermitRequest),
@@ -213,8 +213,8 @@ pub enum BlueNRGEvent {
     /// is received by the server from the client. This event will be given to the application only
     /// if the event bit for this event generation is set when the characteristic was added.  On
     /// receiving this event, the application can update the values of the handles if it desires and
-    /// when done it has to send the aci_gatt_allow_read command to indicate to the stack that it
-    /// can send the response to the client.
+    /// when done it has to send the [`allow_read`](::gatt::Commands::allow_read) command to
+    /// indicate to the stack that it can send the response to the client.
     ///
     /// See the Bluetooth Core v4.1 spec, Vol 3, Part F, section 3.4.4.
     AttReadMultiplePermitRequest(AttReadMultiplePermitRequest),
@@ -380,8 +380,8 @@ pub enum BlueNRGError {
     /// event: The packet ends with a partial attribute handle.
     AttReadMultiplePermitRequestPartial,
 
-    /// For the [ACI Read Config Data](::aci::Commands::read_config_data) command complete
-    /// [event](command::ReturnParameters::AciReadConfigData): The returned value has a length that
+    /// For the [HAL Read Config Data](::hal::Commands::read_config_data) command complete
+    /// [event](command::ReturnParameters::HalReadConfigData): The returned value has a length that
     /// does not correspond to a requested parameter. Known lengths are 1, 2, 6, or 16. Includes the
     /// number of bytes returned.
     BadConfigParameterLength(usize),
@@ -617,8 +617,8 @@ impl hci::event::VendorEvent for BlueNRGEvent {
 pub enum ResetReason {
     /// Firmware started properly
     Normal,
-    /// Updater mode entered because of Aci_Updater_Start command
-    UpdaterAci,
+    /// Updater mode entered because of updater_start command
+    Updater,
     /// Updater mode entered because of a bad BLUE flag
     UpdaterBadFlag,
     /// Updater mode entered with IRQ pin
@@ -641,7 +641,7 @@ impl TryFrom<u8> for ResetReason {
     fn try_from(value: u8) -> Result<ResetReason, Self::Error> {
         match value {
             1 => Ok(ResetReason::Normal),
-            2 => Ok(ResetReason::UpdaterAci),
+            2 => Ok(ResetReason::Updater),
             3 => Ok(ResetReason::UpdaterBadFlag),
             4 => Ok(ResetReason::UpdaterPin),
             5 => Ok(ResetReason::Watchdog),
@@ -2589,7 +2589,8 @@ fn to_att_error_response(
 /// the server from the client. This event will be given to the application only if the event bit
 /// for this event generation is set when the characteristic was added. On receiving this event, the
 /// application can update the value of the handle if it desires and when done it has to use the
-/// `gatt_allow_read` command to indicate to the stack that it can send the response to the client.
+/// [`allow_read`](::gatt::Commands::allow_read) command to indicate to the stack that it can send
+/// the response to the client.
 ///
 /// See the Bluetooth Core v4.1 spec, Vol 3, Part F, section 3.4.4.
 #[derive(Copy, Clone, Debug)]

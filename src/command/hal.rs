@@ -22,7 +22,7 @@ pub trait Commands {
     /// # Generated events
     ///
     /// The controller will generate a [command
-    /// complete](::event::command::ReturnParameters::AciWriteConfigData) event.
+    /// complete](::event::command::ReturnParameters::HalWriteConfigData) event.
     fn write_config_data(&mut self, config: &ConfigData) -> nb::Result<(), Self::Error>;
 
     /// This command requests the value in the low level configure data structure.
@@ -34,7 +34,7 @@ pub trait Commands {
     /// # Generated events
     ///
     /// The controller will generate a [command
-    /// complete](::event::command::ReturnParameters::AciReadConfigData) event.
+    /// complete](::event::command::ReturnParameters::HalReadConfigData) event.
     fn read_config_data(&mut self, param: ConfigParameter) -> nb::Result<(), Self::Error>;
 
     /// This command sets the TX power level of the BlueNRG-MS.
@@ -56,7 +56,7 @@ pub trait Commands {
     /// # Generated events
     ///
     /// The controller will generate a [command
-    /// complete](::event::command::ReturnParameters::AciSetTxPowerLevel) event.
+    /// complete](::event::command::ReturnParameters::HalSetTxPowerLevel) event.
     fn set_tx_power_level(&mut self, level: PowerLevel) -> nb::Result<(), Self::Error>;
 
     /// Puts the device in standby mode.
@@ -77,7 +77,7 @@ pub trait Commands {
     /// # Generated events
     ///
     /// The controller will generate a [command
-    /// complete](::event::command::ReturnParameters::AciDeviceStandby) event.
+    /// complete](::event::command::ReturnParameters::HalDeviceStandby) event.
     ///
     /// The command is only accepted when there is no other Bluetooth activity. Otherwise an error
     /// code [command disallowed](hci::Status::CommandDisallowed) will return.
@@ -97,22 +97,22 @@ where
     impl_variable_length_params!(
         write_config_data,
         ConfigData,
-        ::opcode::ACI_WRITE_CONFIG_DATA
+        ::opcode::HAL_WRITE_CONFIG_DATA
     );
 
     fn read_config_data(&mut self, param: ConfigParameter) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::ACI_READ_CONFIG_DATA, &[param as u8])
+        self.write_command(::opcode::HAL_READ_CONFIG_DATA, &[param as u8])
     }
 
     fn set_tx_power_level(&mut self, level: PowerLevel) -> nb::Result<(), Self::Error> {
         let mut bytes = [0; 2];
         LittleEndian::write_u16(&mut bytes, level as u16);
 
-        self.write_command(::opcode::ACI_SET_TX_POWER_LEVEL, &bytes)
+        self.write_command(::opcode::HAL_SET_TX_POWER_LEVEL, &bytes)
     }
 
     fn device_standby(&mut self) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::ACI_DEVICE_STANDBY, &[])
+        self.write_command(::opcode::HAL_DEVICE_STANDBY, &[])
     }
 }
 

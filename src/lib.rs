@@ -47,7 +47,7 @@ extern crate bitflags;
 #[macro_use]
 extern crate bluetooth_hci as hci;
 extern crate byteorder;
-extern crate embedded_hal as hal;
+extern crate embedded_hal as emhal;
 #[macro_use(block)]
 extern crate nb;
 
@@ -63,9 +63,9 @@ mod command;
 pub mod event;
 mod opcode;
 
-pub use command::aci;
 pub use command::gap;
 pub use command::gatt;
+pub use command::hal;
 pub use command::l2cap;
 
 pub use hci::host::{AdvertisingFilterPolicy, AdvertisingType, OwnAddressType};
@@ -136,10 +136,10 @@ fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<E>> {
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E>
     ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
 where
-    SPI: hal::blocking::spi::Transfer<u8, Error = E> + hal::blocking::spi::Write<u8, Error = E>,
-    OutputPin1: hal::digital::OutputPin,
-    OutputPin2: hal::digital::OutputPin,
-    InputPin: hal::digital::InputPin,
+    SPI: emhal::blocking::spi::Transfer<u8, Error = E> + emhal::blocking::spi::Write<u8, Error = E>,
+    OutputPin1: emhal::digital::OutputPin,
+    OutputPin2: emhal::digital::OutputPin,
+    InputPin: emhal::digital::InputPin,
 {
     /// Write data to the chip over the SPI bus. First writes a BlueNRG SPI header to the
     /// controller, indicating the host wants to write. The controller returns one byte indicating
@@ -234,10 +234,10 @@ where
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller
     for ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
 where
-    SPI: hal::blocking::spi::Transfer<u8, Error = E> + hal::blocking::spi::Write<u8, Error = E>,
-    OutputPin1: hal::digital::OutputPin,
-    OutputPin2: hal::digital::OutputPin,
-    InputPin: hal::digital::InputPin,
+    SPI: emhal::blocking::spi::Transfer<u8, Error = E> + emhal::blocking::spi::Write<u8, Error = E>,
+    OutputPin1: emhal::digital::OutputPin,
+    OutputPin2: emhal::digital::OutputPin,
+    InputPin: emhal::digital::InputPin,
 {
     // type Error = Error<E>;
     type Error = E;
@@ -303,9 +303,9 @@ where
 impl<'buf, SPI, OutputPin1, OutputPin2, InputPin>
     BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin>
 where
-    OutputPin1: hal::digital::OutputPin,
-    OutputPin2: hal::digital::OutputPin,
-    InputPin: hal::digital::InputPin,
+    OutputPin1: emhal::digital::OutputPin,
+    OutputPin2: emhal::digital::OutputPin,
+    InputPin: emhal::digital::InputPin,
 {
     /// Returns a new BlueNRG struct with the given RX Buffer and pins. Resets the controller.
     pub fn new(
@@ -330,8 +330,8 @@ where
     pub fn with_spi<'spi, T, F, E>(&mut self, spi: &'spi mut SPI, body: F) -> T
     where
         F: FnOnce(&mut ActiveBlueNRG<SPI, OutputPin1, OutputPin2, InputPin>) -> T,
-        SPI: hal::blocking::spi::transfer::Default<u8, Error = E>
-            + hal::blocking::spi::write::Default<u8, Error = E>,
+        SPI: emhal::blocking::spi::transfer::Default<u8, Error = E>
+            + emhal::blocking::spi::write::Default<u8, Error = E>,
     {
         let mut active =
             ActiveBlueNRG::<SPI, OutputPin1, OutputPin2, InputPin> { spi: spi, d: self };
@@ -342,7 +342,7 @@ where
     /// toggling the reset pin.
     pub fn reset<T, Time>(&mut self, timer: &mut T, freq: Time)
     where
-        T: hal::timer::CountDown<Time = Time>,
+        T: emhal::timer::CountDown<Time = Time>,
         Time: Copy,
     {
         self.reset.set_low();

@@ -4,7 +4,7 @@ extern crate nb;
 
 mod fixture;
 
-use bluenrg::aci::*;
+use bluenrg::hal::*;
 use fixture::Fixture;
 
 fn becomes_bytes(data: ConfigData, expected: &[u8]) -> bool {

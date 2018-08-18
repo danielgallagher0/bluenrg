@@ -15,19 +15,19 @@ use core::fmt::{Debug, Formatter, Result as FmtResult};
 /// return parameters, they are included in the enum.
 #[derive(Clone, Debug)]
 pub enum ReturnParameters {
-    /// Status returned by the [ACI Write Config Data](::aci::Commands::write_config_data) command.
-    AciWriteConfigData(hci::Status),
+    /// Status returned by the [HAL Write Config Data](::hal::Commands::write_config_data) command.
+    HalWriteConfigData(hci::Status),
 
-    /// Parameters returned by the [ACI Read Config Data](::aci::Commands::read_config_data)
+    /// Parameters returned by the [HAL Read Config Data](::hal::Commands::read_config_data)
     /// command.
-    AciReadConfigData(AciConfigData),
+    HalReadConfigData(HalConfigData),
 
-    /// Status returned by the [ACI Set Tx Power Level](::aci::Commands::set_tx_power_level)
+    /// Status returned by the [HAL Set Tx Power Level](::hal::Commands::set_tx_power_level)
     /// command.
-    AciSetTxPowerLevel(hci::Status),
+    HalSetTxPowerLevel(hci::Status),
 
-    /// Status returned by the [ACI Device Standby](::aci::Commands::device_standby) command.
-    AciDeviceStandby(hci::Status),
+    /// Status returned by the [HAL Device Standby](::hal::Commands::device_standby) command.
+    HalDeviceStandby(hci::Status),
 
     /// Status returned by the [GAP Set Non-Discoverable](::gap::Commands::set_nondiscoverable)
     /// command.
@@ -219,17 +219,17 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
         check_len_at_least(bytes, 3)?;
 
         match hci::Opcode(LittleEndian::read_u16(&bytes[1..])) {
-            ::opcode::ACI_WRITE_CONFIG_DATA => Ok(ReturnParameters::AciWriteConfigData(to_status(
+            ::opcode::HAL_WRITE_CONFIG_DATA => Ok(ReturnParameters::HalWriteConfigData(to_status(
                 &bytes[3..],
             )?)),
-            ::opcode::ACI_READ_CONFIG_DATA => Ok(ReturnParameters::AciReadConfigData(
-                to_aci_config_data(&bytes[3..])?,
+            ::opcode::HAL_READ_CONFIG_DATA => Ok(ReturnParameters::HalReadConfigData(
+                to_hal_config_data(&bytes[3..])?,
             )),
-            ::opcode::ACI_SET_TX_POWER_LEVEL => Ok(ReturnParameters::AciSetTxPowerLevel(
+            ::opcode::HAL_SET_TX_POWER_LEVEL => Ok(ReturnParameters::HalSetTxPowerLevel(
                 to_status(&bytes[3..])?,
             )),
-            ::opcode::ACI_DEVICE_STANDBY => {
-                Ok(ReturnParameters::AciDeviceStandby(to_status(&bytes[3..])?))
+            ::opcode::HAL_DEVICE_STANDBY => {
+                Ok(ReturnParameters::HalDeviceStandby(to_status(&bytes[3..])?))
             }
             ::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNonDiscoverable(
                 to_status(&bytes[3..])?,
@@ -445,9 +445,9 @@ fn to_status(bytes: &[u8]) -> Result<hci::Status, hci::event::Error<super::BlueN
     bytes[0].try_into().map_err(hci::event::rewrap_bad_status)
 }
 
-/// Parameters returned by the [ACI Read Config Data](::aci::Commands::read_config_data) command.
+/// Parameters returned by the [HAL Read Config Data](::hal::Commands::read_config_data) command.
 #[derive(Clone, Debug)]
-pub struct AciConfigData {
+pub struct HalConfigData {
     /// Did the command fail, and if so, how?
     pub status: hci::Status,
 
@@ -455,68 +455,68 @@ pub struct AciConfigData {
     ///
     /// The value is requested by offset, and distinguished upon return by length only. This means
     /// that this event cannot distinguish between the 16-byte encryption keys
-    /// ([EncryptionRoot](::aci::ConfigParameter::EncryptionRoot) and
-    /// [IdentityRoot](::aci::ConfigParameter::IdentityRoot)) or between the single-byte values
-    /// ([LinkLayerOnly](::aci::ConfigParameter::LinkLayerOnly) or
-    /// [Role](::aci::ConfigParameter::Role)).
-    pub value: AciConfigParameter,
+    /// ([EncryptionRoot](::hal::ConfigParameter::EncryptionRoot) and
+    /// [IdentityRoot](::hal::ConfigParameter::IdentityRoot)) or between the single-byte values
+    /// ([LinkLayerOnly](::hal::ConfigParameter::LinkLayerOnly) or
+    /// [Role](::hal::ConfigParameter::Role)).
+    pub value: HalConfigParameter,
 }
 
-/// Potential values that can be fetched by [ACI Read Config
-/// Data](::aci::Commands::read_config_data).
+/// Potential values that can be fetched by [HAL Read Config
+/// Data](::hal::Commands::read_config_data).
 #[derive(Clone, Debug, PartialEq)]
-pub enum AciConfigParameter {
+pub enum HalConfigParameter {
     /// Bluetooth public address. Corresponds to
-    /// [PublicAddress](::aci::ConfigParameter::PublicAddress).
+    /// [PublicAddress](::hal::ConfigParameter::PublicAddress).
     PublicAddress(hci::BdAddr),
 
     /// Diversifier used to derive CSRK (connection signature resolving key).  Corresponds to
-    /// [Diversifier](::aci::ConfigParameter::Diversifier).
+    /// [Diversifier](::hal::ConfigParameter::Diversifier).
     Diversifier(u16),
 
     /// A requested encryption key. Corresponds to either
-    /// [EncryptionRoot](::aci::ConfigParameter::EncryptionRoot) or
-    /// [IdentityRoot](::aci::ConfigParameter::IdentityRoot).
+    /// [EncryptionRoot](::hal::ConfigParameter::EncryptionRoot) or
+    /// [IdentityRoot](::hal::ConfigParameter::IdentityRoot).
     EncryptionKey(hci::host::EncryptionKey),
 
     /// A single-byte value. Corresponds to either
-    /// [LinkLayerOnly](::aci::ConfigParameter::LinkLayerOnly) or
-    /// [Role](::aci::ConfigParameter::Role).
+    /// [LinkLayerOnly](::hal::ConfigParameter::LinkLayerOnly) or
+    /// [Role](::hal::ConfigParameter::Role).
     Byte(u8),
 }
 
-fn to_aci_config_data(
+fn to_hal_config_data(
     bytes: &[u8],
-) -> Result<AciConfigData, hci::event::Error<super::BlueNRGError>> {
+) -> Result<HalConfigData, hci::event::Error<super::BlueNRGError>> {
     require_len_at_least!(bytes, 2);
-    Ok(AciConfigData {
+    Ok(HalConfigData {
         status: to_status(bytes)?,
-        value: to_aci_config_parameter(&bytes[1..])?,
+        value: to_hal_config_parameter(&bytes[1..])?,
     })
 }
 
-fn to_aci_config_parameter(
+fn to_hal_config_parameter(
     bytes: &[u8],
-) -> Result<AciConfigParameter, hci::event::Error<super::BlueNRGError>> {
+) -> Result<HalConfigParameter, hci::event::Error<super::BlueNRGError>> {
     match bytes.len() {
         6 => {
             let mut buf = [0; 6];
             buf.copy_from_slice(bytes);
 
-            Ok(AciConfigParameter::PublicAddress(hci::BdAddr(buf)))
+            Ok(HalConfigParameter::PublicAddress(hci::BdAddr(buf)))
         }
-        2 => Ok(AciConfigParameter::Diversifier(LittleEndian::read_u16(
+        2 => Ok(HalConfigParameter::Diversifier(LittleEndian::read_u16(
             &bytes,
         ))),
         16 => {
             let mut buf = [0; 16];
             buf.copy_from_slice(bytes);
 
-            Ok(AciConfigParameter::EncryptionKey(hci::host::EncryptionKey(
+            Ok(HalConfigParameter::EncryptionKey(hci::host::EncryptionKey(
                 buf,
             )))
         }
-        1 => Ok(AciConfigParameter::Byte(bytes[0])),
+        1 => Ok(HalConfigParameter::Byte(bytes[0])),
         other => Err(hci::event::Error::Vendor(
             super::BlueNRGError::BadConfigParameterLength(other),
         )),

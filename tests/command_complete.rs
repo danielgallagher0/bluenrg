@@ -37,9 +37,9 @@ macro_rules! status_only {
 }
 
 status_only! {
-    aci_write_config_data(0x0C, 0xFC, BNRGParams::AciWriteConfigData);
-    aci_set_tx_power_level(0x0F, 0xFC, BNRGParams::AciSetTxPowerLevel);
-    aci_device_standby(0x13, 0xFC, BNRGParams::AciDeviceStandby);
+    hal_write_config_data(0x0C, 0xFC, BNRGParams::HalWriteConfigData);
+    hal_set_tx_power_level(0x0F, 0xFC, BNRGParams::HalSetTxPowerLevel);
+    hal_device_standby(0x13, 0xFC, BNRGParams::HalDeviceStandby);
 
     l2cap_connection_parameter_update_response(
         0x82,
@@ -94,17 +94,17 @@ status_only! {
 }
 
 #[test]
-fn aci_read_config_data_public_addr() {
+fn hal_read_config_data_public_addr() {
     let buffer = [0x0E, 10, 8, 0x0D, 0xFC, 0, 1, 2, 3, 4, 5, 6];
     match Event::new(Packet(&buffer)) {
         Ok(HciEvent::CommandComplete(event)) => {
             assert_eq!(event.num_hci_command_packets, 8);
             match event.return_params {
-                HciParams::Vendor(BNRGParams::AciReadConfigData(params)) => {
+                HciParams::Vendor(BNRGParams::HalReadConfigData(params)) => {
                     assert_eq!(params.status, hci::Status::Success);
                     assert_eq!(
                         params.value,
-                        AciConfigParameter::PublicAddress(hci::BdAddr([1, 2, 3, 4, 5, 6]))
+                        HalConfigParameter::PublicAddress(hci::BdAddr([1, 2, 3, 4, 5, 6]))
                     );
                 }
                 other => panic!("Wrong return parameters: {:?}", other),
@@ -115,15 +115,15 @@ fn aci_read_config_data_public_addr() {
 }
 
 #[test]
-fn aci_read_config_data_diversifier() {
+fn hal_read_config_data_diversifier() {
     let buffer = [0x0E, 6, 8, 0x0D, 0xFC, 0, 1, 2];
     match Event::new(Packet(&buffer)) {
         Ok(HciEvent::CommandComplete(event)) => {
             assert_eq!(event.num_hci_command_packets, 8);
             match event.return_params {
-                HciParams::Vendor(BNRGParams::AciReadConfigData(params)) => {
+                HciParams::Vendor(BNRGParams::HalReadConfigData(params)) => {
                     assert_eq!(params.status, hci::Status::Success);
-                    assert_eq!(params.value, AciConfigParameter::Diversifier(0x0201));
+                    assert_eq!(params.value, HalConfigParameter::Diversifier(0x0201));
                 }
                 other => panic!("Wrong return parameters: {:?}", other),
             }
@@ -133,7 +133,7 @@ fn aci_read_config_data_diversifier() {
 }
 
 #[test]
-fn aci_read_config_data_key() {
+fn hal_read_config_data_key() {
     let buffer = [
         0x0E, 20, 8, 0x0D, 0xFC, 0, 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB,
         0xC, 0xD, 0xE, 0xF,
@@ -142,11 +142,11 @@ fn aci_read_config_data_key() {
         Ok(HciEvent::CommandComplete(event)) => {
             assert_eq!(event.num_hci_command_packets, 8);
             match event.return_params {
-                HciParams::Vendor(BNRGParams::AciReadConfigData(params)) => {
+                HciParams::Vendor(BNRGParams::HalReadConfigData(params)) => {
                     assert_eq!(params.status, hci::Status::Success);
                     assert_eq!(
                         params.value,
-                        AciConfigParameter::EncryptionKey(hci::host::EncryptionKey([
+                        HalConfigParameter::EncryptionKey(hci::host::EncryptionKey([
                             0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD,
                             0xE, 0xF
                         ]))
@@ -160,15 +160,15 @@ fn aci_read_config_data_key() {
 }
 
 #[test]
-fn aci_read_config_byte() {
+fn hal_read_config_byte() {
     let buffer = [0x0E, 5, 8, 0x0D, 0xFC, 0, 0];
     match Event::new(Packet(&buffer)) {
         Ok(HciEvent::CommandComplete(event)) => {
             assert_eq!(event.num_hci_command_packets, 8);
             match event.return_params {
-                HciParams::Vendor(BNRGParams::AciReadConfigData(params)) => {
+                HciParams::Vendor(BNRGParams::HalReadConfigData(params)) => {
                     assert_eq!(params.status, hci::Status::Success);
-                    assert_eq!(params.value, AciConfigParameter::Byte(0));
+                    assert_eq!(params.value, HalConfigParameter::Byte(0));
                 }
                 other => panic!("Wrong return parameters: {:?}", other),
             }
@@ -178,7 +178,7 @@ fn aci_read_config_byte() {
 }
 
 #[test]
-fn aci_read_config_invalid() {
+fn hal_read_config_invalid() {
     let buffer = [0x0E, 7, 8, 0x0D, 0xFC, 0, 0, 1, 2];
     match Event::new(Packet(&buffer)) {
         Err(HciError::Vendor(BlueNRGError::BadConfigParameterLength(len))) => {

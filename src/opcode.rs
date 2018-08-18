@@ -22,12 +22,12 @@ macro_rules! opcodes {
 }
 
 opcodes! {
-    Aci = 0x0;
+    Hal = 0x0;
     {
-        pub const ACI_WRITE_CONFIG_DATA = 0x0C;
-        pub const ACI_READ_CONFIG_DATA = 0x0D;
-        pub const ACI_SET_TX_POWER_LEVEL = 0x0F;
-        pub const ACI_DEVICE_STANDBY = 0x13;
+        pub const HAL_WRITE_CONFIG_DATA = 0x0C;
+        pub const HAL_READ_CONFIG_DATA = 0x0D;
+        pub const HAL_SET_TX_POWER_LEVEL = 0x0F;
+        pub const HAL_DEVICE_STANDBY = 0x13;
     }
     Gap = 0x1;
     {
