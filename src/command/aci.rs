@@ -58,6 +58,30 @@ pub trait Commands {
     /// The controller will generate a [command
     /// complete](::event::command::ReturnParameters::AciSetTxPowerLevel) event.
     fn set_tx_power_level(&mut self, level: PowerLevel) -> nb::Result<(), Self::Error>;
+
+    /// Puts the device in standby mode.
+    ///
+    /// Normally the BlueNRG-MS will automatically enter sleep mode to save power. This command
+    /// further put the device into the Standby mode instead of the sleep mode. The difference is
+    /// that, in sleep mode, the device can still wake up itself with the internal timer. But in
+    /// standby mode, this timer is also disabled. So the only possibility to wake up the device is
+    /// by the external signals, e.g. a HCI command sent via SPI bus.
+    ///
+    /// Based on the measurement, the current consumption under sleep mode is ~2 uA. And this value
+    /// is ~1.5 uA in standby mode.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// The controller will generate a [command
+    /// complete](::event::command::ReturnParameters::AciDeviceStandby) event.
+    ///
+    /// The command is only accepted when there is no other Bluetooth activity. Otherwise an error
+    /// code [command disallowed](hci::Status::CommandDisallowed) will return.
+    fn device_standby(&mut self) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -85,6 +109,10 @@ where
         LittleEndian::write_u16(&mut bytes, level as u16);
 
         self.write_command(::opcode::ACI_SET_TX_POWER_LEVEL, &bytes)
+    }
+
+    fn device_standby(&mut self) -> nb::Result<(), Self::Error> {
+        self.write_command(::opcode::ACI_DEVICE_STANDBY, &[])
     }
 }
 

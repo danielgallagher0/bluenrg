@@ -94,3 +94,13 @@ fn set_tx_power_level() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x0F, 0xFC, 2, 1, 2]));
 }
+
+#[test]
+fn device_standby() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.device_standby())
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x13, 0xFC, 0]));
+}

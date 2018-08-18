@@ -27,6 +27,7 @@ opcodes! {
         pub const ACI_WRITE_CONFIG_DATA = 0x0C;
         pub const ACI_READ_CONFIG_DATA = 0x0D;
         pub const ACI_SET_TX_POWER_LEVEL = 0x0F;
+        pub const ACI_DEVICE_STANDBY = 0x13;
     }
     Gap = 0x1;
     {

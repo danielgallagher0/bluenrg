@@ -26,6 +26,9 @@ pub enum ReturnParameters {
     /// command.
     AciSetTxPowerLevel(hci::Status),
 
+    /// Status returned by the [ACI Device Standby](::aci::Commands::device_standby) command.
+    AciDeviceStandby(hci::Status),
+
     /// Status returned by the [GAP Set Non-Discoverable](::gap::Commands::set_nondiscoverable)
     /// command.
     GapSetNonDiscoverable(hci::Status),
@@ -225,6 +228,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::ACI_SET_TX_POWER_LEVEL => Ok(ReturnParameters::AciSetTxPowerLevel(
                 to_status(&bytes[3..])?,
             )),
+            ::opcode::ACI_DEVICE_STANDBY => {
+                Ok(ReturnParameters::AciDeviceStandby(to_status(&bytes[3..])?))
+            }
             ::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNonDiscoverable(
                 to_status(&bytes[3..])?,
             )),
