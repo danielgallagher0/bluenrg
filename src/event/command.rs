@@ -18,6 +18,10 @@ pub enum ReturnParameters {
     /// Status returned by the [ACI Write Config Data](::aci::Commands::write_config_data) command.
     AciWriteConfigData(hci::Status),
 
+    /// Parameters returned by the [ACI Read Config Data](::aci::Commands::read_config_data)
+    /// command.
+    AciReadConfigData(AciConfigData),
+
     /// Status returned by the [GAP Set Non-Discoverable](::gap::Commands::set_nondiscoverable)
     /// command.
     GapSetNonDiscoverable(hci::Status),
@@ -211,6 +215,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::ACI_WRITE_CONFIG_DATA => Ok(ReturnParameters::AciWriteConfigData(to_status(
                 &bytes[3..],
             )?)),
+            ::opcode::ACI_READ_CONFIG_DATA => Ok(ReturnParameters::AciReadConfigData(
+                to_aci_config_data(&bytes[3..])?,
+            )),
             ::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNonDiscoverable(
                 to_status(&bytes[3..])?,
             )),
@@ -423,6 +430,84 @@ fn check_len_at_least(
 fn to_status(bytes: &[u8]) -> Result<hci::Status, hci::event::Error<super::BlueNRGError>> {
     require_len_at_least!(bytes, 1);
     bytes[0].try_into().map_err(hci::event::rewrap_bad_status)
+}
+
+/// Parameters returned by the [ACI Read Config Data](::aci::Commands::read_config_data) command.
+#[derive(Clone, Debug)]
+pub struct AciConfigData {
+    /// Did the command fail, and if so, how?
+    pub status: hci::Status,
+
+    /// Requested value.
+    ///
+    /// The value is requested by offset, and distinguished upon return by length only. This means
+    /// that this event cannot distinguish between the 16-byte encryption keys
+    /// ([EncryptionRoot](::aci::ConfigParameter::EncryptionRoot) and
+    /// [IdentityRoot](::aci::ConfigParameter::IdentityRoot)) or between the single-byte values
+    /// ([LinkLayerOnly](::aci::ConfigParameter::LinkLayerOnly) or
+    /// [Role](::aci::ConfigParameter::Role)).
+    pub value: AciConfigParameter,
+}
+
+/// Potential values that can be fetched by [ACI Read Config
+/// Data](::aci::Commands::read_config_data).
+#[derive(Clone, Debug, PartialEq)]
+pub enum AciConfigParameter {
+    /// Bluetooth public address. Corresponds to
+    /// [PublicAddress](::aci::ConfigParameter::PublicAddress).
+    PublicAddress(hci::BdAddr),
+
+    /// Diversifier used to derive CSRK (connection signature resolving key).  Corresponds to
+    /// [Diversifier](::aci::ConfigParameter::Diversifier).
+    Diversifier(u16),
+
+    /// A requested encryption key. Corresponds to either
+    /// [EncryptionRoot](::aci::ConfigParameter::EncryptionRoot) or
+    /// [IdentityRoot](::aci::ConfigParameter::IdentityRoot).
+    EncryptionKey(hci::host::EncryptionKey),
+
+    /// A single-byte value. Corresponds to either
+    /// [LinkLayerOnly](::aci::ConfigParameter::LinkLayerOnly) or
+    /// [Role](::aci::ConfigParameter::Role).
+    Byte(u8),
+}
+
+fn to_aci_config_data(
+    bytes: &[u8],
+) -> Result<AciConfigData, hci::event::Error<super::BlueNRGError>> {
+    require_len_at_least!(bytes, 2);
+    Ok(AciConfigData {
+        status: to_status(bytes)?,
+        value: to_aci_config_parameter(&bytes[1..])?,
+    })
+}
+
+fn to_aci_config_parameter(
+    bytes: &[u8],
+) -> Result<AciConfigParameter, hci::event::Error<super::BlueNRGError>> {
+    match bytes.len() {
+        6 => {
+            let mut buf = [0; 6];
+            buf.copy_from_slice(bytes);
+
+            Ok(AciConfigParameter::PublicAddress(hci::BdAddr(buf)))
+        }
+        2 => Ok(AciConfigParameter::Diversifier(LittleEndian::read_u16(
+            &bytes,
+        ))),
+        16 => {
+            let mut buf = [0; 16];
+            buf.copy_from_slice(bytes);
+
+            Ok(AciConfigParameter::EncryptionKey(hci::host::EncryptionKey(
+                buf,
+            )))
+        }
+        1 => Ok(AciConfigParameter::Byte(bytes[0])),
+        other => Err(hci::event::Error::Vendor(
+            super::BlueNRGError::BadConfigParameterLength(other),
+        )),
+    }
 }
 
 /// Parameters returned by the [GAP Init](::gap::Commands::init) command.

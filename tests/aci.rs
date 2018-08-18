@@ -74,3 +74,13 @@ fn write_config_data() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x0C, 0xFC, 3, 41, 1, 0x2]));
 }
+
+#[test]
+fn read_config_data() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.read_config_data(ConfigParameter::PublicAddress))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x0D, 0xFC, 1, 0]));
+}

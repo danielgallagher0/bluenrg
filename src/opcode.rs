@@ -25,6 +25,7 @@ opcodes! {
     Aci = 0x0;
     {
         pub const ACI_WRITE_CONFIG_DATA = 0x0C;
+        pub const ACI_READ_CONFIG_DATA = 0x0D;
     }
     Gap = 0x1;
     {

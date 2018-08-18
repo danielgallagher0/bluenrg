@@ -24,6 +24,18 @@ pub trait Commands {
     /// The controller will generate a [command
     /// complete](::event::command::ReturnParameters::AciWriteConfigData) event.
     fn write_config_data(&mut self, config: &ConfigData) -> nb::Result<(), Self::Error>;
+
+    /// This command requests the value in the low level configure data structure.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// The controller will generate a [command
+    /// complete](::event::command::ReturnParameters::AciReadConfigData) event.
+    fn read_config_data(&mut self, param: ConfigParameter) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -41,6 +53,10 @@ where
         ConfigData,
         ::opcode::ACI_WRITE_CONFIG_DATA
     );
+
+    fn read_config_data(&mut self, param: ConfigParameter) -> nb::Result<(), Self::Error> {
+        self.write_command(::opcode::ACI_READ_CONFIG_DATA, &[param as u8])
+    }
 }
 
 /// Potential errors from parameter validation.
@@ -339,4 +355,29 @@ pub enum Role {
     /// - Up to 4 connections
     /// - This mode is available starting from BlueNRG-MS FW stack version 7.1.b
     SimultaneousAdvertisingScanning = 4,
+}
+
+/// Configuration parameters that are readable by the
+/// [`read_config_data`](Commands::read_config_data) command.
+#[repr(u8)]
+pub enum ConfigParameter {
+    /// Bluetooth public address.
+    PublicAddress = 0,
+
+    /// Diversifier used to derive CSRK (connection signature resolving key).
+    Diversifier = 6,
+
+    /// Encryption root key used to derive the LTK (long-term key) and CSRK (connection signature
+    /// resolving key).
+    EncryptionRoot = 8,
+
+    /// Identity root key used to derive the LTK (long-term key) and CSRK (connection signature
+    /// resolving key).
+    IdentityRoot = 24,
+
+    /// Switch on/off Link Layer only mode.
+    LinkLayerOnly = 40,
+
+    /// BlueNRG-MS roles and mode configuration.
+    Role = 41,
 }

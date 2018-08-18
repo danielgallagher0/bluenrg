@@ -380,6 +380,12 @@ pub enum BlueNRGError {
     /// event: The packet ends with a partial attribute handle.
     AttReadMultiplePermitRequestPartial,
 
+    /// For the [ACI Read Config Data](::aci::Commands::read_config_data) command complete
+    /// [event](command::ReturnParameters::AciReadConfigData): The returned value has a length that
+    /// does not correspond to a requested parameter. Known lengths are 1, 2, 6, or 16. Includes the
+    /// number of bytes returned.
+    BadConfigParameterLength(usize),
+
     /// For the [GAP Get Security Level](::gap::Commands::get_security_level) command complete
     /// [event](command::ReturnParameters::GapGetSecurityLevel): One of the boolean values
     /// ([`mitm_protection_required`](command::GapSecurityLevel::mitm_protection_required),

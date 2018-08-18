@@ -92,6 +92,101 @@ status_only! {
 }
 
 #[test]
+fn aci_read_config_data_public_addr() {
+    let buffer = [0x0E, 10, 8, 0x0D, 0xFC, 0, 1, 2, 3, 4, 5, 6];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 8);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::AciReadConfigData(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(
+                        params.value,
+                        AciConfigParameter::PublicAddress(hci::BdAddr([1, 2, 3, 4, 5, 6]))
+                    );
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
+fn aci_read_config_data_diversifier() {
+    let buffer = [0x0E, 6, 8, 0x0D, 0xFC, 0, 1, 2];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 8);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::AciReadConfigData(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(params.value, AciConfigParameter::Diversifier(0x0201));
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
+fn aci_read_config_data_key() {
+    let buffer = [
+        0x0E, 20, 8, 0x0D, 0xFC, 0, 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB,
+        0xC, 0xD, 0xE, 0xF,
+    ];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 8);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::AciReadConfigData(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(
+                        params.value,
+                        AciConfigParameter::EncryptionKey(hci::host::EncryptionKey([
+                            0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD,
+                            0xE, 0xF
+                        ]))
+                    );
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
+fn aci_read_config_byte() {
+    let buffer = [0x0E, 5, 8, 0x0D, 0xFC, 0, 0];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 8);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::AciReadConfigData(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(params.value, AciConfigParameter::Byte(0));
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
+fn aci_read_config_invalid() {
+    let buffer = [0x0E, 7, 8, 0x0D, 0xFC, 0, 0, 1, 2];
+    match Event::new(Packet(&buffer)) {
+        Err(HciError::Vendor(BlueNRGError::BadConfigParameterLength(len))) => {
+            assert_eq!(len, 3);
+        }
+        other => panic!("Did not get bad parameter length: {:?}", other),
+    }
+}
+
+#[test]
 fn gap_init() {
     let buffer = [
         0x0E, 10, 8, 0x8A, 0xFC, 0, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
