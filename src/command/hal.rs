@@ -105,6 +105,26 @@ pub trait Commands {
     /// The controller will generate a [command
     /// complete](::event::command::ReturnParameters::HalGetTxTestPacketCount) event.
     fn get_tx_test_packet_count(&mut self) -> nb::Result<(), Self::Error>;
+
+    /// This command starts a carrier frequency, i.e. a tone, on a specific channel.
+    ///
+    /// The frequency sine wave at the specific channel may be used for debugging purpose only. The
+    /// channel ID is a parameter from 0 to 39 for the 40 BLE channels, e.g. 0 for 2.402 GHz, 1 for
+    /// 2.404 GHz etc.
+    ///
+    /// This command should not be used when normal Bluetooth activities are ongoing.
+    /// The tone should be stopped by [`stop_tone`](Commands::stop_tone) command.
+    ///
+    /// # Errors
+    ///
+    /// - [InvalidChannel](Error::InvalidChannel) if the channel is greater than 39.
+    /// - Underlying communication errors
+    ///
+    /// # Generated events
+    ///
+    /// The controller will generate a [command
+    /// complete](::event::command::ReturnParameters::HalStartTone) event.
+    fn start_tone(&mut self, channel: u8) -> nb::Result<(), Error<Self::Error>>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -141,6 +161,16 @@ where
     fn get_tx_test_packet_count(&mut self) -> nb::Result<(), Self::Error> {
         self.write_command(::opcode::HAL_TX_TEST_PACKET_COUNT, &[])
     }
+
+    fn start_tone(&mut self, channel: u8) -> nb::Result<(), Error<Self::Error>> {
+        const MAX_CHANNEL: u8 = 39;
+        if channel > MAX_CHANNEL {
+            return Err(nb::Error::Other(Error::InvalidChannel(channel)));
+        }
+
+        self.write_command(::opcode::HAL_START_TONE, &[channel as u8])
+            .map_err(rewrap_error)
+    }
 }
 
 /// Potential errors from parameter validation.
@@ -150,18 +180,20 @@ where
 /// errors.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Error<E> {
+    /// For the [Start Tone](Commands::start_tone) command, the channel was greater than the maximum
+    /// allowed channel (39). The invalid channel is returned.
+    InvalidChannel(u8),
+
     /// Underlying communication error.
     Comm(E),
 }
 
-/*
 fn rewrap_error<E>(e: nb::Error<E>) -> nb::Error<Error<E>> {
     match e {
         nb::Error::WouldBlock => nb::Error::WouldBlock,
         nb::Error::Other(c) => nb::Error::Other(Error::Comm(c)),
     }
 }
-*/
 
 /// Low-level configuration parameters for the controller.
 pub struct ConfigData {

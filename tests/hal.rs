@@ -114,3 +114,22 @@ fn get_tx_test_packet_count() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x14, 0xFC, 0]));
 }
+
+#[test]
+fn start_tone() {
+    let mut fixture = Fixture::new();
+    fixture.act(|controller| controller.start_tone(12)).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x15, 0xFC, 1, 12]));
+}
+
+#[test]
+fn start_tone_invalid() {
+    let mut fixture = Fixture::new();
+    let err = fixture
+        .act(|controller| controller.start_tone(40))
+        .err()
+        .unwrap();
+    assert_eq!(err, nb::Error::Other(Error::InvalidChannel(40)));
+    assert!(!fixture.wrote_header());
+}
