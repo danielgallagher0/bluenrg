@@ -209,6 +209,77 @@ fn hal_get_tx_test_packet_count() {
 }
 
 #[test]
+fn hal_get_link_status() {
+    let buffer = [
+        0x0E, 28, 8, 0x17, 0xFC, 0, 0, 1, 2, 3, 4, 5, 6, 7, 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7,
+        0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF,
+    ];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 8);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::HalGetLinkStatus(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(
+                        params.clients,
+                        [
+                            ClientStatus {
+                                state: LinkState::Idle,
+                                conn_handle: hci::ConnectionHandle(0x0100),
+                            },
+                            ClientStatus {
+                                state: LinkState::Advertising,
+                                conn_handle: hci::ConnectionHandle(0x0302),
+                            },
+                            ClientStatus {
+                                state: LinkState::ConnectedAsPeripheral,
+                                conn_handle: hci::ConnectionHandle(0x0504),
+                            },
+                            ClientStatus {
+                                state: LinkState::Scanning,
+                                conn_handle: hci::ConnectionHandle(0x0706),
+                            },
+                            ClientStatus {
+                                state: LinkState::Reserved,
+                                conn_handle: hci::ConnectionHandle(0x0908),
+                            },
+                            ClientStatus {
+                                state: LinkState::ConnectedAsPrimary,
+                                conn_handle: hci::ConnectionHandle(0x0B0A),
+                            },
+                            ClientStatus {
+                                state: LinkState::TxTest,
+                                conn_handle: hci::ConnectionHandle(0x0D0C),
+                            },
+                            ClientStatus {
+                                state: LinkState::RxTest,
+                                conn_handle: hci::ConnectionHandle(0x0F0E),
+                            },
+                        ]
+                    );
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
+fn hal_get_link_status_invalid_status() {
+    let buffer = [
+        0x0E, 28, 8, 0x17, 0xFC, 0, 8, 1, 2, 3, 4, 5, 6, 7, 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7,
+        0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF,
+    ];
+    match Event::new(Packet(&buffer)) {
+        Err(HciError::Vendor(BlueNRGError::UnknownLinkState(value))) => {
+            assert_eq!(value, 8);
+        }
+        other => panic!("Did not get unknown link state: {:?}", other),
+    }
+}
+
+#[test]
 fn gap_init() {
     let buffer = [
         0x0E, 10, 8, 0x8A, 0xFC, 0, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,

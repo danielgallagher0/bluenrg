@@ -141,3 +141,13 @@ fn stop_tone() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x16, 0xFC, 0]));
 }
+
+#[test]
+fn get_link_status() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.get_link_status())
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x17, 0xFC, 0]));
+}

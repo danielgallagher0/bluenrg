@@ -137,6 +137,18 @@ pub trait Commands {
     /// The controller will generate a [command
     /// complete](::event::command::ReturnParameters::HalStopTone) event.
     fn stop_tone(&mut self) -> nb::Result<(), Self::Error>;
+
+    /// This command is intended to return the Link Layer Status and Connection Handles.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// The controller will generate a [command
+    /// complete](::event::command::ReturnParameters::HalGetLinkStatus) event.
+    fn get_link_status(&mut self) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -186,6 +198,10 @@ where
 
     fn stop_tone(&mut self) -> nb::Result<(), Self::Error> {
         self.write_command(::opcode::HAL_STOP_TONE, &[])
+    }
+
+    fn get_link_status(&mut self) -> nb::Result<(), Self::Error> {
+        self.write_command(::opcode::HAL_GET_LINK_STATUS, &[])
     }
 }
 

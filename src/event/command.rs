@@ -39,6 +39,9 @@ pub enum ReturnParameters {
     /// Status returned by the [HAL Stop Tone](::hal::Commands::stop_tone) command.
     HalStopTone(hci::Status),
 
+    /// Status returned by the [HAL Get Link Status](::hal::Commands::get_link_status) command.
+    HalGetLinkStatus(HalLinkStatus),
+
     /// Status returned by the [GAP Set Non-Discoverable](::gap::Commands::set_nondiscoverable)
     /// command.
     GapSetNonDiscoverable(hci::Status),
@@ -246,6 +249,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             )),
             ::opcode::HAL_START_TONE => Ok(ReturnParameters::HalStartTone(to_status(&bytes[3..])?)),
             ::opcode::HAL_STOP_TONE => Ok(ReturnParameters::HalStopTone(to_status(&bytes[3..])?)),
+            ::opcode::HAL_GET_LINK_STATUS => Ok(ReturnParameters::HalGetLinkStatus(
+                to_hal_link_status(&bytes[3..])?,
+            )),
             ::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNonDiscoverable(
                 to_status(&bytes[3..])?,
             )),
@@ -557,6 +563,90 @@ fn to_hal_tx_test_packet_count(
         status: to_status(bytes)?,
         packet_count: LittleEndian::read_u32(&bytes[1..]),
     })
+}
+
+/// Parameters returned by the [HAL Get Link Status](::hal::Commands::get_link_status) command.
+#[derive(Clone, Debug)]
+pub struct HalLinkStatus {
+    /// Did the command fail, and if so, how?
+    pub status: hci::Status,
+
+    /// State of the client connections.
+    pub clients: [ClientStatus; 8],
+}
+
+/// State of a client connection.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct ClientStatus {
+    /// Link state for the client.
+    pub state: LinkState,
+
+    /// Connection handle for the client
+    pub conn_handle: hci::ConnectionHandle,
+}
+
+/// Potential states for a connection.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum LinkState {
+    /// Idle
+    Idle,
+    /// Advertising
+    Advertising,
+    /// Connected in peripheral role
+    ConnectedAsPeripheral,
+    /// Scanning
+    Scanning,
+    /// Reserved
+    Reserved,
+    /// Connected in primary role
+    ConnectedAsPrimary,
+    /// TX Test
+    TxTest,
+    /// RX Test
+    RxTest,
+}
+
+impl TryFrom<u8> for LinkState {
+    type Error = super::BlueNRGError;
+
+    fn try_from(value: u8) -> Result<LinkState, Self::Error> {
+        match value {
+            0 => Ok(LinkState::Idle),
+            1 => Ok(LinkState::Advertising),
+            2 => Ok(LinkState::ConnectedAsPeripheral),
+            3 => Ok(LinkState::Scanning),
+            4 => Ok(LinkState::Reserved),
+            5 => Ok(LinkState::ConnectedAsPrimary),
+            6 => Ok(LinkState::TxTest),
+            7 => Ok(LinkState::RxTest),
+            _ => Err(super::BlueNRGError::UnknownLinkState(value)),
+        }
+    }
+}
+
+fn to_hal_link_status(
+    bytes: &[u8],
+) -> Result<HalLinkStatus, hci::event::Error<super::BlueNRGError>> {
+    require_len!(bytes, 25);
+
+    let mut status = HalLinkStatus {
+        status: to_status(&bytes[0..])?,
+        clients: [ClientStatus {
+            state: LinkState::Idle,
+            conn_handle: hci::ConnectionHandle(0),
+        }; 8],
+    };
+
+    for client in 0..8 {
+        status.clients[client].state = bytes[1 + client]
+            .try_into()
+            .map_err(hci::event::Error::Vendor)?;
+        status.clients[client].conn_handle = hci::ConnectionHandle(LittleEndian::read_u16(
+            &bytes[9 + 2 * client..9 + 2 * (client + 1)],
+        ));
+    }
+
+    Ok(status)
 }
 
 /// Parameters returned by the [GAP Init](::gap::Commands::init) command.

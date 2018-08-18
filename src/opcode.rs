@@ -31,6 +31,7 @@ opcodes! {
         pub const HAL_TX_TEST_PACKET_COUNT = 0x14;
         pub const HAL_START_TONE = 0x15;
         pub const HAL_STOP_TONE = 0x16;
+        pub const HAL_GET_LINK_STATUS = 0x17;
     }
     Gap = 0x1;
     {

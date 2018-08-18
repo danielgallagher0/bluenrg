@@ -386,6 +386,11 @@ pub enum BlueNRGError {
     /// number of bytes returned.
     BadConfigParameterLength(usize),
 
+    /// For the [HAL Get Link Status](::hal::Commands::get_link_status) command complete
+    /// [event](command::ReturnParameters::HalGetLinkStatus): One of the bytes representing a link
+    /// state does not represent a known link state. Returns the unknown value.
+    UnknownLinkState(u8),
+
     /// For the [GAP Get Security Level](::gap::Commands::get_security_level) command complete
     /// [event](command::ReturnParameters::GapGetSecurityLevel): One of the boolean values
     /// ([`mitm_protection_required`](command::GapSecurityLevel::mitm_protection_required),
