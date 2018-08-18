@@ -84,3 +84,13 @@ fn read_config_data() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x0D, 0xFC, 1, 0]));
 }
+
+#[test]
+fn set_tx_power_level() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.set_tx_power_level(PowerLevel::DbmNeg8_4))
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x0F, 0xFC, 2, 1, 2]));
+}

@@ -22,6 +22,10 @@ pub enum ReturnParameters {
     /// command.
     AciReadConfigData(AciConfigData),
 
+    /// Status returned by the [ACI Set Tx Power Level](::aci::Commands::set_tx_power_level)
+    /// command.
+    AciSetTxPowerLevel(hci::Status),
+
     /// Status returned by the [GAP Set Non-Discoverable](::gap::Commands::set_nondiscoverable)
     /// command.
     GapSetNonDiscoverable(hci::Status),
@@ -217,6 +221,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             )?)),
             ::opcode::ACI_READ_CONFIG_DATA => Ok(ReturnParameters::AciReadConfigData(
                 to_aci_config_data(&bytes[3..])?,
+            )),
+            ::opcode::ACI_SET_TX_POWER_LEVEL => Ok(ReturnParameters::AciSetTxPowerLevel(
+                to_status(&bytes[3..])?,
             )),
             ::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNonDiscoverable(
                 to_status(&bytes[3..])?,

@@ -36,6 +36,28 @@ pub trait Commands {
     /// The controller will generate a [command
     /// complete](::event::command::ReturnParameters::AciReadConfigData) event.
     fn read_config_data(&mut self, param: ConfigParameter) -> nb::Result<(), Self::Error>;
+
+    /// This command sets the TX power level of the BlueNRG-MS.
+    ///
+    /// When the system starts up or reboots, the default TX power level will be used, which is the
+    /// maximum value of [8 dBm](PowerLevel::Dbm8_0). Once this command is given, the output power
+    /// will be changed instantly, regardless if there is Bluetooth communication going on or
+    /// not. For example, for debugging purpose, the BlueNRG-MS can be set to advertise all the
+    /// time. And use this command to observe the signal strength changing.
+    ///
+    /// The system will keep the last received TX power level from the command, i.e. the 2nd
+    /// command overwrites the previous TX power level. The new TX power level remains until
+    /// another Set TX Power command, or the system reboots.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// The controller will generate a [command
+    /// complete](::event::command::ReturnParameters::AciSetTxPowerLevel) event.
+    fn set_tx_power_level(&mut self, level: PowerLevel) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -56,6 +78,13 @@ where
 
     fn read_config_data(&mut self, param: ConfigParameter) -> nb::Result<(), Self::Error> {
         self.write_command(::opcode::ACI_READ_CONFIG_DATA, &[param as u8])
+    }
+
+    fn set_tx_power_level(&mut self, level: PowerLevel) -> nb::Result<(), Self::Error> {
+        let mut bytes = [0; 2];
+        LittleEndian::write_u16(&mut bytes, level as u16);
+
+        self.write_command(::opcode::ACI_SET_TX_POWER_LEVEL, &bytes)
     }
 }
 
@@ -380,4 +409,45 @@ pub enum ConfigParameter {
 
     /// BlueNRG-MS roles and mode configuration.
     Role = 41,
+}
+
+/// Transmitter power levels available for the system.
+///
+/// The controller uses two parameters to determine the actual power level: enable high power, and
+/// PA level. This enum combines the two parameters. The high byte is the PA level; the low byte is
+/// the enable high power flag.
+#[repr(u16)]
+pub enum PowerLevel {
+    /// PA level 0, low power.
+    DbmNeg18 = 0x000,
+    /// PA level 0, high power.
+    DbmNeg15 = 0x001,
+    /// PA level 1, low power.
+    DbmNeg14_7 = 0x100,
+    /// PA level 1, high power.
+    DbmNeg11_7 = 0x101,
+    /// PA level 2, low power.
+    DbmNeg11_4 = 0x200,
+    /// PA level 2, high power.
+    DbmNeg8_4 = 0x201,
+    /// PA level 3, low power.
+    DbmNeg8_1 = 0x300,
+    /// PA level 3, high power.
+    DbmNeg5_1 = 0x301,
+    /// PA level 4, low power.
+    DbmNeg4_9 = 0x400,
+    /// PA level 4, high power.
+    DbmNeg2_1 = 0x401,
+    /// PA level 5, low power.
+    DbmNeg1_6 = 0x500,
+    /// PA level 5, high power.
+    Dbm1_4 = 0x501,
+    /// PA level 6, low power.
+    Dbm1_7 = 0x600,
+    /// PA level 6, high power.
+    Dbm4_7 = 0x601,
+    /// PA level 7, low power.
+    Dbm5_0 = 0x700,
+    /// PA level 7, high power.
+    Dbm8_0 = 0x701,
 }
