@@ -104,3 +104,13 @@ fn device_standby() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x13, 0xFC, 0]));
 }
+
+#[test]
+fn get_tx_test_packet_count() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.get_tx_test_packet_count())
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x14, 0xFC, 0]));
+}

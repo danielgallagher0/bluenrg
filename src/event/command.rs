@@ -29,6 +29,10 @@ pub enum ReturnParameters {
     /// Status returned by the [HAL Device Standby](::hal::Commands::device_standby) command.
     HalDeviceStandby(hci::Status),
 
+    /// Parameters returned by the [HAL Get Tx Test Packet
+    /// Count](::hal::Commands::get_tx_test_packet_count) command.
+    HalGetTxTestPacketCount(HalTxTestPacketCount),
+
     /// Status returned by the [GAP Set Non-Discoverable](::gap::Commands::set_nondiscoverable)
     /// command.
     GapSetNonDiscoverable(hci::Status),
@@ -231,6 +235,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::HAL_DEVICE_STANDBY => {
                 Ok(ReturnParameters::HalDeviceStandby(to_status(&bytes[3..])?))
             }
+            ::opcode::HAL_TX_TEST_PACKET_COUNT => Ok(ReturnParameters::HalGetTxTestPacketCount(
+                to_hal_tx_test_packet_count(&bytes[3..])?,
+            )),
             ::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNonDiscoverable(
                 to_status(&bytes[3..])?,
             )),
@@ -521,6 +528,27 @@ fn to_hal_config_parameter(
             super::BlueNRGError::BadConfigParameterLength(other),
         )),
     }
+}
+
+/// Parameters returned by the [HAL Get Tx Test Packet
+/// Count](::hal::Commands::get_tx_test_packet_count) command.
+#[derive(Clone, Debug)]
+pub struct HalTxTestPacketCount {
+    /// Did the command fail, and if so, how?
+    pub status: hci::Status,
+
+    /// Number of packets sent during the last Direct TX test.
+    pub packet_count: u32,
+}
+
+fn to_hal_tx_test_packet_count(
+    bytes: &[u8],
+) -> Result<HalTxTestPacketCount, hci::event::Error<super::BlueNRGError>> {
+    require_len!(bytes, 5);
+    Ok(HalTxTestPacketCount {
+        status: to_status(bytes)?,
+        packet_count: LittleEndian::read_u32(&bytes[1..]),
+    })
 }
 
 /// Parameters returned by the [GAP Init](::gap::Commands::init) command.

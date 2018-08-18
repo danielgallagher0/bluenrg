@@ -28,6 +28,7 @@ opcodes! {
         pub const HAL_READ_CONFIG_DATA = 0x0D;
         pub const HAL_SET_TX_POWER_LEVEL = 0x0F;
         pub const HAL_DEVICE_STANDBY = 0x13;
+        pub const HAL_TX_TEST_PACKET_COUNT = 0x14;
     }
     Gap = 0x1;
     {

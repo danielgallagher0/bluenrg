@@ -82,6 +82,29 @@ pub trait Commands {
     /// The command is only accepted when there is no other Bluetooth activity. Otherwise an error
     /// code [command disallowed](hci::Status::CommandDisallowed) will return.
     fn device_standby(&mut self) -> nb::Result<(), Self::Error>;
+
+    /// Retrieve the number of packets sent in the last TX direct test.
+    ///
+    /// During the Direct Test mode, in the TX tests, the number of packets sent in the test is not
+    /// returned when executing the Direct Test End command. This command implements this feature.
+    ///
+    /// If the Direct TX test is started, a 32-bit counter will be used to count how many packets
+    /// have been transmitted. After the Direct Test End, this command can be used to check how many
+    /// packets were sent during the Direct TX test.
+    ///
+    /// The counter starts from 0 and counts upwards. As would be the case if 32-bits are all used,
+    /// the counter wraps back and starts from 0 again. The counter is not cleared until the next
+    /// Direct TX test starts.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// The controller will generate a [command
+    /// complete](::event::command::ReturnParameters::HalGetTxTestPacketCount) event.
+    fn get_tx_test_packet_count(&mut self) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -113,6 +136,10 @@ where
 
     fn device_standby(&mut self) -> nb::Result<(), Self::Error> {
         self.write_command(::opcode::HAL_DEVICE_STANDBY, &[])
+    }
+
+    fn get_tx_test_packet_count(&mut self) -> nb::Result<(), Self::Error> {
+        self.write_command(::opcode::HAL_TX_TEST_PACKET_COUNT, &[])
     }
 }
 

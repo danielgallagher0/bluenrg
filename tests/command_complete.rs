@@ -189,6 +189,24 @@ fn hal_read_config_invalid() {
 }
 
 #[test]
+fn hal_get_tx_test_packet_count() {
+    let buffer = [0x0E, 8, 8, 0x14, 0xFC, 0, 0x1, 0x2, 0x3, 0x4];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 8);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::HalGetTxTestPacketCount(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(params.packet_count, 0x04030201);
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
 fn gap_init() {
     let buffer = [
         0x0E, 10, 8, 0x8A, 0xFC, 0, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
