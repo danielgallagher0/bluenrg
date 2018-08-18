@@ -133,3 +133,11 @@ fn start_tone_invalid() {
     assert_eq!(err, nb::Error::Other(Error::InvalidChannel(40)));
     assert!(!fixture.wrote_header());
 }
+
+#[test]
+fn stop_tone() {
+    let mut fixture = Fixture::new();
+    fixture.act(|controller| controller.stop_tone()).unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x16, 0xFC, 0]));
+}

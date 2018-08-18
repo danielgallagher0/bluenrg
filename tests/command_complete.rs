@@ -41,6 +41,7 @@ status_only! {
     hal_set_tx_power_level(0x0F, 0xFC, BNRGParams::HalSetTxPowerLevel);
     hal_device_standby(0x13, 0xFC, BNRGParams::HalDeviceStandby);
     hal_start_tone(0x15, 0xFC, BNRGParams::HalStartTone);
+    hal_stop_tone(0x16, 0xFC, BNRGParams::HalStopTone);
 
     l2cap_connection_parameter_update_response(
         0x82,

@@ -125,6 +125,18 @@ pub trait Commands {
     /// The controller will generate a [command
     /// complete](::event::command::ReturnParameters::HalStartTone) event.
     fn start_tone(&mut self, channel: u8) -> nb::Result<(), Error<Self::Error>>;
+
+    /// Stops the previously started by the [`start_tone`](Commands::start_tone) command.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// The controller will generate a [command
+    /// complete](::event::command::ReturnParameters::HalStopTone) event.
+    fn stop_tone(&mut self) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -170,6 +182,10 @@ where
 
         self.write_command(::opcode::HAL_START_TONE, &[channel as u8])
             .map_err(rewrap_error)
+    }
+
+    fn stop_tone(&mut self) -> nb::Result<(), Self::Error> {
+        self.write_command(::opcode::HAL_STOP_TONE, &[])
     }
 }
 

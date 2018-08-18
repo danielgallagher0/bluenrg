@@ -36,6 +36,9 @@ pub enum ReturnParameters {
     /// Status returned by the [HAL Start Tone](::hal::Commands::start_tone) command.
     HalStartTone(hci::Status),
 
+    /// Status returned by the [HAL Stop Tone](::hal::Commands::stop_tone) command.
+    HalStopTone(hci::Status),
+
     /// Status returned by the [GAP Set Non-Discoverable](::gap::Commands::set_nondiscoverable)
     /// command.
     GapSetNonDiscoverable(hci::Status),
@@ -242,6 +245,7 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                 to_hal_tx_test_packet_count(&bytes[3..])?,
             )),
             ::opcode::HAL_START_TONE => Ok(ReturnParameters::HalStartTone(to_status(&bytes[3..])?)),
+            ::opcode::HAL_STOP_TONE => Ok(ReturnParameters::HalStopTone(to_status(&bytes[3..])?)),
             ::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNonDiscoverable(
                 to_status(&bytes[3..])?,
             )),

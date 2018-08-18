@@ -30,6 +30,7 @@ opcodes! {
         pub const HAL_DEVICE_STANDBY = 0x13;
         pub const HAL_TX_TEST_PACKET_COUNT = 0x14;
         pub const HAL_START_TONE = 0x15;
+        pub const HAL_STOP_TONE = 0x16;
     }
     Gap = 0x1;
     {
