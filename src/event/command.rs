@@ -15,6 +15,9 @@ use core::fmt::{Debug, Formatter, Result as FmtResult};
 /// return parameters, they are included in the enum.
 #[derive(Clone, Debug)]
 pub enum ReturnParameters {
+    /// Status returned by the [ACI Write Config Data](::aci::Commands::write_config_data) command.
+    AciWriteConfigData(hci::Status),
+
     /// Status returned by the [GAP Set Non-Discoverable](::gap::Commands::set_nondiscoverable)
     /// command.
     GapSetNonDiscoverable(hci::Status),
@@ -205,6 +208,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
         check_len_at_least(bytes, 3)?;
 
         match hci::Opcode(LittleEndian::read_u16(&bytes[1..])) {
+            ::opcode::ACI_WRITE_CONFIG_DATA => Ok(ReturnParameters::AciWriteConfigData(to_status(
+                &bytes[3..],
+            )?)),
             ::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNonDiscoverable(
                 to_status(&bytes[3..])?,
             )),

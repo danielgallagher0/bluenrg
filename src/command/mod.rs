@@ -73,6 +73,7 @@ macro_rules! impl_validate_variable_length_params {
     };
 }
 
+pub mod aci;
 pub mod gap;
 pub mod gatt;
 pub mod l2cap;

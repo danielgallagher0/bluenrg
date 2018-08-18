@@ -37,6 +37,8 @@ macro_rules! status_only {
 }
 
 status_only! {
+    aci_write_config_data(0x0C, 0xFC, BNRGParams::AciWriteConfigData);
+
     l2cap_connection_parameter_update_response(
         0x82,
         0xFD,

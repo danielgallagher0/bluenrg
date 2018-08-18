@@ -63,6 +63,7 @@ mod command;
 pub mod event;
 mod opcode;
 
+pub use command::aci;
 pub use command::gap;
 pub use command::gatt;
 pub use command::l2cap;

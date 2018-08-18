@@ -22,7 +22,10 @@ macro_rules! opcodes {
 }
 
 opcodes! {
-    // Hci = 0x0;
+    Aci = 0x0;
+    {
+        pub const ACI_WRITE_CONFIG_DATA = 0x0C;
+    }
     Gap = 0x1;
     {
         pub const GAP_SET_NONDISCOVERABLE = 0x01;
