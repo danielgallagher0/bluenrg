@@ -24,6 +24,7 @@ macro_rules! opcodes {
 opcodes! {
     Hal = 0x0;
     {
+        pub const HAL_GET_FIRMWARE_REVISION = 0x00;
         pub const HAL_WRITE_CONFIG_DATA = 0x0C;
         pub const HAL_READ_CONFIG_DATA = 0x0D;
         pub const HAL_SET_TX_POWER_LEVEL = 0x0F;

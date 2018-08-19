@@ -280,6 +280,24 @@ fn hal_get_link_status_invalid_status() {
 }
 
 #[test]
+fn hal_get_firmware_revision() {
+    let buffer = [0x0E, 6, 8, 0x00, 0xFC, 0, 1, 2];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 8);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::HalGetFirmwareRevision(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(params.revision, 0x0201);
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
 fn gap_init() {
     let buffer = [
         0x0E, 10, 8, 0x8A, 0xFC, 0, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,

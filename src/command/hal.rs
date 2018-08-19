@@ -12,6 +12,18 @@ pub trait Commands {
     /// Type of communication errors.
     type Error;
 
+    /// This command is intended to retrieve the firmware revision number.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// The controller will generate a [command
+    /// complete](::event::command::ReturnParameters::HalGetFirmwareRevision) event.
+    fn get_firmware_revision(&mut self) -> nb::Result<(), Self::Error>;
+
     /// This command writes a value to a low level configure data structure. It is useful to setup
     /// directly some low level parameters for the system in the runtime.
     ///
@@ -160,6 +172,10 @@ where
     InputPin: hal::digital::InputPin,
 {
     type Error = E;
+
+    fn get_firmware_revision(&mut self) -> nb::Result<(), Self::Error> {
+        self.write_command(::opcode::HAL_GET_FIRMWARE_REVISION, &[])
+    }
 
     impl_variable_length_params!(
         write_config_data,

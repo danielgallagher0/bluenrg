@@ -15,6 +15,10 @@ use core::fmt::{Debug, Formatter, Result as FmtResult};
 /// return parameters, they are included in the enum.
 #[derive(Clone, Debug)]
 pub enum ReturnParameters {
+    /// Parameters returned by the [HAL Get Firmware
+    /// Revision](::hal::Commands::get_firmware_revision) command.
+    HalGetFirmwareRevision(HalFirmwareRevision),
+
     /// Status returned by the [HAL Write Config Data](::hal::Commands::write_config_data) command.
     HalWriteConfigData(hci::Status),
 
@@ -232,6 +236,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
         check_len_at_least(bytes, 3)?;
 
         match hci::Opcode(LittleEndian::read_u16(&bytes[1..])) {
+            ::opcode::HAL_GET_FIRMWARE_REVISION => Ok(ReturnParameters::HalGetFirmwareRevision(
+                to_hal_firmware_revision(&bytes[3..])?,
+            )),
             ::opcode::HAL_WRITE_CONFIG_DATA => Ok(ReturnParameters::HalWriteConfigData(to_status(
                 &bytes[3..],
             )?)),
@@ -464,6 +471,28 @@ fn check_len_at_least(
 fn to_status(bytes: &[u8]) -> Result<hci::Status, hci::event::Error<super::BlueNRGError>> {
     require_len_at_least!(bytes, 1);
     bytes[0].try_into().map_err(hci::event::rewrap_bad_status)
+}
+
+/// Parameters returned by the [HAL Get Firmware Revision](::hal::Commands::get_firmware_revision)
+/// command.
+#[derive(Clone, Debug)]
+pub struct HalFirmwareRevision {
+    /// Did the command fail, and if so, how?
+    pub status: hci::Status,
+
+    /// The firmware revision number.
+    pub revision: u16,
+}
+
+fn to_hal_firmware_revision(
+    bytes: &[u8],
+) -> Result<HalFirmwareRevision, hci::event::Error<super::BlueNRGError>> {
+    require_len!(bytes, 3);
+
+    Ok(HalFirmwareRevision {
+        status: to_status(bytes)?,
+        revision: LittleEndian::read_u16(&bytes[1..]),
+    })
 }
 
 /// Parameters returned by the [HAL Read Config Data](::hal::Commands::read_config_data) command.

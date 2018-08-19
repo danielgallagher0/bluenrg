@@ -7,6 +7,16 @@ mod fixture;
 use bluenrg::hal::*;
 use fixture::Fixture;
 
+#[test]
+fn get_firmware_revision() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.get_firmware_revision())
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x00, 0xFC, 0]));
+}
+
 fn becomes_bytes(data: ConfigData, expected: &[u8]) -> bool {
     let mut actual = [0; ConfigData::MAX_LENGTH];
     let len = data.into_bytes(&mut actual);
