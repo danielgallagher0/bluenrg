@@ -161,6 +161,19 @@ pub trait Commands {
     /// The controller will generate a [command
     /// complete](::event::command::ReturnParameters::HalGetLinkStatus) event.
     fn get_link_status(&mut self) -> nb::Result<(), Self::Error>;
+
+    /// This command is intended to retrieve information about the current Anchor Interval and
+    /// allocable timing slots.
+    ///
+    /// # Errors
+    ///
+    /// Only underlying communication errors are reported.
+    ///
+    /// # Generated events
+    ///
+    /// The controller will generate a [command
+    /// complete](::event::command::ReturnParameters::HalGetAnchorPeriod) event.
+    fn get_anchor_period(&mut self) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
@@ -218,6 +231,10 @@ where
 
     fn get_link_status(&mut self) -> nb::Result<(), Self::Error> {
         self.write_command(::opcode::HAL_GET_LINK_STATUS, &[])
+    }
+
+    fn get_anchor_period(&mut self) -> nb::Result<(), Self::Error> {
+        self.write_command(::opcode::HAL_GET_ANCHOR_PERIOD, &[])
     }
 }
 

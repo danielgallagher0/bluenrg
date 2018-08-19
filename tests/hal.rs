@@ -161,3 +161,13 @@ fn get_link_status() {
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x17, 0xFC, 0]));
 }
+
+#[test]
+fn get_anchor_period() {
+    let mut fixture = Fixture::new();
+    fixture
+        .act(|controller| controller.get_anchor_period())
+        .unwrap();
+    assert!(fixture.wrote_header());
+    assert!(fixture.wrote(&[1, 0x19, 0xFC, 0]));
+}

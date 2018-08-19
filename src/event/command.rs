@@ -9,6 +9,7 @@ extern crate bluetooth_hci as hci;
 use byteorder::{ByteOrder, LittleEndian};
 use core::convert::{TryFrom, TryInto};
 use core::fmt::{Debug, Formatter, Result as FmtResult};
+use core::time::Duration;
 
 /// Vendor-specific commands that may generate the [Command
 /// Complete](hci::event::command::ReturnParameters::Vendor) event. If the commands have defined
@@ -45,6 +46,10 @@ pub enum ReturnParameters {
 
     /// Status returned by the [HAL Get Link Status](::hal::Commands::get_link_status) command.
     HalGetLinkStatus(HalLinkStatus),
+
+    /// Parameters returned by the [HAL Get Anchor Period](::hal::Commands::get_anchor_period)
+    /// command.
+    HalGetAnchorPeriod(HalAnchorPeriod),
 
     /// Status returned by the [GAP Set Non-Discoverable](::gap::Commands::set_nondiscoverable)
     /// command.
@@ -258,6 +263,9 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
             ::opcode::HAL_STOP_TONE => Ok(ReturnParameters::HalStopTone(to_status(&bytes[3..])?)),
             ::opcode::HAL_GET_LINK_STATUS => Ok(ReturnParameters::HalGetLinkStatus(
                 to_hal_link_status(&bytes[3..])?,
+            )),
+            ::opcode::HAL_GET_ANCHOR_PERIOD => Ok(ReturnParameters::HalGetAnchorPeriod(
+                to_hal_anchor_period(&bytes[3..])?,
             )),
             ::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNonDiscoverable(
                 to_status(&bytes[3..])?,
@@ -676,6 +684,31 @@ fn to_hal_link_status(
     }
 
     Ok(status)
+}
+
+/// Parameters returned by the [HAL Get Anchor Period](::hal::Commands::get_anchor_period) command.
+#[derive(Clone, Debug)]
+pub struct HalAnchorPeriod {
+    /// Did the command fail, and if so, how?
+    pub status: hci::Status,
+
+    /// Duration between the beginnings of sniff anchor points.
+    pub anchor_interval: Duration,
+
+    /// Maximum available size that can be allocated to a new connection slot.
+    pub max_slot: Duration,
+}
+
+fn to_hal_anchor_period(
+    bytes: &[u8],
+) -> Result<HalAnchorPeriod, hci::event::Error<super::BlueNRGError>> {
+    require_len!(bytes, 9);
+
+    Ok(HalAnchorPeriod {
+        status: to_status(bytes)?,
+        anchor_interval: Duration::from_micros(625 * LittleEndian::read_u32(&bytes[1..5]) as u64),
+        max_slot: Duration::from_micros(625 * LittleEndian::read_u32(&bytes[5..9]) as u64),
+    })
 }
 
 /// Parameters returned by the [GAP Init](::gap::Commands::init) command.

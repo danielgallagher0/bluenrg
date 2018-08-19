@@ -33,6 +33,10 @@ opcodes! {
         pub const HAL_START_TONE = 0x15;
         pub const HAL_STOP_TONE = 0x16;
         pub const HAL_GET_LINK_STATUS = 0x17;
+
+        // The documentation says the OCF is 0xF8 (0b1111_1000), but that does not fit the OCF
+        // length (7 bits). The C source code has 0x19, which is valid.
+        pub const HAL_GET_ANCHOR_PERIOD = 0x19;
     }
     Gap = 0x1;
     {

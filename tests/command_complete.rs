@@ -6,6 +6,7 @@ use bluenrg::event::command::*;
 use bluenrg::event::*;
 use hci::event::command::ReturnParameters as HciParams;
 use hci::event::{Error as HciError, Event as HciEvent, Packet};
+use std::time::Duration;
 
 type Event = HciEvent<BlueNRGEvent>;
 
@@ -289,6 +290,30 @@ fn hal_get_firmware_revision() {
                 HciParams::Vendor(BNRGParams::HalGetFirmwareRevision(params)) => {
                     assert_eq!(params.status, hci::Status::Success);
                     assert_eq!(params.revision, 0x0201);
+                }
+                other => panic!("Wrong return parameters: {:?}", other),
+            }
+        }
+        other => panic!("Did not get command complete event: {:?}", other),
+    }
+}
+
+#[test]
+fn hal_get_anchor_period() {
+    let buffer = [
+        0x0E, 12, 8, 0x19, 0xFC, 0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8,
+    ];
+    match Event::new(Packet(&buffer)) {
+        Ok(HciEvent::CommandComplete(event)) => {
+            assert_eq!(event.num_hci_command_packets, 8);
+            match event.return_params {
+                HciParams::Vendor(BNRGParams::HalGetAnchorPeriod(params)) => {
+                    assert_eq!(params.status, hci::Status::Success);
+                    assert_eq!(
+                        params.anchor_interval,
+                        Duration::from_micros(625 * 0x04030201)
+                    );
+                    assert_eq!(params.max_slot, Duration::from_micros(625 * 0x08070605));
                 }
                 other => panic!("Wrong return parameters: {:?}", other),
             }
