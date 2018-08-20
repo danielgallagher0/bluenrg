@@ -93,17 +93,19 @@ impl hal::blocking::spi::write::Default<u8> for RecordingSink {}
 pub struct DummyPin;
 
 impl hal::digital::OutputPin for DummyPin {
-    fn is_high(&self) -> bool {
-        true // Needs to indicate data ready
-    }
-
-    fn is_low(&self) -> bool {
-        false
-    }
-
     fn set_low(&mut self) {}
 
     fn set_high(&mut self) {}
+}
+
+impl hal::digital::StatefulOutputPin for DummyPin {
+    fn is_set_high(&self) -> bool {
+        true // Needs to indicate data ready
+    }
+
+    fn is_set_low(&self) -> bool {
+        false
+    }
 }
 
 impl hal::digital::InputPin for DummyPin {
