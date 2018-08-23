@@ -239,8 +239,8 @@ where
     OutputPin2: emhal::digital::OutputPin,
     InputPin: emhal::digital::InputPin,
 {
-    // type Error = Error<E>;
     type Error = E;
+    type Header = hci::host::uart::CommandHeader;
 
     fn write(&mut self, header: &[u8], payload: &[u8]) -> nb::Result<(), Self::Error> {
         self.d.chip_select.set_low();
