@@ -1468,10 +1468,10 @@ impl AddCharacteristicParameters {
     }
 }
 
-/// Available [properties](AddCharacteristicParameters::characteristic_properties) for
-/// characteristics. Defined in Volume 3, Part G, Section 3.3.3.1 of Bluetooth
-/// Specification 4.1.
 bitflags! {
+    /// Available [properties](AddCharacteristicParameters::characteristic_properties) for
+    /// characteristics. Defined in Volume 3, Part G, Section 3.3.3.1 of Bluetooth Specification
+    /// 4.1.
     pub struct CharacteristicProperty: u8 {
         /// If set, permits broadcasts of the Characteristic Value using Server Characteristic
         /// Configuration Descriptor. If set, the Server Characteristic Configuration Descriptor
