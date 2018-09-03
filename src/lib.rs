@@ -361,6 +361,7 @@ where
 }
 
 /// Vendor-specific interpretation of the local version information from the controller.
+#[derive(Clone)]
 pub struct Version {
     /// Version of the controller hardware.
     pub hw_version: u8,
