@@ -17,8 +17,8 @@ ms = []
 
 [dependencies]
 nb = "0.1.1"
-bluetooth-hci = { git = "https://github.com/danielgallagher0/bluetooth-hci" }
-bitflags = { version = "1.0" }
+bluetooth-hci = "0.0.2"
+bitflags = "1.0"
 
 [dependencies.embedded-hal]
 version = "0.2.0"

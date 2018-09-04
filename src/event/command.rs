@@ -21,7 +21,7 @@ pub enum ReturnParameters {
     HalGetFirmwareRevision(HalFirmwareRevision),
 
     /// Status returned by the [HAL Write Config Data](::hal::Commands::write_config_data) command.
-    HalWriteConfigData(hci::Status),
+    HalWriteConfigData(hci::Status<::event::Status>),
 
     /// Parameters returned by the [HAL Read Config Data](::hal::Commands::read_config_data)
     /// command.
@@ -29,20 +29,20 @@ pub enum ReturnParameters {
 
     /// Status returned by the [HAL Set Tx Power Level](::hal::Commands::set_tx_power_level)
     /// command.
-    HalSetTxPowerLevel(hci::Status),
+    HalSetTxPowerLevel(hci::Status<::event::Status>),
 
     /// Status returned by the [HAL Device Standby](::hal::Commands::device_standby) command.
-    HalDeviceStandby(hci::Status),
+    HalDeviceStandby(hci::Status<::event::Status>),
 
     /// Parameters returned by the [HAL Get Tx Test Packet
     /// Count](::hal::Commands::get_tx_test_packet_count) command.
     HalGetTxTestPacketCount(HalTxTestPacketCount),
 
     /// Status returned by the [HAL Start Tone](::hal::Commands::start_tone) command.
-    HalStartTone(hci::Status),
+    HalStartTone(hci::Status<::event::Status>),
 
     /// Status returned by the [HAL Stop Tone](::hal::Commands::stop_tone) command.
-    HalStopTone(hci::Status),
+    HalStopTone(hci::Status<::event::Status>),
 
     /// Status returned by the [HAL Get Link Status](::hal::Commands::get_link_status) command.
     HalGetLinkStatus(HalLinkStatus),
@@ -53,54 +53,54 @@ pub enum ReturnParameters {
 
     /// Status returned by the [GAP Set Non-Discoverable](::gap::Commands::set_nondiscoverable)
     /// command.
-    GapSetNonDiscoverable(hci::Status),
+    GapSetNonDiscoverable(hci::Status<::event::Status>),
 
     /// Status returned by the [GAP Set Discoverable](::gap::Commands::set_discoverable)
     /// command.
-    GapSetDiscoverable(hci::Status),
+    GapSetDiscoverable(hci::Status<::event::Status>),
 
     /// Status returned by the [GAP Set Direct
     /// Connectable](::gap::Commands::set_direct_connectable) command.
-    GapSetDirectConnectable(hci::Status),
+    GapSetDirectConnectable(hci::Status<::event::Status>),
 
     /// Status returned by the [GAP Set IO Capability](::gap::Commands::set_io_capability)
     /// command.
-    GapSetIoCapability(hci::Status),
+    GapSetIoCapability(hci::Status<::event::Status>),
 
     /// Status returned by the [GAP Set Authentication
     /// Requirement](::gap::Commands::set_authentication_requirement) command.
-    GapSetAuthenticationRequirement(hci::Status),
+    GapSetAuthenticationRequirement(hci::Status<::event::Status>),
 
     /// Status returned by the [GAP Set Authorization
     /// Requirement](::gap::Commands::set_authorization_requirement) command.
-    GapSetAuthorizationRequirement(hci::Status),
+    GapSetAuthorizationRequirement(hci::Status<::event::Status>),
 
     /// Status returned by the [GAP Pass Key Response](::gap::Commands::pass_key_response)
     /// command.
-    GapPassKeyResponse(hci::Status),
+    GapPassKeyResponse(hci::Status<::event::Status>),
 
     /// Status returned by the [GAP Authorization
     /// Response](::gap::Commands::authorization_response) command.
-    GapAuthorizationResponse(hci::Status),
+    GapAuthorizationResponse(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GAP Init](::gap::Commands::init) command.
     GapInit(GapInit),
 
     /// Parameters returned by the [GAP Set
     /// Non-Connectable](::gap::Commands::set_nonconnectable) command.
-    GapSetNonConnectable(hci::Status),
+    GapSetNonConnectable(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GAP Set
     /// Undirected Connectable](::gap::Commands::set_undirected_connectable) command.
-    GapSetUndirectedConnectable(hci::Status),
+    GapSetUndirectedConnectable(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GAP Update Advertising
     /// Data](::gap::Commands::update_advertising_data) command.
-    GapUpdateAdvertisingData(hci::Status),
+    GapUpdateAdvertisingData(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GAP Delete AD Type](::gap::Commands::delete_ad_type)
     /// command.
-    GapDeleteAdType(hci::Status),
+    GapDeleteAdType(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GAP Get Security Level](::gap::Commands::get_security_level)
     /// command.
@@ -108,27 +108,27 @@ pub enum ReturnParameters {
 
     /// Parameters returned by the [GAP Set Event Mask](::gap::Commands::set_event_mask)
     /// command.
-    GapSetEventMask(hci::Status),
+    GapSetEventMask(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GAP Configure
     /// White List](::gap::Commands::configure_white_list) command.
-    GapConfigureWhiteList(hci::Status),
+    GapConfigureWhiteList(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GAP Clear Security
     /// Database](::gap::Commands::clear_security_database) command.
-    GapClearSecurityDatabase(hci::Status),
+    GapClearSecurityDatabase(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GAP Allow Rebond](::gap::Commands::allow_rebond) command.
-    GapAllowRebond(hci::Status),
+    GapAllowRebond(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GAP Terminate
     /// Procedure](::gap::Commands::terminate_procedure) command.
-    GapTerminateProcedure(hci::Status),
+    GapTerminateProcedure(hci::Status<::event::Status>),
 
     #[cfg(not(feature = "ms"))]
     /// Parameters returned by the [GAP Resolve Private
     /// Address](::gap::Commands::resolve_private_address) command.
-    GapResolvePrivateAddress(hci::Status),
+    GapResolvePrivateAddress(hci::Status<::event::Status>),
 
     #[cfg(feature = "ms")]
     /// Parameters returned by the [GAP Resolve Private
@@ -142,19 +142,19 @@ pub enum ReturnParameters {
     #[cfg(feature = "ms")]
     /// Parameters returned by the [GAP Set Broadcast Mode](::gap::Commands::set_broadcast_mode)
     /// command.
-    GapSetBroadcastMode(hci::Status),
+    GapSetBroadcastMode(hci::Status<::event::Status>),
 
     #[cfg(feature = "ms")]
     /// Parameters returned by the [GAP Start Observation
     /// Procedure](::gap::Commands::start_observation_procedure) command.
-    GapStartObservationProcedure(hci::Status),
+    GapStartObservationProcedure(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GAP Is Device Bonded](::gap::Commands::is_device_bonded)
     /// command.
-    GapIsDeviceBonded(hci::Status),
+    GapIsDeviceBonded(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GATT Init](::gatt::Commands::init) command.
-    GattInit(hci::Status),
+    GattInit(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GATT Add Service](::gatt::Commands::add_service) command.
     GattAddService(GattService),
@@ -173,47 +173,47 @@ pub enum ReturnParameters {
 
     /// Parameters returned by the [GATT Update Characteristic
     /// Value](::gatt::Commands::update_characteristic_value) command.
-    GattUpdateCharacteristicValue(hci::Status),
+    GattUpdateCharacteristicValue(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GATT Delete
     /// Characteristic](::gatt::Commands::delete_characteristic) command.
-    GattDeleteCharacteristic(hci::Status),
+    GattDeleteCharacteristic(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GATT Delete Service](::gatt::Commands::delete_service) command.
-    GattDeleteService(hci::Status),
+    GattDeleteService(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GATT Delete Included
     /// Service](::gatt::Commands::delete_included_service) command.
-    GattDeleteIncludedService(hci::Status),
+    GattDeleteIncludedService(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GATT Set Event Mask](::gatt::Commands::set_event_mask) command.
-    GattSetEventMask(hci::Status),
+    GattSetEventMask(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GATT Write Without
     /// Response](::gatt::Commands::write_without_response) command.
-    GattWriteWithoutResponse(hci::Status),
+    GattWriteWithoutResponse(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GATT Signed Write Without
     /// Response](::gatt::Commands::signed_write_without_response) command.
-    GattSignedWriteWithoutResponse(hci::Status),
+    GattSignedWriteWithoutResponse(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GATT Confirm Indication](::gatt::Commands::confirm_indication)
     /// command.
-    GattConfirmIndication(hci::Status),
+    GattConfirmIndication(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GATT Write Response](::gatt::Commands::write_response) command.
-    GattWriteResponse(hci::Status),
+    GattWriteResponse(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GATT Allow Read](::gatt::Commands::allow_read) command.
-    GattAllowRead(hci::Status),
+    GattAllowRead(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GATT Set Security
     /// Permission](::gatt::Commands::set_security_permission) command.
-    GattSetSecurityPermission(hci::Status),
+    GattSetSecurityPermission(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GATT Set Descriptor
     /// Value](::gatt::Commands::set_descriptor_value) command.
-    GattSetDescriptorValue(hci::Status),
+    GattSetDescriptorValue(hci::Status<::event::Status>),
 
     /// Parameters returned by the [GATT Read Handle Value](::gatt::Commands::read_handle_value)
     /// command.
@@ -227,11 +227,11 @@ pub enum ReturnParameters {
     /// Parameters returned by the [GATT Update Long Characteristic
     /// Value](::gatt::Commands::update_long_characteristic_value) command.
     #[cfg(feature = "ms")]
-    GattUpdateLongCharacteristicValue(hci::Status),
+    GattUpdateLongCharacteristicValue(hci::Status<::event::Status>),
 
     /// Status returned by the [L2CAP Connection Parameter Update
     /// Response](::l2cap::Commands::connection_parameter_update_response) command.
-    L2CapConnectionParameterUpdateResponse(hci::Status),
+    L2CapConnectionParameterUpdateResponse(hci::Status<::event::Status>),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -476,7 +476,9 @@ fn check_len_at_least(
     }
 }
 
-fn to_status(bytes: &[u8]) -> Result<hci::Status, hci::event::Error<super::BlueNRGError>> {
+fn to_status(
+    bytes: &[u8],
+) -> Result<hci::Status<::event::Status>, hci::event::Error<super::BlueNRGError>> {
     require_len_at_least!(bytes, 1);
     bytes[0].try_into().map_err(hci::event::rewrap_bad_status)
 }
@@ -486,7 +488,7 @@ fn to_status(bytes: &[u8]) -> Result<hci::Status, hci::event::Error<super::BlueN
 #[derive(Clone, Debug)]
 pub struct HalFirmwareRevision {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status,
+    pub status: hci::Status<::event::Status>,
 
     /// The firmware revision number.
     pub revision: u16,
@@ -507,7 +509,7 @@ fn to_hal_firmware_revision(
 #[derive(Clone, Debug)]
 pub struct HalConfigData {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status,
+    pub status: hci::Status<::event::Status>,
 
     /// Requested value.
     ///
@@ -586,7 +588,7 @@ fn to_hal_config_parameter(
 #[derive(Clone, Debug)]
 pub struct HalTxTestPacketCount {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status,
+    pub status: hci::Status<::event::Status>,
 
     /// Number of packets sent during the last Direct TX test.
     pub packet_count: u32,
@@ -606,7 +608,7 @@ fn to_hal_tx_test_packet_count(
 #[derive(Clone, Debug)]
 pub struct HalLinkStatus {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status,
+    pub status: hci::Status<::event::Status>,
 
     /// State of the client connections.
     pub clients: [ClientStatus; 8],
@@ -690,7 +692,7 @@ fn to_hal_link_status(
 #[derive(Clone, Debug)]
 pub struct HalAnchorPeriod {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status,
+    pub status: hci::Status<::event::Status>,
 
     /// Duration between the beginnings of sniff anchor points.
     pub anchor_interval: Duration,
@@ -719,7 +721,7 @@ pub struct GapInit {
     /// Should be one of:
     /// - [Success](hci::Status::Success)
     /// - [InvalidParameters](hci::Status::InvalidParameters)
-    pub status: hci::Status,
+    pub status: hci::Status<::event::Status>,
 
     /// Handle for the GAP service
     pub service_handle: ::gatt::ServiceHandle,
@@ -747,7 +749,7 @@ fn to_gap_init(bytes: &[u8]) -> Result<GapInit, hci::event::Error<super::BlueNRG
 #[derive(Copy, Clone, Debug)]
 pub struct GapSecurityLevel {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status,
+    pub status: hci::Status<::event::Status>,
 
     /// Is MITM (man-in-the-middle) protection required?
     pub mitm_protection_required: bool,
@@ -814,7 +816,7 @@ fn to_gap_security_level(
 #[derive(Copy, Clone, Debug)]
 pub struct GapResolvePrivateAddress {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status,
+    pub status: hci::Status<::event::Status>,
 
     /// If the address was successfully resolved, the peer address is returned.  This value is
     /// `None` if the address could not be resolved.
@@ -849,7 +851,7 @@ fn to_gap_resolve_private_address(
 #[derive(Copy, Clone)]
 pub struct GapBondedDevices {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status,
+    pub status: hci::Status<::event::Status>,
 
     // Number of peer addresses in the event, and a buffer that can hold all of the addresses.
     address_count: usize,
@@ -923,7 +925,7 @@ fn to_gap_bonded_devices(
 #[derive(Copy, Clone, Debug)]
 pub struct GattService {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status,
+    pub status: hci::Status<::event::Status>,
 
     /// Handle of the Service
     ///
@@ -948,7 +950,7 @@ fn to_gatt_service(bytes: &[u8]) -> Result<GattService, hci::event::Error<super:
 #[derive(Copy, Clone, Debug)]
 pub struct GattCharacteristic {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status,
+    pub status: hci::Status<::event::Status>,
 
     /// Handle of the characteristic.
     pub characteristic_handle: ::gatt::CharacteristicHandle,
@@ -970,7 +972,7 @@ fn to_gatt_characteristic(
 #[derive(Copy, Clone, Debug)]
 pub struct GattCharacteristicDescriptor {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status,
+    pub status: hci::Status<::event::Status>,
 
     /// Handle of the characteristic.
     pub descriptor_handle: ::gatt::DescriptorHandle,
@@ -992,7 +994,7 @@ fn to_gatt_characteristic_descriptor(
 #[derive(Copy, Clone)]
 pub struct GattHandleValue {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status,
+    pub status: hci::Status<::event::Status>,
 
     value_buf: [u8; GattHandleValue::MAX_VALUE_BUF],
     value_len: usize,

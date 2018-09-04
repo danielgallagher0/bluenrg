@@ -2130,7 +2130,7 @@ pub struct WriteResponseParameters<'a> {
     pub attribute_handle: CharacteristicHandle,
 
     /// Is the command rejected, and if so, why?
-    pub status: Result<(), hci::Status>,
+    pub status: Result<(), hci::Status<::event::Status>>,
 
     /// Value as passed in the [Write Permit Request](::event::BlueNRGEvent::AttWritePermitRequest)
     /// event.
@@ -2159,7 +2159,7 @@ impl<'a> WriteResponseParameters<'a> {
             }
             Err(code) => {
                 bytes[4] = 1;
-                bytes[5] = code as u8;
+                bytes[5] = code.into();
             }
         }
         bytes[6] = self.value.len() as u8;

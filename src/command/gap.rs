@@ -450,7 +450,7 @@ pub trait Commands {
     fn terminate(
         &mut self,
         conn_handle: hci::ConnectionHandle,
-        reason: hci::Status,
+        reason: hci::Status<::event::Status>,
     ) -> nb::Result<(), Error<Self::Error>>;
 
     /// Clear the security database. All the devices in the security database will be removed.
@@ -1031,7 +1031,7 @@ where
     fn terminate(
         &mut self,
         conn_handle: hci::ConnectionHandle,
-        reason: hci::Status,
+        reason: hci::Status<::event::Status>,
     ) -> nb::Result<(), Error<Self::Error>> {
         match reason {
             hci::Status::AuthFailure
@@ -1046,7 +1046,7 @@ where
 
         let mut bytes = [0; 3];
         LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
-        bytes[2] = reason as u8;
+        bytes[2] = reason.into();
 
         self.write_command(::opcode::GAP_TERMINATE, &bytes)
             .map_err(rewrap_error)
@@ -1208,7 +1208,7 @@ pub enum Error<E> {
 
     /// For the [GAP Terminate](Commands::terminate) command, the termination reason was
     /// not one of the allowed reason. The reason is returned.
-    BadTerminationReason(hci::Status),
+    BadTerminationReason(hci::Status<::event::Status>),
 
     /// For the [GAP Start Auto Connection
     /// Establishment](Commands::start_auto_connection_establishment) or [GAP Start

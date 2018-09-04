@@ -40,6 +40,7 @@
 #![no_std]
 #![feature(const_fn)]
 #![feature(try_from)]
+#![feature(never_type)]
 #![deny(missing_docs)]
 
 #[macro_use]
@@ -384,7 +385,7 @@ pub trait LocalVersionInfoExt {
     fn bluenrg_version(&self) -> Version;
 }
 
-impl LocalVersionInfoExt for hci::event::command::LocalVersionInfo {
+impl<VS> LocalVersionInfoExt for hci::event::command::LocalVersionInfo<VS> {
     fn bluenrg_version(&self) -> Version {
         Version {
             hw_version: (self.hci_revision >> 8) as u8,

@@ -243,6 +243,133 @@ pub enum BlueNRGEvent {
     AttPrepareWritePermitRequest(AttPrepareWritePermitRequest),
 }
 
+/// Enumeration of vendor-specific status codes.
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[repr(u8)]
+pub enum Status {
+    /// The command cannot be executed due to the current state of the device.
+    Failed = 0x41,
+    /// Some parameters are invalid.
+    InvalidParameters = 0x42,
+    /// It is not allowed to start the procedure (e.g. another the procedure is ongoing or cannot be
+    /// started on the given handle).
+    NotAllowed = 0x46,
+    /// Unexpected error.
+    Error = 0x47,
+    /// The address was not resolved.
+    AddressNotResolved = 0x48,
+    /// Failed to read from flash.
+    FlashReadFailed = 0x49,
+    /// Failed to write to flash.
+    FlashWriteFailed = 0x4A,
+    /// Failed to erase flash.
+    FlashEraseFailed = 0x4B,
+    /// Invalid CID
+    InvalidCid = 0x50,
+    /// Timer is not valid
+    TimerNotValidLayer = 0x54,
+    /// Insufficient resources to create the timer
+    TimerInsufficientResources = 0x55,
+    /// Connection signature resolving key (CSRK) is not found.
+    CsrkNotFound = 0x5A,
+    /// Identity resolving key (IRK) is not found
+    IrkNotFound = 0x5B,
+    /// The device is not in the security database.
+    DeviceNotFoundInDatabase = 0x5C,
+    /// The security database is full.
+    SecurityDatabaseFull = 0x5D,
+    /// The device is not bonded.
+    DeviceNotBonded = 0x5E,
+    /// The device is blacklisted.
+    DeviceInBlacklist = 0x5F,
+    /// The handle (service, characteristic, or descriptor) is invalid.
+    InvalidHandle = 0x60,
+    /// A parameter is invalid
+    InvalidParameter = 0x61,
+    /// The characteristic handle is not part of the service.
+    OutOfHandle = 0x62,
+    /// The operation is invalid
+    InvalidOperation = 0x63,
+    /// Insufficient resources to complete the operation.
+    InsufficientResources = 0x64,
+    /// The encryption key size is too small
+    InsufficientEncryptionKeySize = 0x65,
+    /// The characteristic already exists.
+    CharacteristicAlreadyExists = 0x66,
+    /// Returned when no valid slots are available (e.g. when there are no available state
+    /// machines).
+    NoValidSlot = 0x82,
+    /// Returned when a scan window shorter than minimum allowed value has been requested
+    /// (i.e. 2ms). The Rust API should prevent this error from occurring.
+    ScanWindowTooShort = 0x83,
+    /// Returned when the maximum requested interval to be allocated is shorter then the current
+    /// anchor period and a there is no submultiple for the current anchor period that is between
+    /// the minimum and the maximum requested intervals.
+    NewIntervalFailed = 0x84,
+    /// Returned when the maximum requested interval to be allocated is greater than the current
+    /// anchor period and there is no multiple of the anchor period that is between the minimum and
+    /// the maximum requested intervals.
+    IntervalTooLarge = 0x85,
+    /// Returned when the current anchor period or a new one can be found that is compatible to the
+    /// interval range requested by the new slot but the maximum available length that can be
+    /// allocated is less than the minimum requested slot length.
+    LengthFailed = 0x86,
+    /// MCU Library timed out.
+    Timeout = 0xFF,
+    /// MCU library: profile already initialized.
+    ProfileAlreadyInitialized = 0xF0,
+    /// MCU library: A parameter was null.
+    NullParameter = 0xF1,
+}
+
+impl TryFrom<u8> for Status {
+    type Error = hci::BadStatusError;
+
+    fn try_from(value: u8) -> Result<Status, Self::Error> {
+        match value {
+            0x41 => Ok(Status::Failed),
+            0x42 => Ok(Status::InvalidParameters),
+            0x46 => Ok(Status::NotAllowed),
+            0x47 => Ok(Status::Error),
+            0x48 => Ok(Status::AddressNotResolved),
+            0x49 => Ok(Status::FlashReadFailed),
+            0x4A => Ok(Status::FlashWriteFailed),
+            0x4B => Ok(Status::FlashEraseFailed),
+            0x50 => Ok(Status::InvalidCid),
+            0x54 => Ok(Status::TimerNotValidLayer),
+            0x55 => Ok(Status::TimerInsufficientResources),
+            0x5A => Ok(Status::CsrkNotFound),
+            0x5B => Ok(Status::IrkNotFound),
+            0x5C => Ok(Status::DeviceNotFoundInDatabase),
+            0x5D => Ok(Status::SecurityDatabaseFull),
+            0x5E => Ok(Status::DeviceNotBonded),
+            0x5F => Ok(Status::DeviceInBlacklist),
+            0x60 => Ok(Status::InvalidHandle),
+            0x61 => Ok(Status::InvalidParameter),
+            0x62 => Ok(Status::OutOfHandle),
+            0x63 => Ok(Status::InvalidOperation),
+            0x64 => Ok(Status::InsufficientResources),
+            0x65 => Ok(Status::InsufficientEncryptionKeySize),
+            0x66 => Ok(Status::CharacteristicAlreadyExists),
+            0x82 => Ok(Status::NoValidSlot),
+            0x83 => Ok(Status::ScanWindowTooShort),
+            0x84 => Ok(Status::NewIntervalFailed),
+            0x85 => Ok(Status::IntervalTooLarge),
+            0x86 => Ok(Status::LengthFailed),
+            0xFF => Ok(Status::Timeout),
+            0xF0 => Ok(Status::ProfileAlreadyInitialized),
+            0xF1 => Ok(Status::NullParameter),
+            _ => Err(hci::BadStatusError::BadValue(value)),
+        }
+    }
+}
+
+impl Into<u8> for Status {
+    fn into(self) -> u8 {
+        self as u8
+    }
+}
+
 /// Enumeration of potential errors when sending commands or deserializing events.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum BlueNRGError {
@@ -442,6 +569,7 @@ fn first_16<T>(buffer: &[T]) -> &[T] {
 impl hci::event::VendorEvent for BlueNRGEvent {
     type Error = BlueNRGError;
     type ReturnParameters = command::ReturnParameters;
+    type Status = Status;
 
     fn new(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<BlueNRGError>> {
         require_len_at_least!(buffer, 2);

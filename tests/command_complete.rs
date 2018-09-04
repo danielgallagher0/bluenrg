@@ -96,6 +96,59 @@ status_only! {
     );
 }
 
+fn hal_write_config_data_nonstandard_status() {
+    for (code, expected_status) in [
+        (0x41, Status::Failed),
+        (0x42, Status::InvalidParameters),
+        (0x46, Status::NotAllowed),
+        (0x47, Status::Error),
+        (0x48, Status::AddressNotResolved),
+        (0x49, Status::FlashReadFailed),
+        (0x4A, Status::FlashWriteFailed),
+        (0x4B, Status::FlashEraseFailed),
+        (0x50, Status::InvalidCid),
+        (0x54, Status::TimerNotValidLayer),
+        (0x55, Status::TimerInsufficientResources),
+        (0x5A, Status::CsrkNotFound),
+        (0x5B, Status::IrkNotFound),
+        (0x5C, Status::DeviceNotFoundInDatabase),
+        (0x5D, Status::SecurityDatabaseFull),
+        (0x5E, Status::DeviceNotBonded),
+        (0x5F, Status::DeviceInBlacklist),
+        (0x60, Status::InvalidHandle),
+        (0x61, Status::InvalidParameter),
+        (0x62, Status::OutOfHandle),
+        (0x63, Status::InvalidOperation),
+        (0x64, Status::InsufficientResources),
+        (0x65, Status::InsufficientEncryptionKeySize),
+        (0x66, Status::CharacteristicAlreadyExists),
+        (0x82, Status::NoValidSlot),
+        (0x83, Status::ScanWindowTooShort),
+        (0x84, Status::NewIntervalFailed),
+        (0x85, Status::IntervalTooLarge),
+        (0x86, Status::LengthFailed),
+        (0xFF, Status::Timeout),
+        (0xF0, Status::ProfileAlreadyInitialized),
+        (0xF1, Status::NullParameter),
+    ]
+        .iter()
+    {
+        let buffer = [0x0E, 4, 8, 0x0C, 0xFC, *code];
+        match Event::new(Packet(&buffer)) {
+            Ok(HciEvent::CommandComplete(event)) => {
+                assert_eq!(event.num_hci_command_packets, 8);
+                match event.return_params {
+                    HciParams::Vendor(BNRGParams::HalWriteConfigData(status)) => {
+                        assert_eq!(status, hci::Status::Vendor(*expected_status));
+                    }
+                    other => panic!("Wrong return parameters: {:?}", other),
+                }
+            }
+            other => panic!("Did not get command complete event: {:?}", other),
+        }
+    }
+}
+
 #[test]
 fn hal_read_config_data_public_addr() {
     let buffer = [0x0E, 10, 8, 0x0D, 0xFC, 0, 1, 2, 3, 4, 5, 6];
@@ -421,7 +474,7 @@ fn gap_resolve_private_address_failed() {
             assert_eq!(event.num_hci_command_packets, 1);
             match event.return_params {
                 HciParams::Vendor(BNRGParams::GapResolvePrivateAddress(params)) => {
-                    assert_eq!(params.status, hci::Status::InvalidParameters);
+                    assert_eq!(params.status, hci::Status::InvalidParameters,);
                     assert_eq!(params.bd_addr, None);
                 }
                 other => panic!("Wrong return parameters: {:?}", other),
@@ -440,7 +493,7 @@ fn gap_resolve_private_address_failed_mixed_signals() {
             assert_eq!(event.num_hci_command_packets, 1);
             match event.return_params {
                 HciParams::Vendor(BNRGParams::GapResolvePrivateAddress(params)) => {
-                    assert_eq!(params.status, hci::Status::InvalidParameters);
+                    assert_eq!(params.status, hci::Status::InvalidParameters,);
                     assert_eq!(params.bd_addr, None);
                 }
                 other => panic!("Wrong return parameters: {:?}", other),
@@ -506,7 +559,7 @@ fn gap_get_bonded_addresses_failed() {
             assert_eq!(event.num_hci_command_packets, 1);
             match event.return_params {
                 HciParams::Vendor(BNRGParams::GapGetBondedDevices(params)) => {
-                    assert_eq!(params.status, hci::Status::InvalidParameters);
+                    assert_eq!(params.status, hci::Status::InvalidParameters,);
                     assert_eq!(params.bonded_addresses(), []);
                 }
                 other => panic!("Wrong return parameters: {:?}", other),
@@ -524,7 +577,7 @@ fn gap_get_bonded_addresses_failed_mixed_signals() {
             assert_eq!(event.num_hci_command_packets, 1);
             match event.return_params {
                 HciParams::Vendor(BNRGParams::GapGetBondedDevices(params)) => {
-                    assert_eq!(params.status, hci::Status::InvalidParameters);
+                    assert_eq!(params.status, hci::Status::InvalidParameters,);
                     assert_eq!(params.bonded_addresses(), []);
                 }
                 other => panic!("Wrong return parameters: {:?}", other),
