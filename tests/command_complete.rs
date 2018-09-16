@@ -96,6 +96,7 @@ status_only! {
     );
 }
 
+#[test]
 fn hal_write_config_data_nonstandard_status() {
     for (code, expected_status) in [
         (0x41, Status::Failed),
