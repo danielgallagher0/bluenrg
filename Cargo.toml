@@ -17,7 +17,7 @@ ms = []
 
 [dependencies]
 nb = "0.1.1"
-bluetooth-hci = "0.0.2"
+bluetooth-hci = "0.0.3"
 bitflags = "1.0"
 
 [dependencies.embedded-hal]

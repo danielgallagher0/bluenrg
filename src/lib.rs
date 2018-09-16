@@ -243,6 +243,7 @@ where
 {
     type Error = E;
     type Header = hci::host::uart::CommandHeader;
+    type Vendor = BlueNRGTypes;
 
     fn write(&mut self, header: &[u8], payload: &[u8]) -> nb::Result<(), Self::Error> {
         self.d.chip_select.set_low();
@@ -300,6 +301,13 @@ where
             Err(nb::Error::WouldBlock)
         }
     }
+}
+
+/// Specify vendor-specific extensions for the BlueNRG.
+pub struct BlueNRGTypes;
+impl hci::Vendor for BlueNRGTypes {
+    type Status = event::Status;
+    type Event = event::BlueNRGEvent;
 }
 
 impl<'buf, SPI, OutputPin1, OutputPin2, InputPin>
