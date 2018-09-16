@@ -1,6 +1,6 @@
 [package]
 name = "bluenrg"
-version = "0.0.3"
+version = "0.0.4"
 authors = ["Daniel Gallagher <pdanielgallagher@gmail.com>"]
 categories = ["embedded", "hardware-support", "no-std"]
 description = "Interface to ST Micro BlueNRG Bluetooth radios"
