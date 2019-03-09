@@ -39,8 +39,6 @@
 
 #![no_std]
 #![feature(const_fn)]
-#![feature(extern_prelude)]
-#![feature(try_from)]
 #![feature(never_type)]
 #![deny(missing_docs)]
 

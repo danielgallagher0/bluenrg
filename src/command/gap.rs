@@ -935,7 +935,7 @@ where
             _ => {
                 return Err(nb::Error::Other(Error::BadAdvertisingType(
                     advertising_type,
-                )))
+                )));
             }
         }
 
@@ -954,14 +954,15 @@ where
             _ => {
                 return Err(nb::Error::Other(Error::BadAdvertisingType(
                     advertising_type,
-                )))
+                )));
             }
         }
 
         self.write_command(
             ::opcode::GAP_SET_NONCONNECTABLE,
             &[advertising_type as u8, address_type as u8],
-        ).map_err(rewrap_error)
+        )
+        .map_err(rewrap_error)
     }
 
     fn set_undirected_connectable(
@@ -975,14 +976,15 @@ where
             _ => {
                 return Err(nb::Error::Other(Error::BadAdvertisingFilterPolicy(
                     filter_policy,
-                )))
+                )));
             }
         }
 
         self.write_command(
             ::opcode::GAP_SET_UNDIRECTED_CONNECTABLE,
             &[filter_policy as u8, address_type as u8],
-        ).map_err(rewrap_error)
+        )
+        .map_err(rewrap_error)
     }
 
     impl_params!(
@@ -1006,7 +1008,8 @@ where
         self.write_command(
             ::opcode::GAP_UPDATE_ADVERTISING_DATA,
             &bytes[0..1 + data.len()],
-        ).map_err(rewrap_error)
+        )
+        .map_err(rewrap_error)
     }
 
     fn delete_ad_type(&mut self, ad_type: AdvertisingDataType) -> nb::Result<(), Self::Error> {
@@ -1363,7 +1366,7 @@ impl<'a, 'b> DiscoverableParameters<'a, 'b> {
         };
         bytes[advertising_data_len_index] = self.advertising_data.len() as u8;
         bytes[(advertising_data_len_index + 1)
-                  ..(advertising_data_len_index + 1 + self.advertising_data.len())]
+            ..(advertising_data_len_index + 1 + self.advertising_data.len())]
             .copy_from_slice(self.advertising_data);
         let conn_interval_index = advertising_data_len_index + 1 + self.advertising_data.len();
         const NO_SPECIFIC_CONN_INTERVAL: u16 = 0xFFFF;
@@ -1614,7 +1617,7 @@ pub enum Authorization {
     Rejected = 0x02,
 }
 
-bitflags!{
+bitflags! {
     /// Roles for a [GAP service](Commands::init).
     pub struct Role: u8 {
         /// Peripheral
@@ -1709,7 +1712,7 @@ pub enum AdvertisingDataType {
     ManufacturerSpecificData = 0xFF,
 }
 
-bitflags!{
+bitflags! {
     /// Event types for [GAP Set Event Mask](Commands::set_event_mask).
     pub struct EventFlags: u16 {
         /// [Limited Discoverable](::event::BlueNRGEvent::GapLimitedDiscoverableTimeout)
@@ -1963,7 +1966,7 @@ impl<'a> SelectiveConnectionEstablishmentParameters<'a> {
 /// and [GAP Create Connection](Commands::create_connection) commands are identical.
 pub type ConnectionParameters = NameDiscoveryProcedureParameters;
 
-bitflags!{
+bitflags! {
     /// Roles for a [GAP service](Commands::init).
     pub struct Procedure: u8 {
         /// [Limited Discovery](Commands::start_limited_discovery_procedure) procedure.

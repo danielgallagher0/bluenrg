@@ -1003,7 +1003,7 @@ pub struct GattHandleValue {
 impl Debug for GattHandleValue {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(f, "{{")?;
-        write!(f, "status: {:?}; value: {{", self.status);
+        write!(f, "status: {:?}; value: {{", self.status)?;
         for addr in self.value().iter() {
             write!(f, "{:?}, ", addr)?;
         }

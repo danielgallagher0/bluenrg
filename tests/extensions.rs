@@ -1,5 +1,3 @@
-#![feature(try_from)]
-
 extern crate bluenrg;
 extern crate core;
 
