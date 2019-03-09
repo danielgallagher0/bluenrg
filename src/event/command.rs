@@ -17,221 +17,225 @@ use core::time::Duration;
 #[derive(Clone, Debug)]
 pub enum ReturnParameters {
     /// Parameters returned by the [HAL Get Firmware
-    /// Revision](::hal::Commands::get_firmware_revision) command.
+    /// Revision](crate::hal::Commands::get_firmware_revision) command.
     HalGetFirmwareRevision(HalFirmwareRevision),
 
-    /// Status returned by the [HAL Write Config Data](::hal::Commands::write_config_data) command.
-    HalWriteConfigData(hci::Status<::event::Status>),
+    /// Status returned by the [HAL Write Config Data](crate::hal::Commands::write_config_data)
+    /// command.
+    HalWriteConfigData(hci::Status<crate::event::Status>),
 
-    /// Parameters returned by the [HAL Read Config Data](::hal::Commands::read_config_data)
+    /// Parameters returned by the [HAL Read Config Data](crate::hal::Commands::read_config_data)
     /// command.
     HalReadConfigData(HalConfigData),
 
-    /// Status returned by the [HAL Set Tx Power Level](::hal::Commands::set_tx_power_level)
+    /// Status returned by the [HAL Set Tx Power Level](crate::hal::Commands::set_tx_power_level)
     /// command.
-    HalSetTxPowerLevel(hci::Status<::event::Status>),
+    HalSetTxPowerLevel(hci::Status<crate::event::Status>),
 
-    /// Status returned by the [HAL Device Standby](::hal::Commands::device_standby) command.
-    HalDeviceStandby(hci::Status<::event::Status>),
+    /// Status returned by the [HAL Device Standby](crate::hal::Commands::device_standby) command.
+    HalDeviceStandby(hci::Status<crate::event::Status>),
 
     /// Parameters returned by the [HAL Get Tx Test Packet
-    /// Count](::hal::Commands::get_tx_test_packet_count) command.
+    /// Count](crate::hal::Commands::get_tx_test_packet_count) command.
     HalGetTxTestPacketCount(HalTxTestPacketCount),
 
-    /// Status returned by the [HAL Start Tone](::hal::Commands::start_tone) command.
-    HalStartTone(hci::Status<::event::Status>),
+    /// Status returned by the [HAL Start Tone](crate::hal::Commands::start_tone) command.
+    HalStartTone(hci::Status<crate::event::Status>),
 
-    /// Status returned by the [HAL Stop Tone](::hal::Commands::stop_tone) command.
-    HalStopTone(hci::Status<::event::Status>),
+    /// Status returned by the [HAL Stop Tone](crate::hal::Commands::stop_tone) command.
+    HalStopTone(hci::Status<crate::event::Status>),
 
-    /// Status returned by the [HAL Get Link Status](::hal::Commands::get_link_status) command.
+    /// Status returned by the [HAL Get Link Status](crate::hal::Commands::get_link_status) command.
     HalGetLinkStatus(HalLinkStatus),
 
-    /// Parameters returned by the [HAL Get Anchor Period](::hal::Commands::get_anchor_period)
+    /// Parameters returned by the [HAL Get Anchor Period](crate::hal::Commands::get_anchor_period)
     /// command.
     HalGetAnchorPeriod(HalAnchorPeriod),
 
-    /// Status returned by the [GAP Set Non-Discoverable](::gap::Commands::set_nondiscoverable)
+    /// Status returned by the [GAP Set Non-Discoverable](crate::gap::Commands::set_nondiscoverable)
     /// command.
-    GapSetNonDiscoverable(hci::Status<::event::Status>),
+    GapSetNonDiscoverable(hci::Status<crate::event::Status>),
 
-    /// Status returned by the [GAP Set Discoverable](::gap::Commands::set_discoverable)
+    /// Status returned by the [GAP Set Discoverable](crate::gap::Commands::set_discoverable)
     /// command.
-    GapSetDiscoverable(hci::Status<::event::Status>),
+    GapSetDiscoverable(hci::Status<crate::event::Status>),
 
     /// Status returned by the [GAP Set Direct
-    /// Connectable](::gap::Commands::set_direct_connectable) command.
-    GapSetDirectConnectable(hci::Status<::event::Status>),
+    /// Connectable](crate::gap::Commands::set_direct_connectable) command.
+    GapSetDirectConnectable(hci::Status<crate::event::Status>),
 
-    /// Status returned by the [GAP Set IO Capability](::gap::Commands::set_io_capability)
+    /// Status returned by the [GAP Set IO Capability](crate::gap::Commands::set_io_capability)
     /// command.
-    GapSetIoCapability(hci::Status<::event::Status>),
+    GapSetIoCapability(hci::Status<crate::event::Status>),
 
     /// Status returned by the [GAP Set Authentication
-    /// Requirement](::gap::Commands::set_authentication_requirement) command.
-    GapSetAuthenticationRequirement(hci::Status<::event::Status>),
+    /// Requirement](crate::gap::Commands::set_authentication_requirement) command.
+    GapSetAuthenticationRequirement(hci::Status<crate::event::Status>),
 
     /// Status returned by the [GAP Set Authorization
-    /// Requirement](::gap::Commands::set_authorization_requirement) command.
-    GapSetAuthorizationRequirement(hci::Status<::event::Status>),
+    /// Requirement](crate::gap::Commands::set_authorization_requirement) command.
+    GapSetAuthorizationRequirement(hci::Status<crate::event::Status>),
 
-    /// Status returned by the [GAP Pass Key Response](::gap::Commands::pass_key_response)
+    /// Status returned by the [GAP Pass Key Response](crate::gap::Commands::pass_key_response)
     /// command.
-    GapPassKeyResponse(hci::Status<::event::Status>),
+    GapPassKeyResponse(hci::Status<crate::event::Status>),
 
     /// Status returned by the [GAP Authorization
-    /// Response](::gap::Commands::authorization_response) command.
-    GapAuthorizationResponse(hci::Status<::event::Status>),
+    /// Response](crate::gap::Commands::authorization_response) command.
+    GapAuthorizationResponse(hci::Status<crate::event::Status>),
 
-    /// Parameters returned by the [GAP Init](::gap::Commands::init) command.
+    /// Parameters returned by the [GAP Init](crate::gap::Commands::init) command.
     GapInit(GapInit),
 
     /// Parameters returned by the [GAP Set
-    /// Non-Connectable](::gap::Commands::set_nonconnectable) command.
-    GapSetNonConnectable(hci::Status<::event::Status>),
+    /// Non-Connectable](crate::gap::Commands::set_nonconnectable) command.
+    GapSetNonConnectable(hci::Status<crate::event::Status>),
 
     /// Parameters returned by the [GAP Set
-    /// Undirected Connectable](::gap::Commands::set_undirected_connectable) command.
-    GapSetUndirectedConnectable(hci::Status<::event::Status>),
+    /// Undirected Connectable](crate::gap::Commands::set_undirected_connectable) command.
+    GapSetUndirectedConnectable(hci::Status<crate::event::Status>),
 
     /// Parameters returned by the [GAP Update Advertising
-    /// Data](::gap::Commands::update_advertising_data) command.
-    GapUpdateAdvertisingData(hci::Status<::event::Status>),
+    /// Data](crate::gap::Commands::update_advertising_data) command.
+    GapUpdateAdvertisingData(hci::Status<crate::event::Status>),
 
-    /// Parameters returned by the [GAP Delete AD Type](::gap::Commands::delete_ad_type)
+    /// Parameters returned by the [GAP Delete AD Type](crate::gap::Commands::delete_ad_type)
     /// command.
-    GapDeleteAdType(hci::Status<::event::Status>),
+    GapDeleteAdType(hci::Status<crate::event::Status>),
 
-    /// Parameters returned by the [GAP Get Security Level](::gap::Commands::get_security_level)
-    /// command.
+    /// Parameters returned by the [GAP Get Security
+    /// Level](crate::gap::Commands::get_security_level) command.
     GapGetSecurityLevel(GapSecurityLevel),
 
-    /// Parameters returned by the [GAP Set Event Mask](::gap::Commands::set_event_mask)
+    /// Parameters returned by the [GAP Set Event Mask](crate::gap::Commands::set_event_mask)
     /// command.
-    GapSetEventMask(hci::Status<::event::Status>),
+    GapSetEventMask(hci::Status<crate::event::Status>),
 
     /// Parameters returned by the [GAP Configure
-    /// White List](::gap::Commands::configure_white_list) command.
-    GapConfigureWhiteList(hci::Status<::event::Status>),
+    /// White List](crate::gap::Commands::configure_white_list) command.
+    GapConfigureWhiteList(hci::Status<crate::event::Status>),
 
     /// Parameters returned by the [GAP Clear Security
-    /// Database](::gap::Commands::clear_security_database) command.
-    GapClearSecurityDatabase(hci::Status<::event::Status>),
+    /// Database](crate::gap::Commands::clear_security_database) command.
+    GapClearSecurityDatabase(hci::Status<crate::event::Status>),
 
-    /// Parameters returned by the [GAP Allow Rebond](::gap::Commands::allow_rebond) command.
-    GapAllowRebond(hci::Status<::event::Status>),
+    /// Parameters returned by the [GAP Allow Rebond](crate::gap::Commands::allow_rebond) command.
+    GapAllowRebond(hci::Status<crate::event::Status>),
 
     /// Parameters returned by the [GAP Terminate
-    /// Procedure](::gap::Commands::terminate_procedure) command.
-    GapTerminateProcedure(hci::Status<::event::Status>),
+    /// Procedure](crate::gap::Commands::terminate_procedure) command.
+    GapTerminateProcedure(hci::Status<crate::event::Status>),
 
     #[cfg(not(feature = "ms"))]
     /// Parameters returned by the [GAP Resolve Private
-    /// Address](::gap::Commands::resolve_private_address) command.
-    GapResolvePrivateAddress(hci::Status<::event::Status>),
+    /// Address](crate::gap::Commands::resolve_private_address) command.
+    GapResolvePrivateAddress(hci::Status<crate::event::Status>),
 
     #[cfg(feature = "ms")]
     /// Parameters returned by the [GAP Resolve Private
-    /// Address](::gap::Commands::resolve_private_address) command.
+    /// Address](crate::gap::Commands::resolve_private_address) command.
     GapResolvePrivateAddress(GapResolvePrivateAddress),
 
-    /// Parameters returned by the [GAP Get Bonded Devices](::gap::Commands::get_bonded_devices)
-    /// command.
+    /// Parameters returned by the [GAP Get Bonded
+    /// Devices](crate::gap::Commands::get_bonded_devices) command.
     GapGetBondedDevices(GapBondedDevices),
 
     #[cfg(feature = "ms")]
-    /// Parameters returned by the [GAP Set Broadcast Mode](::gap::Commands::set_broadcast_mode)
-    /// command.
-    GapSetBroadcastMode(hci::Status<::event::Status>),
+    /// Parameters returned by the [GAP Set Broadcast
+    /// Mode](crate::gap::Commands::set_broadcast_mode) command.
+    GapSetBroadcastMode(hci::Status<crate::event::Status>),
 
     #[cfg(feature = "ms")]
     /// Parameters returned by the [GAP Start Observation
-    /// Procedure](::gap::Commands::start_observation_procedure) command.
-    GapStartObservationProcedure(hci::Status<::event::Status>),
+    /// Procedure](crate::gap::Commands::start_observation_procedure) command.
+    GapStartObservationProcedure(hci::Status<crate::event::Status>),
 
-    /// Parameters returned by the [GAP Is Device Bonded](::gap::Commands::is_device_bonded)
+    /// Parameters returned by the [GAP Is Device Bonded](crate::gap::Commands::is_device_bonded)
     /// command.
-    GapIsDeviceBonded(hci::Status<::event::Status>),
+    GapIsDeviceBonded(hci::Status<crate::event::Status>),
 
-    /// Parameters returned by the [GATT Init](::gatt::Commands::init) command.
-    GattInit(hci::Status<::event::Status>),
+    /// Parameters returned by the [GATT Init](crate::gatt::Commands::init) command.
+    GattInit(hci::Status<crate::event::Status>),
 
-    /// Parameters returned by the [GATT Add Service](::gatt::Commands::add_service) command.
+    /// Parameters returned by the [GATT Add Service](crate::gatt::Commands::add_service) command.
     GattAddService(GattService),
 
-    /// Parameters returned by the [GATT Include Service](::gatt::Commands::include_service)
+    /// Parameters returned by the [GATT Include Service](crate::gatt::Commands::include_service)
     /// command.
     GattIncludeService(GattService),
 
-    /// Parameters returned by the [GATT Add Characteristic](::gatt::Commands::add_characteristic)
-    /// command.
+    /// Parameters returned by the [GATT Add
+    /// Characteristic](crate::gatt::Commands::add_characteristic) command.
     GattAddCharacteristic(GattCharacteristic),
 
     /// Parameters returned by the [GATT Add Characteristic
-    /// Descriptor](::gatt::Commands::add_characteristic_descriptor) command.
+    /// Descriptor](crate::gatt::Commands::add_characteristic_descriptor) command.
     GattAddCharacteristicDescriptor(GattCharacteristicDescriptor),
 
     /// Parameters returned by the [GATT Update Characteristic
-    /// Value](::gatt::Commands::update_characteristic_value) command.
-    GattUpdateCharacteristicValue(hci::Status<::event::Status>),
+    /// Value](crate::gatt::Commands::update_characteristic_value) command.
+    GattUpdateCharacteristicValue(hci::Status<crate::event::Status>),
 
     /// Parameters returned by the [GATT Delete
-    /// Characteristic](::gatt::Commands::delete_characteristic) command.
-    GattDeleteCharacteristic(hci::Status<::event::Status>),
+    /// Characteristic](crate::gatt::Commands::delete_characteristic) command.
+    GattDeleteCharacteristic(hci::Status<crate::event::Status>),
 
-    /// Parameters returned by the [GATT Delete Service](::gatt::Commands::delete_service) command.
-    GattDeleteService(hci::Status<::event::Status>),
+    /// Parameters returned by the [GATT Delete Service](crate::gatt::Commands::delete_service)
+    /// command.
+    GattDeleteService(hci::Status<crate::event::Status>),
 
     /// Parameters returned by the [GATT Delete Included
-    /// Service](::gatt::Commands::delete_included_service) command.
-    GattDeleteIncludedService(hci::Status<::event::Status>),
+    /// Service](crate::gatt::Commands::delete_included_service) command.
+    GattDeleteIncludedService(hci::Status<crate::event::Status>),
 
-    /// Parameters returned by the [GATT Set Event Mask](::gatt::Commands::set_event_mask) command.
-    GattSetEventMask(hci::Status<::event::Status>),
+    /// Parameters returned by the [GATT Set Event Mask](crate::gatt::Commands::set_event_mask)
+    /// command.
+    GattSetEventMask(hci::Status<crate::event::Status>),
 
     /// Parameters returned by the [GATT Write Without
-    /// Response](::gatt::Commands::write_without_response) command.
-    GattWriteWithoutResponse(hci::Status<::event::Status>),
+    /// Response](crate::gatt::Commands::write_without_response) command.
+    GattWriteWithoutResponse(hci::Status<crate::event::Status>),
 
     /// Parameters returned by the [GATT Signed Write Without
-    /// Response](::gatt::Commands::signed_write_without_response) command.
-    GattSignedWriteWithoutResponse(hci::Status<::event::Status>),
+    /// Response](crate::gatt::Commands::signed_write_without_response) command.
+    GattSignedWriteWithoutResponse(hci::Status<crate::event::Status>),
 
-    /// Parameters returned by the [GATT Confirm Indication](::gatt::Commands::confirm_indication)
+    /// Parameters returned by the [GATT Confirm
+    /// Indication](crate::gatt::Commands::confirm_indication) command.
+    GattConfirmIndication(hci::Status<crate::event::Status>),
+
+    /// Parameters returned by the [GATT Write Response](crate::gatt::Commands::write_response)
     /// command.
-    GattConfirmIndication(hci::Status<::event::Status>),
+    GattWriteResponse(hci::Status<crate::event::Status>),
 
-    /// Parameters returned by the [GATT Write Response](::gatt::Commands::write_response) command.
-    GattWriteResponse(hci::Status<::event::Status>),
-
-    /// Parameters returned by the [GATT Allow Read](::gatt::Commands::allow_read) command.
-    GattAllowRead(hci::Status<::event::Status>),
+    /// Parameters returned by the [GATT Allow Read](crate::gatt::Commands::allow_read) command.
+    GattAllowRead(hci::Status<crate::event::Status>),
 
     /// Parameters returned by the [GATT Set Security
-    /// Permission](::gatt::Commands::set_security_permission) command.
-    GattSetSecurityPermission(hci::Status<::event::Status>),
+    /// Permission](crate::gatt::Commands::set_security_permission) command.
+    GattSetSecurityPermission(hci::Status<crate::event::Status>),
 
     /// Parameters returned by the [GATT Set Descriptor
-    /// Value](::gatt::Commands::set_descriptor_value) command.
-    GattSetDescriptorValue(hci::Status<::event::Status>),
+    /// Value](crate::gatt::Commands::set_descriptor_value) command.
+    GattSetDescriptorValue(hci::Status<crate::event::Status>),
 
-    /// Parameters returned by the [GATT Read Handle Value](::gatt::Commands::read_handle_value)
-    /// command.
+    /// Parameters returned by the [GATT Read Handle
+    /// Value](crate::gatt::Commands::read_handle_value) command.
     GattReadHandleValue(GattHandleValue),
 
     /// Parameters returned by the [GATT Read Handle
-    /// Value](::gatt::Commands::read_handle_value_offset) command.
+    /// Value](crate::gatt::Commands::read_handle_value_offset) command.
     #[cfg(feature = "ms")]
     GattReadHandleValueOffset(GattHandleValue),
 
     /// Parameters returned by the [GATT Update Long Characteristic
-    /// Value](::gatt::Commands::update_long_characteristic_value) command.
+    /// Value](crate::gatt::Commands::update_long_characteristic_value) command.
     #[cfg(feature = "ms")]
-    GattUpdateLongCharacteristicValue(hci::Status<::event::Status>),
+    GattUpdateLongCharacteristicValue(hci::Status<crate::event::Status>),
 
     /// Status returned by the [L2CAP Connection Parameter Update
-    /// Response](::l2cap::Commands::connection_parameter_update_response) command.
-    L2CapConnectionParameterUpdateResponse(hci::Status<::event::Status>),
+    /// Response](crate::l2cap::Commands::connection_parameter_update_response) command.
+    L2CapConnectionParameterUpdateResponse(hci::Status<crate::event::Status>),
 }
 
 impl hci::event::VendorReturnParameters for ReturnParameters {
@@ -241,88 +245,94 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
         check_len_at_least(bytes, 3)?;
 
         match hci::Opcode(LittleEndian::read_u16(&bytes[1..])) {
-            ::opcode::HAL_GET_FIRMWARE_REVISION => Ok(ReturnParameters::HalGetFirmwareRevision(
-                to_hal_firmware_revision(&bytes[3..])?,
+            crate::opcode::HAL_GET_FIRMWARE_REVISION => Ok(
+                ReturnParameters::HalGetFirmwareRevision(to_hal_firmware_revision(&bytes[3..])?),
+            ),
+            crate::opcode::HAL_WRITE_CONFIG_DATA => Ok(ReturnParameters::HalWriteConfigData(
+                to_status(&bytes[3..])?,
             )),
-            ::opcode::HAL_WRITE_CONFIG_DATA => Ok(ReturnParameters::HalWriteConfigData(to_status(
-                &bytes[3..],
-            )?)),
-            ::opcode::HAL_READ_CONFIG_DATA => Ok(ReturnParameters::HalReadConfigData(
+            crate::opcode::HAL_READ_CONFIG_DATA => Ok(ReturnParameters::HalReadConfigData(
                 to_hal_config_data(&bytes[3..])?,
             )),
-            ::opcode::HAL_SET_TX_POWER_LEVEL => Ok(ReturnParameters::HalSetTxPowerLevel(
+            crate::opcode::HAL_SET_TX_POWER_LEVEL => Ok(ReturnParameters::HalSetTxPowerLevel(
                 to_status(&bytes[3..])?,
             )),
-            ::opcode::HAL_DEVICE_STANDBY => {
+            crate::opcode::HAL_DEVICE_STANDBY => {
                 Ok(ReturnParameters::HalDeviceStandby(to_status(&bytes[3..])?))
             }
-            ::opcode::HAL_TX_TEST_PACKET_COUNT => Ok(ReturnParameters::HalGetTxTestPacketCount(
-                to_hal_tx_test_packet_count(&bytes[3..])?,
-            )),
-            ::opcode::HAL_START_TONE => Ok(ReturnParameters::HalStartTone(to_status(&bytes[3..])?)),
-            ::opcode::HAL_STOP_TONE => Ok(ReturnParameters::HalStopTone(to_status(&bytes[3..])?)),
-            ::opcode::HAL_GET_LINK_STATUS => Ok(ReturnParameters::HalGetLinkStatus(
+            crate::opcode::HAL_TX_TEST_PACKET_COUNT => {
+                Ok(ReturnParameters::HalGetTxTestPacketCount(
+                    to_hal_tx_test_packet_count(&bytes[3..])?,
+                ))
+            }
+            crate::opcode::HAL_START_TONE => {
+                Ok(ReturnParameters::HalStartTone(to_status(&bytes[3..])?))
+            }
+            crate::opcode::HAL_STOP_TONE => {
+                Ok(ReturnParameters::HalStopTone(to_status(&bytes[3..])?))
+            }
+            crate::opcode::HAL_GET_LINK_STATUS => Ok(ReturnParameters::HalGetLinkStatus(
                 to_hal_link_status(&bytes[3..])?,
             )),
-            ::opcode::HAL_GET_ANCHOR_PERIOD => Ok(ReturnParameters::HalGetAnchorPeriod(
+            crate::opcode::HAL_GET_ANCHOR_PERIOD => Ok(ReturnParameters::HalGetAnchorPeriod(
                 to_hal_anchor_period(&bytes[3..])?,
             )),
-            ::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNonDiscoverable(
+            crate::opcode::GAP_SET_NONDISCOVERABLE => Ok(ReturnParameters::GapSetNonDiscoverable(
                 to_status(&bytes[3..])?,
             )),
-            ::opcode::GAP_SET_DISCOVERABLE => Ok(ReturnParameters::GapSetDiscoverable(to_status(
-                &bytes[3..],
-            )?)),
-            ::opcode::GAP_SET_DIRECT_CONNECTABLE => Ok(ReturnParameters::GapSetDirectConnectable(
+            crate::opcode::GAP_SET_DISCOVERABLE => Ok(ReturnParameters::GapSetDiscoverable(
                 to_status(&bytes[3..])?,
             )),
-            ::opcode::GAP_SET_IO_CAPABILITY => Ok(ReturnParameters::GapSetIoCapability(to_status(
-                &bytes[3..],
-            )?)),
-            ::opcode::GAP_SET_AUTHENTICATION_REQUIREMENT => Ok(
+            crate::opcode::GAP_SET_DIRECT_CONNECTABLE => Ok(
+                ReturnParameters::GapSetDirectConnectable(to_status(&bytes[3..])?),
+            ),
+            crate::opcode::GAP_SET_IO_CAPABILITY => Ok(ReturnParameters::GapSetIoCapability(
+                to_status(&bytes[3..])?,
+            )),
+            crate::opcode::GAP_SET_AUTHENTICATION_REQUIREMENT => Ok(
                 ReturnParameters::GapSetAuthenticationRequirement(to_status(&bytes[3..])?),
             ),
-            ::opcode::GAP_SET_AUTHORIZATION_REQUIREMENT => Ok(
+            crate::opcode::GAP_SET_AUTHORIZATION_REQUIREMENT => Ok(
                 ReturnParameters::GapSetAuthorizationRequirement(to_status(&bytes[3..])?),
             ),
-            ::opcode::GAP_PASS_KEY_RESPONSE => Ok(ReturnParameters::GapPassKeyResponse(to_status(
-                &bytes[3..],
-            )?)),
-            ::opcode::GAP_AUTHORIZATION_RESPONSE => Ok(ReturnParameters::GapAuthorizationResponse(
+            crate::opcode::GAP_PASS_KEY_RESPONSE => Ok(ReturnParameters::GapPassKeyResponse(
                 to_status(&bytes[3..])?,
             )),
-            ::opcode::GAP_INIT => Ok(ReturnParameters::GapInit(to_gap_init(&bytes[3..])?)),
-            ::opcode::GAP_SET_NONCONNECTABLE => Ok(ReturnParameters::GapSetNonConnectable(
+            crate::opcode::GAP_AUTHORIZATION_RESPONSE => Ok(
+                ReturnParameters::GapAuthorizationResponse(to_status(&bytes[3..])?),
+            ),
+            crate::opcode::GAP_INIT => Ok(ReturnParameters::GapInit(to_gap_init(&bytes[3..])?)),
+            crate::opcode::GAP_SET_NONCONNECTABLE => Ok(ReturnParameters::GapSetNonConnectable(
                 to_status(&bytes[3..])?,
             )),
-            ::opcode::GAP_SET_UNDIRECTED_CONNECTABLE => Ok(
+            crate::opcode::GAP_SET_UNDIRECTED_CONNECTABLE => Ok(
                 ReturnParameters::GapSetUndirectedConnectable(to_status(&bytes[3..])?),
             ),
-            ::opcode::GAP_UPDATE_ADVERTISING_DATA => Ok(
+            crate::opcode::GAP_UPDATE_ADVERTISING_DATA => Ok(
                 ReturnParameters::GapUpdateAdvertisingData(to_status(&bytes[3..])?),
             ),
-            ::opcode::GAP_DELETE_AD_TYPE => {
+            crate::opcode::GAP_DELETE_AD_TYPE => {
                 Ok(ReturnParameters::GapDeleteAdType(to_status(&bytes[3..])?))
             }
-            ::opcode::GAP_GET_SECURITY_LEVEL => Ok(ReturnParameters::GapGetSecurityLevel(
+            crate::opcode::GAP_GET_SECURITY_LEVEL => Ok(ReturnParameters::GapGetSecurityLevel(
                 to_gap_security_level(&bytes[3..])?,
             )),
-            ::opcode::GAP_SET_EVENT_MASK => {
+            crate::opcode::GAP_SET_EVENT_MASK => {
                 Ok(ReturnParameters::GapSetEventMask(to_status(&bytes[3..])?))
             }
-            ::opcode::GAP_CONFIGURE_WHITE_LIST => Ok(ReturnParameters::GapConfigureWhiteList(
+            crate::opcode::GAP_CONFIGURE_WHITE_LIST => Ok(ReturnParameters::GapConfigureWhiteList(
                 to_status(&bytes[3..])?,
             )),
-            ::opcode::GAP_CLEAR_SECURITY_DATABASE => Ok(
+            crate::opcode::GAP_CLEAR_SECURITY_DATABASE => Ok(
                 ReturnParameters::GapClearSecurityDatabase(to_status(&bytes[3..])?),
             ),
-            ::opcode::GAP_ALLOW_REBOND => {
+            crate::opcode::GAP_ALLOW_REBOND => {
                 Ok(ReturnParameters::GapAllowRebond(to_status(&bytes[3..])?))
             }
-            ::opcode::GAP_TERMINATE_PROCEDURE => Ok(ReturnParameters::GapTerminateProcedure(
+            crate::opcode::GAP_TERMINATE_PROCEDURE => Ok(ReturnParameters::GapTerminateProcedure(
                 to_status(&bytes[3..])?,
             )),
-            ::opcode::GAP_RESOLVE_PRIVATE_ADDRESS => {
+            crate::opcode::GAP_RESOLVE_PRIVATE_ADDRESS => {
                 #[cfg(not(feature = "ms"))]
                 {
                     Ok(ReturnParameters::GapResolvePrivateAddress(to_status(
@@ -337,10 +347,10 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                     ))
                 }
             }
-            ::opcode::GAP_GET_BONDED_DEVICES => Ok(ReturnParameters::GapGetBondedDevices(
+            crate::opcode::GAP_GET_BONDED_DEVICES => Ok(ReturnParameters::GapGetBondedDevices(
                 to_gap_bonded_devices(&bytes[3..])?,
             )),
-            ::opcode::GAP_SET_BROADCAST_MODE => {
+            crate::opcode::GAP_SET_BROADCAST_MODE => {
                 #[cfg(feature = "ms")]
                 {
                     Ok(ReturnParameters::GapSetBroadcastMode(to_status(
@@ -351,11 +361,11 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                 #[cfg(not(feature = "ms"))]
                 {
                     Err(hci::event::Error::UnknownOpcode(
-                        ::opcode::GAP_SET_BROADCAST_MODE,
+                        crate::opcode::GAP_SET_BROADCAST_MODE,
                     ))
                 }
             }
-            ::opcode::GAP_START_OBSERVATION_PROCEDURE => {
+            crate::opcode::GAP_START_OBSERVATION_PROCEDURE => {
                 #[cfg(feature = "ms")]
                 {
                     Ok(ReturnParameters::GapStartObservationProcedure(to_status(
@@ -366,68 +376,68 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                 #[cfg(not(feature = "ms"))]
                 {
                     Err(hci::event::Error::UnknownOpcode(
-                        ::opcode::GAP_START_OBSERVATION_PROCEDURE,
+                        crate::opcode::GAP_START_OBSERVATION_PROCEDURE,
                     ))
                 }
             }
-            ::opcode::GAP_IS_DEVICE_BONDED => {
+            crate::opcode::GAP_IS_DEVICE_BONDED => {
                 Ok(ReturnParameters::GapIsDeviceBonded(to_status(&bytes[3..])?))
             }
-            ::opcode::GATT_INIT => Ok(ReturnParameters::GattInit(to_status(&bytes[3..])?)),
-            ::opcode::GATT_ADD_SERVICE => Ok(ReturnParameters::GattAddService(to_gatt_service(
-                &bytes[3..],
-            )?)),
-            ::opcode::GATT_INCLUDE_SERVICE => Ok(ReturnParameters::GattIncludeService(
+            crate::opcode::GATT_INIT => Ok(ReturnParameters::GattInit(to_status(&bytes[3..])?)),
+            crate::opcode::GATT_ADD_SERVICE => Ok(ReturnParameters::GattAddService(
                 to_gatt_service(&bytes[3..])?,
             )),
-            ::opcode::GATT_ADD_CHARACTERISTIC => Ok(ReturnParameters::GattAddCharacteristic(
+            crate::opcode::GATT_INCLUDE_SERVICE => Ok(ReturnParameters::GattIncludeService(
+                to_gatt_service(&bytes[3..])?,
+            )),
+            crate::opcode::GATT_ADD_CHARACTERISTIC => Ok(ReturnParameters::GattAddCharacteristic(
                 to_gatt_characteristic(&bytes[3..])?,
             )),
-            ::opcode::GATT_ADD_CHARACTERISTIC_DESCRIPTOR => {
+            crate::opcode::GATT_ADD_CHARACTERISTIC_DESCRIPTOR => {
                 Ok(ReturnParameters::GattAddCharacteristicDescriptor(
                     to_gatt_characteristic_descriptor(&bytes[3..])?,
                 ))
             }
-            ::opcode::GATT_UPDATE_CHARACTERISTIC_VALUE => Ok(
+            crate::opcode::GATT_UPDATE_CHARACTERISTIC_VALUE => Ok(
                 ReturnParameters::GattUpdateCharacteristicValue(to_status(&bytes[3..])?),
             ),
-            ::opcode::GATT_DELETE_CHARACTERISTIC => Ok(ReturnParameters::GattDeleteCharacteristic(
-                to_status(&bytes[3..])?,
-            )),
-            ::opcode::GATT_DELETE_SERVICE => {
+            crate::opcode::GATT_DELETE_CHARACTERISTIC => Ok(
+                ReturnParameters::GattDeleteCharacteristic(to_status(&bytes[3..])?),
+            ),
+            crate::opcode::GATT_DELETE_SERVICE => {
                 Ok(ReturnParameters::GattDeleteService(to_status(&bytes[3..])?))
             }
-            ::opcode::GATT_DELETE_INCLUDED_SERVICE => Ok(
+            crate::opcode::GATT_DELETE_INCLUDED_SERVICE => Ok(
                 ReturnParameters::GattDeleteIncludedService(to_status(&bytes[3..])?),
             ),
-            ::opcode::GATT_SET_EVENT_MASK => {
+            crate::opcode::GATT_SET_EVENT_MASK => {
                 Ok(ReturnParameters::GattSetEventMask(to_status(&bytes[3..])?))
             }
-            ::opcode::GATT_WRITE_WITHOUT_RESPONSE => Ok(
+            crate::opcode::GATT_WRITE_WITHOUT_RESPONSE => Ok(
                 ReturnParameters::GattWriteWithoutResponse(to_status(&bytes[3..])?),
             ),
-            ::opcode::GATT_SIGNED_WRITE_WITHOUT_RESPONSE => Ok(
+            crate::opcode::GATT_SIGNED_WRITE_WITHOUT_RESPONSE => Ok(
                 ReturnParameters::GattSignedWriteWithoutResponse(to_status(&bytes[3..])?),
             ),
-            ::opcode::GATT_CONFIRM_INDICATION => Ok(ReturnParameters::GattConfirmIndication(
+            crate::opcode::GATT_CONFIRM_INDICATION => Ok(ReturnParameters::GattConfirmIndication(
                 to_status(&bytes[3..])?,
             )),
-            ::opcode::GATT_WRITE_RESPONSE => {
+            crate::opcode::GATT_WRITE_RESPONSE => {
                 Ok(ReturnParameters::GattWriteResponse(to_status(&bytes[3..])?))
             }
-            ::opcode::GATT_ALLOW_READ => {
+            crate::opcode::GATT_ALLOW_READ => {
                 Ok(ReturnParameters::GattAllowRead(to_status(&bytes[3..])?))
             }
-            ::opcode::GATT_SET_SECURITY_PERMISSION => Ok(
+            crate::opcode::GATT_SET_SECURITY_PERMISSION => Ok(
                 ReturnParameters::GattSetSecurityPermission(to_status(&bytes[3..])?),
             ),
-            ::opcode::GATT_SET_DESCRIPTOR_VALUE => Ok(ReturnParameters::GattSetDescriptorValue(
-                to_status(&bytes[3..])?,
-            )),
-            ::opcode::GATT_READ_HANDLE_VALUE => Ok(ReturnParameters::GattReadHandleValue(
+            crate::opcode::GATT_SET_DESCRIPTOR_VALUE => Ok(
+                ReturnParameters::GattSetDescriptorValue(to_status(&bytes[3..])?),
+            ),
+            crate::opcode::GATT_READ_HANDLE_VALUE => Ok(ReturnParameters::GattReadHandleValue(
                 to_gatt_handle_value(&bytes[3..])?,
             )),
-            ::opcode::GATT_READ_HANDLE_VALUE_OFFSET => {
+            crate::opcode::GATT_READ_HANDLE_VALUE_OFFSET => {
                 #[cfg(feature = "ms")]
                 {
                     Ok(ReturnParameters::GattReadHandleValueOffset(
@@ -438,11 +448,11 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                 #[cfg(not(feature = "ms"))]
                 {
                     Err(hci::event::Error::UnknownOpcode(
-                        ::opcode::GATT_READ_HANDLE_VALUE_OFFSET,
+                        crate::opcode::GATT_READ_HANDLE_VALUE_OFFSET,
                     ))
                 }
             }
-            ::opcode::GATT_UPDATE_LONG_CHARACTERISTIC_VALUE => {
+            crate::opcode::GATT_UPDATE_LONG_CHARACTERISTIC_VALUE => {
                 #[cfg(feature = "ms")]
                 {
                     Ok(ReturnParameters::GattUpdateLongCharacteristicValue(
@@ -453,11 +463,11 @@ impl hci::event::VendorReturnParameters for ReturnParameters {
                 #[cfg(not(feature = "ms"))]
                 {
                     Err(hci::event::Error::UnknownOpcode(
-                        ::opcode::GATT_UPDATE_LONG_CHARACTERISTIC_VALUE,
+                        crate::opcode::GATT_UPDATE_LONG_CHARACTERISTIC_VALUE,
                     ))
                 }
             }
-            ::opcode::L2CAP_CONN_PARAM_UPDATE_RESP => Ok(
+            crate::opcode::L2CAP_CONN_PARAM_UPDATE_RESP => Ok(
                 ReturnParameters::L2CapConnectionParameterUpdateResponse(to_status(&bytes[3..])?),
             ),
             other => Err(hci::event::Error::UnknownOpcode(other)),
@@ -478,17 +488,17 @@ fn check_len_at_least(
 
 fn to_status(
     bytes: &[u8],
-) -> Result<hci::Status<::event::Status>, hci::event::Error<super::BlueNRGError>> {
+) -> Result<hci::Status<crate::event::Status>, hci::event::Error<super::BlueNRGError>> {
     require_len_at_least!(bytes, 1);
     bytes[0].try_into().map_err(hci::event::rewrap_bad_status)
 }
 
-/// Parameters returned by the [HAL Get Firmware Revision](::hal::Commands::get_firmware_revision)
-/// command.
+/// Parameters returned by the [HAL Get Firmware
+/// Revision](crate::hal::Commands::get_firmware_revision) command.
 #[derive(Clone, Debug)]
 pub struct HalFirmwareRevision {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status<::event::Status>,
+    pub status: hci::Status<crate::event::Status>,
 
     /// The firmware revision number.
     pub revision: u16,
@@ -505,43 +515,44 @@ fn to_hal_firmware_revision(
     })
 }
 
-/// Parameters returned by the [HAL Read Config Data](::hal::Commands::read_config_data) command.
+/// Parameters returned by the [HAL Read Config Data](crate::hal::Commands::read_config_data)
+/// command.
 #[derive(Clone, Debug)]
 pub struct HalConfigData {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status<::event::Status>,
+    pub status: hci::Status<crate::event::Status>,
 
     /// Requested value.
     ///
     /// The value is requested by offset, and distinguished upon return by length only. This means
     /// that this event cannot distinguish between the 16-byte encryption keys
-    /// ([EncryptionRoot](::hal::ConfigParameter::EncryptionRoot) and
-    /// [IdentityRoot](::hal::ConfigParameter::IdentityRoot)) or between the single-byte values
-    /// ([LinkLayerOnly](::hal::ConfigParameter::LinkLayerOnly) or
-    /// [Role](::hal::ConfigParameter::Role)).
+    /// ([EncryptionRoot](crate::hal::ConfigParameter::EncryptionRoot) and
+    /// [IdentityRoot](crate::hal::ConfigParameter::IdentityRoot)) or between the single-byte values
+    /// ([LinkLayerOnly](crate::hal::ConfigParameter::LinkLayerOnly) or
+    /// [Role](crate::hal::ConfigParameter::Role)).
     pub value: HalConfigParameter,
 }
 
 /// Potential values that can be fetched by [HAL Read Config
-/// Data](::hal::Commands::read_config_data).
+/// Data](crate::hal::Commands::read_config_data).
 #[derive(Clone, Debug, PartialEq)]
 pub enum HalConfigParameter {
     /// Bluetooth public address. Corresponds to
-    /// [PublicAddress](::hal::ConfigParameter::PublicAddress).
+    /// [PublicAddress](crate::hal::ConfigParameter::PublicAddress).
     PublicAddress(hci::BdAddr),
 
     /// Diversifier used to derive CSRK (connection signature resolving key).  Corresponds to
-    /// [Diversifier](::hal::ConfigParameter::Diversifier).
+    /// [Diversifier](crate::hal::ConfigParameter::Diversifier).
     Diversifier(u16),
 
     /// A requested encryption key. Corresponds to either
-    /// [EncryptionRoot](::hal::ConfigParameter::EncryptionRoot) or
-    /// [IdentityRoot](::hal::ConfigParameter::IdentityRoot).
+    /// [EncryptionRoot](crate::hal::ConfigParameter::EncryptionRoot) or
+    /// [IdentityRoot](crate::hal::ConfigParameter::IdentityRoot).
     EncryptionKey(hci::host::EncryptionKey),
 
     /// A single-byte value. Corresponds to either
-    /// [LinkLayerOnly](::hal::ConfigParameter::LinkLayerOnly) or
-    /// [Role](::hal::ConfigParameter::Role).
+    /// [LinkLayerOnly](crate::hal::ConfigParameter::LinkLayerOnly) or
+    /// [Role](crate::hal::ConfigParameter::Role).
     Byte(u8),
 }
 
@@ -584,11 +595,11 @@ fn to_hal_config_parameter(
 }
 
 /// Parameters returned by the [HAL Get Tx Test Packet
-/// Count](::hal::Commands::get_tx_test_packet_count) command.
+/// Count](crate::hal::Commands::get_tx_test_packet_count) command.
 #[derive(Clone, Debug)]
 pub struct HalTxTestPacketCount {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status<::event::Status>,
+    pub status: hci::Status<crate::event::Status>,
 
     /// Number of packets sent during the last Direct TX test.
     pub packet_count: u32,
@@ -604,11 +615,11 @@ fn to_hal_tx_test_packet_count(
     })
 }
 
-/// Parameters returned by the [HAL Get Link Status](::hal::Commands::get_link_status) command.
+/// Parameters returned by the [HAL Get Link Status](crate::hal::Commands::get_link_status) command.
 #[derive(Clone, Debug)]
 pub struct HalLinkStatus {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status<::event::Status>,
+    pub status: hci::Status<crate::event::Status>,
 
     /// State of the client connections.
     pub clients: [ClientStatus; 8],
@@ -688,11 +699,12 @@ fn to_hal_link_status(
     Ok(status)
 }
 
-/// Parameters returned by the [HAL Get Anchor Period](::hal::Commands::get_anchor_period) command.
+/// Parameters returned by the [HAL Get Anchor Period](crate::hal::Commands::get_anchor_period)
+/// command.
 #[derive(Clone, Debug)]
 pub struct HalAnchorPeriod {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status<::event::Status>,
+    pub status: hci::Status<crate::event::Status>,
 
     /// Duration between the beginnings of sniff anchor points.
     pub anchor_interval: Duration,
@@ -713,7 +725,7 @@ fn to_hal_anchor_period(
     })
 }
 
-/// Parameters returned by the [GAP Init](::gap::Commands::init) command.
+/// Parameters returned by the [GAP Init](crate::gap::Commands::init) command.
 #[derive(Copy, Clone, Debug)]
 pub struct GapInit {
     /// Did the command fail, and if so, how?
@@ -721,16 +733,16 @@ pub struct GapInit {
     /// Should be one of:
     /// - [Success](hci::Status::Success)
     /// - [InvalidParameters](hci::Status::InvalidParameters)
-    pub status: hci::Status<::event::Status>,
+    pub status: hci::Status<crate::event::Status>,
 
     /// Handle for the GAP service
-    pub service_handle: ::gatt::ServiceHandle,
+    pub service_handle: crate::gatt::ServiceHandle,
 
     /// Handle for the device name characteristic added to the GAP service.
-    pub dev_name_handle: ::gatt::CharacteristicHandle,
+    pub dev_name_handle: crate::gatt::CharacteristicHandle,
 
     /// Handle for the appearance characteristic added to the GAP service.
-    pub appearance_handle: ::gatt::CharacteristicHandle,
+    pub appearance_handle: crate::gatt::CharacteristicHandle,
 }
 
 fn to_gap_init(bytes: &[u8]) -> Result<GapInit, hci::event::Error<super::BlueNRGError>> {
@@ -738,18 +750,18 @@ fn to_gap_init(bytes: &[u8]) -> Result<GapInit, hci::event::Error<super::BlueNRG
 
     Ok(GapInit {
         status: to_status(bytes)?,
-        service_handle: ::gatt::ServiceHandle(LittleEndian::read_u16(&bytes[1..])),
-        dev_name_handle: ::gatt::CharacteristicHandle(LittleEndian::read_u16(&bytes[3..])),
-        appearance_handle: ::gatt::CharacteristicHandle(LittleEndian::read_u16(&bytes[5..])),
+        service_handle: crate::gatt::ServiceHandle(LittleEndian::read_u16(&bytes[1..])),
+        dev_name_handle: crate::gatt::CharacteristicHandle(LittleEndian::read_u16(&bytes[3..])),
+        appearance_handle: crate::gatt::CharacteristicHandle(LittleEndian::read_u16(&bytes[5..])),
     })
 }
 
-/// Parameters returned by the [GAP Get Security Level](::gap::Commands::get_security_level)
+/// Parameters returned by the [GAP Get Security Level](crate::gap::Commands::get_security_level)
 /// command.
 #[derive(Copy, Clone, Debug)]
 pub struct GapSecurityLevel {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status<::event::Status>,
+    pub status: hci::Status<crate::event::Status>,
 
     /// Is MITM (man-in-the-middle) protection required?
     pub mitm_protection_required: bool,
@@ -812,11 +824,11 @@ fn to_gap_security_level(
 
 #[cfg(feature = "ms")]
 /// Parameters returned by the [GAP Resolve Private
-/// Address](::gap::Commands::resolve_private_address) command.
+/// Address](crate::gap::Commands::resolve_private_address) command.
 #[derive(Copy, Clone, Debug)]
 pub struct GapResolvePrivateAddress {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status<::event::Status>,
+    pub status: hci::Status<crate::event::Status>,
 
     /// If the address was successfully resolved, the peer address is returned.  This value is
     /// `None` if the address could not be resolved.
@@ -846,12 +858,12 @@ fn to_gap_resolve_private_address(
     }
 }
 
-/// Parameters returned by the [GAP Get Bonded Devices](::gap::Commands::get_bonded_devices)
+/// Parameters returned by the [GAP Get Bonded Devices](crate::gap::Commands::get_bonded_devices)
 /// command.
 #[derive(Copy, Clone)]
 pub struct GapBondedDevices {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status<::event::Status>,
+    pub status: hci::Status<crate::event::Status>,
 
     // Number of peer addresses in the event, and a buffer that can hold all of the addresses.
     address_count: usize,
@@ -920,20 +932,20 @@ fn to_gap_bonded_devices(
     }
 }
 
-/// Parameters returned by the [GATT Add Service](::gatt::Commands::add_service) and [GATT Include
-/// Service](::gatt::Commands::include_service) commands.
+/// Parameters returned by the [GATT Add Service](crate::gatt::Commands::add_service) and [GATT
+/// Include Service](crate::gatt::Commands::include_service) commands.
 #[derive(Copy, Clone, Debug)]
 pub struct GattService {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status<::event::Status>,
+    pub status: hci::Status<crate::event::Status>,
 
     /// Handle of the Service
     ///
     /// When this service is added to the server, a handle is allocated by the server to this
     /// service. Also server allocates a range of handles for this service from `service_handle` to
     /// `service_handle +
-    /// [max_attribute_records](::gatt::ServiceParameters::max_attribute_records)`.
-    pub service_handle: ::gatt::ServiceHandle,
+    /// [max_attribute_records](crate::gatt::ServiceParameters::max_attribute_records)`.
+    pub service_handle: crate::gatt::ServiceHandle,
 }
 
 fn to_gatt_service(bytes: &[u8]) -> Result<GattService, hci::event::Error<super::BlueNRGError>> {
@@ -941,19 +953,19 @@ fn to_gatt_service(bytes: &[u8]) -> Result<GattService, hci::event::Error<super:
 
     Ok(GattService {
         status: to_status(&bytes)?,
-        service_handle: ::gatt::ServiceHandle(LittleEndian::read_u16(&bytes[1..3])),
+        service_handle: crate::gatt::ServiceHandle(LittleEndian::read_u16(&bytes[1..3])),
     })
 }
 
-/// Parameters returned by the [GATT Add Characteristic](::gatt::Commands::add_characteristic)
+/// Parameters returned by the [GATT Add Characteristic](crate::gatt::Commands::add_characteristic)
 /// command.
 #[derive(Copy, Clone, Debug)]
 pub struct GattCharacteristic {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status<::event::Status>,
+    pub status: hci::Status<crate::event::Status>,
 
     /// Handle of the characteristic.
-    pub characteristic_handle: ::gatt::CharacteristicHandle,
+    pub characteristic_handle: crate::gatt::CharacteristicHandle,
 }
 
 fn to_gatt_characteristic(
@@ -963,19 +975,21 @@ fn to_gatt_characteristic(
 
     Ok(GattCharacteristic {
         status: to_status(&bytes)?,
-        characteristic_handle: ::gatt::CharacteristicHandle(LittleEndian::read_u16(&bytes[1..3])),
+        characteristic_handle: crate::gatt::CharacteristicHandle(LittleEndian::read_u16(
+            &bytes[1..3],
+        )),
     })
 }
 
 /// Parameters returned by the [GATT Add Characteristic
-/// Descriptor](::gatt::Commands::add_characteristic_descriptor) command.
+/// Descriptor](crate::gatt::Commands::add_characteristic_descriptor) command.
 #[derive(Copy, Clone, Debug)]
 pub struct GattCharacteristicDescriptor {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status<::event::Status>,
+    pub status: hci::Status<crate::event::Status>,
 
     /// Handle of the characteristic.
-    pub descriptor_handle: ::gatt::DescriptorHandle,
+    pub descriptor_handle: crate::gatt::DescriptorHandle,
 }
 
 fn to_gatt_characteristic_descriptor(
@@ -985,16 +999,16 @@ fn to_gatt_characteristic_descriptor(
 
     Ok(GattCharacteristicDescriptor {
         status: to_status(&bytes)?,
-        descriptor_handle: ::gatt::DescriptorHandle(LittleEndian::read_u16(&bytes[1..3])),
+        descriptor_handle: crate::gatt::DescriptorHandle(LittleEndian::read_u16(&bytes[1..3])),
     })
 }
 
-/// Parameters returned by the [GATT Read Handle Value](::gatt::Commands::read_handle_value)
+/// Parameters returned by the [GATT Read Handle Value](crate::gatt::Commands::read_handle_value)
 /// command.
 #[derive(Copy, Clone)]
 pub struct GattHandleValue {
     /// Did the command fail, and if so, how?
-    pub status: hci::Status<::event::Status>,
+    pub status: hci::Status<crate::event::Status>,
 
     value_buf: [u8; GattHandleValue::MAX_VALUE_BUF],
     value_len: usize,

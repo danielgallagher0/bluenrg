@@ -225,7 +225,7 @@ where
     fn write_command(&mut self, opcode: opcode::Opcode, params: &[u8]) -> nb::Result<(), E> {
         const HEADER_LEN: usize = 4;
         let mut header = [0; HEADER_LEN];
-        hci::host::uart::CommandHeader::new(opcode, params.len()).into_bytes(&mut header);
+        hci::host::uart::CommandHeader::new(opcode, params.len()).copy_into_slice(&mut header);
 
         self.write(&header, &params)
     }

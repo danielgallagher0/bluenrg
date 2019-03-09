@@ -11,7 +11,7 @@ pub use hci::host::{AdvertisingFilterPolicy, AdvertisingType, OwnAddressType};
 pub use hci::types::{ConnectionInterval, ExpectedConnectionLength, ScanWindow};
 pub use hci::{BdAddr, BdAddrType};
 
-/// GAP-specific commands for the [ActiveBlueNRG](::ActiveBlueNRG).
+/// GAP-specific commands for the [ActiveBlueNRG](crate::ActiveBlueNRG).
 pub trait Commands {
     /// Type of communication errors.
     type Error;
@@ -25,8 +25,8 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapSetNonDiscoverable) event is
-    /// generated.
+    /// A [Command Complete](crate::event::command::ReturnParameters::GapSetNonDiscoverable) event
+    /// is generated.
     fn set_nondiscoverable(&mut self) -> nb::Result<(), Self::Error>;
 
     /// Set the device in limited discoverable mode.
@@ -57,7 +57,7 @@ pub trait Commands {
     /// status](hci::event::Event::CommandStatus) event. The controller starts the advertising after
     /// this and when advertising timeout happens (i.e. limited discovery period has elapsed),
     /// the controller generates an [GAP Limited Discoverable
-    /// Complete](::event::BlueNRGEvent::GapLimitedDiscoverableTimeout) event.
+    /// Complete](crate::event::BlueNRGEvent::GapLimitedDiscoverableTimeout) event.
 
     fn set_limited_discoverable<'a, 'b>(
         &mut self,
@@ -88,7 +88,7 @@ pub trait Commands {
     ///
     /// # Generated evenst
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapSetDiscoverable) event is
+    /// A [Command Complete](crate::event::command::ReturnParameters::GapSetDiscoverable) event is
     /// generated.
     fn set_discoverable<'a, 'b>(
         &mut self,
@@ -124,8 +124,8 @@ pub trait Commands {
     ///
     /// # Generated evenst
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapSetDirectConnectable) event is
-    /// generated.
+    /// A [Command Complete](crate::event::command::ReturnParameters::GapSetDirectConnectable) event
+    /// is generated.
     fn set_direct_connectable(
         &mut self,
         params: &DirectConnectableParameters,
@@ -141,7 +141,7 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapSetIoCapability) event is
+    /// A [Command Complete](crate::event::command::ReturnParameters::GapSetIoCapability) event is
     /// generated.
     fn set_io_capability(&mut self, capability: IoCapability) -> nb::Result<(), Self::Error>;
 
@@ -161,10 +161,11 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// - A [Command Complete](::event::command::ReturnParameters::GapSetAuthenticationRequirement)
-    ///   event is generated.
+    /// - A [Command
+    ///   Complete](crate::event::command::ReturnParameters::GapSetAuthenticationRequirement) event
+    ///   is generated.
     /// - If [`fixed_pin`](AuthenticationRequirements::fixed_pin) is [Request](Pin::Requested), then
-    ///   a [GAP Pass Key](::event::BlueNRGEvent::GapPassKeyRequest) event is generated.
+    ///   a [GAP Pass Key](crate::event::BlueNRGEvent::GapPassKeyRequest) event is generated.
     fn set_authentication_requirement(
         &mut self,
         requirements: &AuthenticationRequirements,
@@ -181,10 +182,11 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// - A [Command Complete](::event::command::ReturnParameters::GapSetAuthorizationRequirement)
-    ///   event is generated.
+    /// - A [Command
+    ///   Complete](crate::event::command::ReturnParameters::GapSetAuthorizationRequirement) event
+    ///   is generated.
     /// - If authorization is required, then a [GAP Authorization
-    ///   Request](::event::BlueNRGEvent::GapAuthorizationRequest) event is generated.
+    ///   Request](crate::event::BlueNRGEvent::GapAuthorizationRequest) event is generated.
     fn set_authorization_requirement(
         &mut self,
         conn_handle: hci::ConnectionHandle,
@@ -192,7 +194,7 @@ pub trait Commands {
     ) -> nb::Result<(), Self::Error>;
 
     /// This command should be send by the host in response to the [GAP Pass Key
-    /// Request](::event::BlueNRGEvent::GapPassKeyRequest) event.
+    /// Request](crate::event::BlueNRGEvent::GapPassKeyRequest) event.
     ///
     /// `pin` contains the pass key which will be used during the pairing process.
     ///
@@ -203,10 +205,10 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// - A [Command Complete](::event::command::ReturnParameters::GapPassKeyResponse) event is
+    /// - A [Command Complete](crate::event::command::ReturnParameters::GapPassKeyResponse) event is
     ///   generated.
     /// - When the pairing process completes, it will generate a
-    ///   [PairingComplete](::event::BlueNRGEvent::GapPairingComplete) event.
+    ///   [PairingComplete](crate::event::BlueNRGEvent::GapPairingComplete) event.
     fn pass_key_response(
         &mut self,
         conn_handle: hci::ConnectionHandle,
@@ -214,7 +216,7 @@ pub trait Commands {
     ) -> nb::Result<(), Error<Self::Error>>;
 
     /// This command should be send by the host in response to the [GAP Authorization
-    /// Request](::event::BlueNRGEvent::GapAuthorizationRequest) event.
+    /// Request](crate::event::BlueNRGEvent::GapAuthorizationRequest) event.
     ///
     /// # Errors
     ///
@@ -222,8 +224,8 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapAuthorizationResponse) event is
-    /// generated.
+    /// A [Command Complete](crate::event::command::ReturnParameters::GapAuthorizationResponse)
+    /// event is generated.
     fn authorization_response(
         &mut self,
         conn_handle: hci::ConnectionHandle,
@@ -251,7 +253,7 @@ pub trait Commands {
     ///
     /// The device name characteristic and appearance characteristic are added by default and the
     /// handles of these characteristics are returned in the [event
-    /// data](::event::command::GapInit).
+    /// data](crate::event::command::GapInit).
     ///
     /// # Errors
     ///
@@ -259,7 +261,7 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapInit) event is generated.
+    /// A [Command Complete](crate::event::command::ReturnParameters::GapInit) event is generated.
     fn init(
         &mut self,
         role: Role,
@@ -308,7 +310,7 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapInit) event is generated.
+    /// A [Command Complete](crate::event::command::ReturnParameters::GapInit) event is generated.
     fn set_nonconnectable(
         &mut self,
         advertising_type: AdvertisingType,
@@ -330,8 +332,8 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapSetUndirectedConnectable) event
-    /// is generated.
+    /// A [Command Complete](crate::event::command::ReturnParameters::GapSetUndirectedConnectable)
+    /// event is generated.
     fn set_undirected_connectable(
         &mut self,
         filter_policy: AdvertisingFilterPolicy,
@@ -350,8 +352,8 @@ pub trait Commands {
     /// A [command status](hci::event::Event::CommandStatus) event will be generated when a valid
     /// command is received. On completion of the command, i.e. when the security request is
     /// successfully transmitted to the master, a [GAP Peripheral Security
-    /// Initiated](::event::BlueNRGEvent::GapPeripheralSecurityInitiated) vendor-specific event will
-    /// be generated.
+    /// Initiated](crate::event::BlueNRGEvent::GapPeripheralSecurityInitiated) vendor-specific event
+    /// will be generated.
     fn peripheral_security_request(
         &mut self,
         params: &SecurityRequestParameters,
@@ -370,8 +372,8 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapUpdateAdvertisingData) event is
-    /// generated.
+    /// A [Command Complete](crate::event::command::ReturnParameters::GapUpdateAdvertisingData)
+    /// event is generated.
     fn update_advertising_data(&mut self, data: &[u8]) -> nb::Result<(), Error<Self::Error>>;
 
     /// This command can be used to delete the specified AD type from the advertisement data if
@@ -383,7 +385,7 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapDeleteAdType) event is
+    /// A [Command Complete](crate::event::command::ReturnParameters::GapDeleteAdType) event is
     /// generated.
     fn delete_ad_type(&mut self, ad_type: AdvertisingDataType) -> nb::Result<(), Self::Error>;
 
@@ -395,7 +397,7 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapGetSecurityLevel) event is
+    /// A [Command Complete](crate::event::command::ReturnParameters::GapGetSecurityLevel) event is
     /// generated.
     fn get_security_level(&mut self) -> nb::Result<(), Self::Error>;
 
@@ -409,7 +411,7 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapSetEventMask) event is
+    /// A [Command Complete](crate::event::command::ReturnParameters::GapSetEventMask) event is
     /// generated.
     fn set_event_mask(&mut self, flags: EventFlags) -> nb::Result<(), Self::Error>;
 
@@ -422,8 +424,8 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapConfigureWhiteList) event is
-    /// generated.
+    /// A [Command Complete](crate::event::command::ReturnParameters::GapConfigureWhiteList) event
+    /// is generated.
     fn configure_white_list(&mut self) -> nb::Result<(), Self::Error>;
 
     /// Command the controller to terminate the connection.
@@ -450,7 +452,7 @@ pub trait Commands {
     fn terminate(
         &mut self,
         conn_handle: hci::ConnectionHandle,
-        reason: hci::Status<::event::Status>,
+        reason: hci::Status<crate::event::Status>,
     ) -> nb::Result<(), Error<Self::Error>>;
 
     /// Clear the security database. All the devices in the security database will be removed.
@@ -461,8 +463,8 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapClearSecurityDatabase) event is
-    /// generated.
+    /// A [Command Complete](crate::event::command::ReturnParameters::GapClearSecurityDatabase)
+    /// event is generated.
     fn clear_security_database(&mut self) -> nb::Result<(), Self::Error>;
 
     #[cfg(not(feature = "ms"))]
@@ -483,8 +485,8 @@ pub trait Commands {
     fn allow_rebond(&mut self) -> nb::Result<(), Self::Error>;
 
     #[cfg(feature = "ms")]
-    /// This command should be given by the application when it receives the
-    /// [GAP Bond Lost](::event::BlueNRGEvent::GapBondLost) event if it wants the re-bonding to happen
+    /// This command should be given by the application when it receives the [GAP Bond
+    /// Lost](crate::event::BlueNRGEvent::GapBondLost) event if it wants the re-bonding to happen
     /// successfully. If this command is not given on receiving the event, the bonding procedure
     /// will timeout.
     ///
@@ -494,7 +496,7 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [Command Complete](::event::command::ReturnParameters::GapAllowRebond) event is
+    /// A [Command Complete](crate::event::command::ReturnParameters::GapAllowRebond) event is
     /// generated. Even if the command is given when it is not valid, success will be returned but
     /// internally it will have no effect.
     fn allow_rebond(&mut self, conn_handle: hci::ConnectionHandle) -> nb::Result<(), Self::Error>;
@@ -515,12 +517,12 @@ pub trait Commands {
     ///
     /// If [Success](hci::Status::Success) is returned in the command status, the procedure is
     /// terminated when either the upper layers issue a command to terminate the procedure by
-    /// issuing the command [`terminate_procedure`](Commands::terminate_procedure)
-    /// with the procedure code set to [LimitedDiscovery](::event::GapProcedure::LimitedDiscovery) or
-    /// a [timeout](::event::BlueNRGEvent::GapLimitedDiscoverableTimeout) happens. When the procedure
-    /// is terminated due to any of the above reasons, a
-    /// [ProcedureComplete](::event::BlueNRGEvent::GapProcedureComplete) event is returned with the
-    /// procedure code set to [LimitedDiscovery](::event::GapProcedure::LimitedDiscovery).
+    /// issuing the command [`terminate_procedure`](Commands::terminate_procedure) with the
+    /// procedure code set to [LimitedDiscovery](crate::event::GapProcedure::LimitedDiscovery) or a
+    /// [timeout](crate::event::BlueNRGEvent::GapLimitedDiscoverableTimeout) happens. When the
+    /// procedure is terminated due to any of the above reasons, a
+    /// [ProcedureComplete](crate::event::BlueNRGEvent::GapProcedureComplete) event is returned with
+    /// the procedure code set to [LimitedDiscovery](crate::event::GapProcedure::LimitedDiscovery).
     ///
     /// The device found when the procedure is ongoing is returned to the upper layers through the
     /// [LeAdvertisingReport](hci::event::Event::LeAdvertisingReport) event.
@@ -543,10 +545,10 @@ pub trait Commands {
     /// If [Success](hci::Status::Success) is returned in the command status, the procedure is
     /// terminated when either the upper layers issue a command to terminate the procedure by
     /// issuing the command [`terminate_procedure`](Commands::terminate_procedure) with the
-    /// procedure code set to [GeneralDiscovery](::event::GapProcedure::GeneralDiscovery) or a
+    /// procedure code set to [GeneralDiscovery](crate::event::GapProcedure::GeneralDiscovery) or a
     /// timeout happens. When the procedure is terminated due to any of the above reasons, a
-    /// [ProcedureComplete](::event::BlueNRGEvent::GapProcedureComplete) event is returned with
-    /// the procedure code set to [GeneralDiscovery](::event::GapProcedure::GeneralDiscovery).
+    /// [ProcedureComplete](crate::event::BlueNRGEvent::GapProcedureComplete) event is returned with
+    /// the procedure code set to [GeneralDiscovery](crate::event::GapProcedure::GeneralDiscovery).
     ///
     /// The device found when the procedure is ongoing is returned to the upper layers through the
     /// [LeAdvertisingReport](hci::event::Event::LeAdvertisingReport) event.
@@ -564,7 +566,7 @@ pub trait Commands {
     /// process connectable advertising packets only for the specified device". Once a connection is
     /// established, GATT procedure is started to read the device name characteristic. When the read
     /// is completed (successfully or unsuccessfully), a
-    /// [ProcedureComplete](::event::BlueNRGEvent::GapProcedureComplete) event is given to the
+    /// [ProcedureComplete](crate::event::BlueNRGEvent::GapProcedureComplete) event is given to the
     /// upper layer. The event also contains the name of the device if the device name was read
     /// successfully.
     ///
@@ -576,9 +578,9 @@ pub trait Commands {
     ///
     /// A [command status](hci::event::Event::CommandStatus) event is generated as soon as the
     /// command is given. If [Success](hci::Status::Success) is returned, on completion of the
-    /// procedure, a [ProcedureComplete](::event::BlueNRGEvent::GapProcedureComplete) event is
+    /// procedure, a [ProcedureComplete](crate::event::BlueNRGEvent::GapProcedureComplete) event is
     /// returned with the procedure code set to
-    /// [NameDiscovery](::event::GapProcedure::NameDiscovery).
+    /// [NameDiscovery](crate::event::GapProcedure::NameDiscovery).
     fn start_name_discovery_procedure(
         &mut self,
         params: &NameDiscoveryProcedureParameters,
@@ -673,9 +675,9 @@ pub trait Commands {
     /// command is given. If [Success](hci::Status::Success) is returned, on termination of the
     /// procedure, a [LE Connection Complete](hci::event::LeConnectionComplete) event is
     /// returned. The procedure can be explicitly terminated by the upper layer by issuing the
-    /// command [`terminate_procedure`](Commands::terminate_procedure) with the
-    /// procedure_code set to
-    /// [DirectConnectionEstablishment](::event::GapProcedure::DirectConnectionEstablishment).
+    /// command [`terminate_procedure`](Commands::terminate_procedure) with the procedure_code set
+    /// to
+    /// [DirectConnectionEstablishment](crate::event::GapProcedure::DirectConnectionEstablishment).
     fn create_connection(&mut self, params: &ConnectionParameters) -> nb::Result<(), Self::Error>;
 
     /// The GAP procedure(s) specified is terminated.
@@ -687,11 +689,11 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [command complete](::event::command::ReturnParameters::GapTerminateProcedure) event is
-    /// generated for this command. If the command was successfully processed, the status field will
-    /// be [Success](hci::Status::Success) and a
-    /// [ProcedureCompleted](::event::BlueNRGEvent::GapProcedureComplete) event is returned with
-    /// the procedure code set to the corresponding procedure.
+    /// A [command complete](crate::event::command::ReturnParameters::GapTerminateProcedure) event
+    /// is generated for this command. If the command was successfully processed, the status field
+    /// will be [Success](hci::Status::Success) and a
+    /// [ProcedureCompleted](crate::event::BlueNRGEvent::GapProcedureComplete) event is returned
+    /// with the procedure code set to the corresponding procedure.
     fn terminate_procedure(&mut self, procedure: Procedure) -> nb::Result<(), Error<Self::Error>>;
 
     /// Start the connection update procedure.
@@ -729,8 +731,8 @@ pub trait Commands {
     ///
     /// A [command status](hci::event::Event::CommandStatus) event is generated when the command is
     /// received. If [Success](hci::Status::Success) is returned in the command status event, a
-    /// [Pairing Complete](::event::BlueNRGEvent::GapPairingComplete) event is returned after the
-    /// pairing process is completed.
+    /// [Pairing Complete](crate::event::BlueNRGEvent::GapPairingComplete) event is returned after
+    /// the pairing process is completed.
     fn send_pairing_request(&mut self, params: &PairingRequest) -> nb::Result<(), Self::Error>;
 
     /// This command tries to resolve the address provided with the IRKs present in its database.
@@ -745,9 +747,9 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [command complete](::event::command::ReturnParameters::GapResolvePrivateAddress) event is
-    /// generated. If [Success](hci::Status::Success) is returned as the status, then the address is
-    /// also returned in the event.
+    /// A [command complete](crate::event::command::ReturnParameters::GapResolvePrivateAddress)
+    /// event is generated. If [Success](hci::Status::Success) is returned as the status, then the
+    /// address is also returned in the event.
     fn resolve_private_address(&mut self, addr: hci::BdAddr) -> nb::Result<(), Self::Error>;
 
     /// This command gets the list of the devices which are bonded. It returns the number of
@@ -759,7 +761,7 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [command complete](::event::command::ReturnParameters::GapGetBondedDevices) event is
+    /// A [command complete](crate::event::command::ReturnParameters::GapGetBondedDevices) event is
     /// generated.
     fn get_bonded_devices(&mut self) -> nb::Result<(), Self::Error>;
 
@@ -780,7 +782,7 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [command complete](::event::command::ReturnParameters::GapSetBroadcastMode) event is
+    /// A [command complete](crate::event::command::ReturnParameters::GapSetBroadcastMode) event is
     /// returned where the status indicates whether the command was successful.
     fn set_broadcast_mode(
         &mut self,
@@ -800,8 +802,8 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [command complete](::event::command::ReturnParameters::GapStartObservationProcedure) event
-    /// is generated.
+    /// A [command complete](crate::event::command::ReturnParameters::GapStartObservationProcedure)
+    /// event is generated.
     fn start_observation_procedure(
         &mut self,
         params: &ObservationProcedureParameters,
@@ -817,13 +819,13 @@ pub trait Commands {
     ///
     /// # Generated events
     ///
-    /// A [command complete](::event::command::ReturnParameters::GapIsDeviceBonded) event is
+    /// A [command complete](crate::event::command::ReturnParameters::GapIsDeviceBonded) event is
     /// generated.
     fn is_device_bonded(&mut self, addr: hci::host::PeerAddrType) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
-    for ::ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
+    for crate::ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
 where
     SPI: hal::blocking::spi::Transfer<u8, Error = E> + hal::blocking::spi::Write<u8, Error = E>,
     OutputPin1: hal::digital::OutputPin,
@@ -833,35 +835,35 @@ where
     type Error = E;
 
     fn set_nondiscoverable(&mut self) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::GAP_SET_NONDISCOVERABLE, &[])
+        self.write_command(crate::opcode::GAP_SET_NONDISCOVERABLE, &[])
     }
 
     impl_validate_variable_length_params!(
         set_limited_discoverable<'a, 'b>,
         DiscoverableParameters<'a, 'b>,
-        ::opcode::GAP_SET_LIMITED_DISCOVERABLE
+        crate::opcode::GAP_SET_LIMITED_DISCOVERABLE
     );
 
     impl_validate_variable_length_params!(
         set_discoverable<'a, 'b>,
         DiscoverableParameters<'a, 'b>,
-        ::opcode::GAP_SET_DISCOVERABLE
+        crate::opcode::GAP_SET_DISCOVERABLE
     );
 
     impl_validate_params!(
         set_direct_connectable,
         DirectConnectableParameters,
-        ::opcode::GAP_SET_DIRECT_CONNECTABLE
+        crate::opcode::GAP_SET_DIRECT_CONNECTABLE
     );
 
     fn set_io_capability(&mut self, capability: IoCapability) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::GAP_SET_IO_CAPABILITY, &[capability as u8])
+        self.write_command(crate::opcode::GAP_SET_IO_CAPABILITY, &[capability as u8])
     }
 
     impl_validate_params!(
         set_authentication_requirement,
         AuthenticationRequirements,
-        ::opcode::GAP_SET_AUTHENTICATION_REQUIREMENT
+        crate::opcode::GAP_SET_AUTHENTICATION_REQUIREMENT
     );
 
     fn set_authorization_requirement(
@@ -873,7 +875,7 @@ where
         LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
         bytes[2] = authorization_required as u8;
 
-        self.write_command(::opcode::GAP_SET_AUTHORIZATION_REQUIREMENT, &bytes)
+        self.write_command(crate::opcode::GAP_SET_AUTHORIZATION_REQUIREMENT, &bytes)
     }
 
     fn pass_key_response(
@@ -889,7 +891,7 @@ where
         LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
         LittleEndian::write_u32(&mut bytes[2..6], pin);
 
-        self.write_command(::opcode::GAP_PASS_KEY_RESPONSE, &bytes)
+        self.write_command(crate::opcode::GAP_PASS_KEY_RESPONSE, &bytes)
             .map_err(rewrap_error)
     }
 
@@ -902,12 +904,12 @@ where
         LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
         bytes[2] = authorization as u8;
 
-        self.write_command(::opcode::GAP_AUTHORIZATION_RESPONSE, &bytes)
+        self.write_command(crate::opcode::GAP_AUTHORIZATION_RESPONSE, &bytes)
     }
 
     #[cfg(not(feature = "ms"))]
     fn init(&mut self, role: Role) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::GAP_INIT, &[role.bits()])
+        self.write_command(crate::opcode::GAP_INIT, &[role.bits()])
     }
 
     #[cfg(feature = "ms")]
@@ -922,7 +924,7 @@ where
         bytes[1] = privacy_enabled as u8;
         bytes[2] = dev_name_characteristic_len as u8;
 
-        self.write_command(::opcode::GAP_INIT, &bytes)
+        self.write_command(crate::opcode::GAP_INIT, &bytes)
     }
 
     #[cfg(not(feature = "ms"))]
@@ -939,8 +941,11 @@ where
             }
         }
 
-        self.write_command(::opcode::GAP_SET_NONCONNECTABLE, &[advertising_type as u8])
-            .map_err(rewrap_error)
+        self.write_command(
+            crate::opcode::GAP_SET_NONCONNECTABLE,
+            &[advertising_type as u8],
+        )
+        .map_err(rewrap_error)
     }
 
     #[cfg(feature = "ms")]
@@ -959,7 +964,7 @@ where
         }
 
         self.write_command(
-            ::opcode::GAP_SET_NONCONNECTABLE,
+            crate::opcode::GAP_SET_NONCONNECTABLE,
             &[advertising_type as u8, address_type as u8],
         )
         .map_err(rewrap_error)
@@ -981,7 +986,7 @@ where
         }
 
         self.write_command(
-            ::opcode::GAP_SET_UNDIRECTED_CONNECTABLE,
+            crate::opcode::GAP_SET_UNDIRECTED_CONNECTABLE,
             &[filter_policy as u8, address_type as u8],
         )
         .map_err(rewrap_error)
@@ -990,7 +995,7 @@ where
     impl_params!(
         peripheral_security_request,
         SecurityRequestParameters,
-        ::opcode::GAP_PERIPHERAL_SECURITY_REQUEST
+        crate::opcode::GAP_PERIPHERAL_SECURITY_REQUEST
     );
 
     fn update_advertising_data(&mut self, data: &[u8]) -> nb::Result<(), Error<Self::Error>> {
@@ -1006,35 +1011,35 @@ where
         bytes[1..=data.len()].copy_from_slice(data);
 
         self.write_command(
-            ::opcode::GAP_UPDATE_ADVERTISING_DATA,
+            crate::opcode::GAP_UPDATE_ADVERTISING_DATA,
             &bytes[0..1 + data.len()],
         )
         .map_err(rewrap_error)
     }
 
     fn delete_ad_type(&mut self, ad_type: AdvertisingDataType) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::GAP_DELETE_AD_TYPE, &[ad_type as u8])
+        self.write_command(crate::opcode::GAP_DELETE_AD_TYPE, &[ad_type as u8])
     }
 
     fn get_security_level(&mut self) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::GAP_GET_SECURITY_LEVEL, &[])
+        self.write_command(crate::opcode::GAP_GET_SECURITY_LEVEL, &[])
     }
 
     fn set_event_mask(&mut self, flags: EventFlags) -> nb::Result<(), Self::Error> {
         let mut bytes = [0; 2];
         LittleEndian::write_u16(&mut bytes, flags.bits());
 
-        self.write_command(::opcode::GAP_SET_EVENT_MASK, &bytes)
+        self.write_command(crate::opcode::GAP_SET_EVENT_MASK, &bytes)
     }
 
     fn configure_white_list(&mut self) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::GAP_CONFIGURE_WHITE_LIST, &[])
+        self.write_command(crate::opcode::GAP_CONFIGURE_WHITE_LIST, &[])
     }
 
     fn terminate(
         &mut self,
         conn_handle: hci::ConnectionHandle,
-        reason: hci::Status<::event::Status>,
+        reason: hci::Status<crate::event::Status>,
     ) -> nb::Result<(), Error<Self::Error>> {
         match reason {
             hci::Status::AuthFailure
@@ -1051,65 +1056,65 @@ where
         LittleEndian::write_u16(&mut bytes[0..2], conn_handle.0);
         bytes[2] = reason.into();
 
-        self.write_command(::opcode::GAP_TERMINATE, &bytes)
+        self.write_command(crate::opcode::GAP_TERMINATE, &bytes)
             .map_err(rewrap_error)
     }
 
     fn clear_security_database(&mut self) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::GAP_CLEAR_SECURITY_DATABASE, &[])
+        self.write_command(crate::opcode::GAP_CLEAR_SECURITY_DATABASE, &[])
     }
 
     #[cfg(not(feature = "ms"))]
     fn allow_rebond(&mut self) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::GAP_ALLOW_REBOND, &[])
+        self.write_command(crate::opcode::GAP_ALLOW_REBOND, &[])
     }
 
     #[cfg(feature = "ms")]
     fn allow_rebond(&mut self, conn_handle: hci::ConnectionHandle) -> nb::Result<(), Self::Error> {
         let mut bytes = [0; 2];
         LittleEndian::write_u16(&mut bytes, conn_handle.0);
-        self.write_command(::opcode::GAP_ALLOW_REBOND, &bytes)
+        self.write_command(crate::opcode::GAP_ALLOW_REBOND, &bytes)
     }
 
     impl_params!(
         start_limited_discovery_procedure,
         DiscoveryProcedureParameters,
-        ::opcode::GAP_START_LIMITED_DISCOVERY_PROCEDURE
+        crate::opcode::GAP_START_LIMITED_DISCOVERY_PROCEDURE
     );
 
     impl_params!(
         start_general_discovery_procedure,
         DiscoveryProcedureParameters,
-        ::opcode::GAP_START_GENERAL_DISCOVERY_PROCEDURE
+        crate::opcode::GAP_START_GENERAL_DISCOVERY_PROCEDURE
     );
 
     impl_params!(
         start_name_discovery_procedure,
         NameDiscoveryProcedureParameters,
-        ::opcode::GAP_START_NAME_DISCOVERY_PROCEDURE
+        crate::opcode::GAP_START_NAME_DISCOVERY_PROCEDURE
     );
 
     impl_validate_variable_length_params!(
         start_auto_connection_establishment<'a>,
         AutoConnectionEstablishmentParameters<'a>,
-        ::opcode::GAP_START_AUTO_CONNECTION_ESTABLISHMENT
+        crate::opcode::GAP_START_AUTO_CONNECTION_ESTABLISHMENT
     );
 
     impl_params!(
         start_general_connection_establishment,
         GeneralConnectionEstablishmentParameters,
-        ::opcode::GAP_START_GENERAL_CONNECTION_ESTABLISHMENT
+        crate::opcode::GAP_START_GENERAL_CONNECTION_ESTABLISHMENT
     );
 
     impl_validate_variable_length_params!(
         start_selective_connection_establishment<'a>,
         SelectiveConnectionEstablishmentParameters<'a>,
-        ::opcode::GAP_START_SELECTIVE_CONNECTION_ESTABLISHMENT
+        crate::opcode::GAP_START_SELECTIVE_CONNECTION_ESTABLISHMENT
     );
     impl_params!(
         create_connection,
         ConnectionParameters,
-        ::opcode::GAP_CREATE_CONNECTION
+        crate::opcode::GAP_CREATE_CONNECTION
     );
 
     fn terminate_procedure(&mut self, procedure: Procedure) -> nb::Result<(), Error<Self::Error>> {
@@ -1117,49 +1122,49 @@ where
             return Err(nb::Error::Other(Error::NoProcedure));
         }
 
-        self.write_command(::opcode::GAP_TERMINATE_PROCEDURE, &[procedure.bits()])
+        self.write_command(crate::opcode::GAP_TERMINATE_PROCEDURE, &[procedure.bits()])
             .map_err(rewrap_error)
     }
 
     impl_params!(
         start_connection_update,
         ConnectionUpdateParameters,
-        ::opcode::GAP_START_CONNECTION_UPDATE
+        crate::opcode::GAP_START_CONNECTION_UPDATE
     );
 
     impl_params!(
         send_pairing_request,
         PairingRequest,
-        ::opcode::GAP_SEND_PAIRING_REQUEST
+        crate::opcode::GAP_SEND_PAIRING_REQUEST
     );
 
     fn resolve_private_address(&mut self, addr: hci::BdAddr) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::GAP_RESOLVE_PRIVATE_ADDRESS, &addr.0)
+        self.write_command(crate::opcode::GAP_RESOLVE_PRIVATE_ADDRESS, &addr.0)
     }
 
     fn get_bonded_devices(&mut self) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::GAP_GET_BONDED_DEVICES, &[])
+        self.write_command(crate::opcode::GAP_GET_BONDED_DEVICES, &[])
     }
 
     #[cfg(feature = "ms")]
     impl_validate_variable_length_params!(
         set_broadcast_mode,
         BroadcastModeParameters,
-        ::opcode::GAP_SET_BROADCAST_MODE
+        crate::opcode::GAP_SET_BROADCAST_MODE
     );
 
     #[cfg(feature = "ms")]
     impl_params!(
         start_observation_procedure,
         ObservationProcedureParameters,
-        ::opcode::GAP_START_OBSERVATION_PROCEDURE
+        crate::opcode::GAP_START_OBSERVATION_PROCEDURE
     );
 
     fn is_device_bonded(&mut self, addr: hci::host::PeerAddrType) -> nb::Result<(), Self::Error> {
         let mut bytes = [0; 7];
-        addr.into_bytes(&mut bytes);
+        addr.copy_into_slice(&mut bytes);
 
-        self.write_command(::opcode::GAP_IS_DEVICE_BONDED, &bytes)
+        self.write_command(crate::opcode::GAP_IS_DEVICE_BONDED, &bytes)
     }
 }
 
@@ -1179,7 +1184,7 @@ pub enum Error<E> {
     /// For the [GAP Set Limited Discoverable](Commands::set_limited_discoverable) and
     /// [GAP Set Broadcast Mode](Commands::set_broadcast_mode) commands, the advertising
     /// type is disallowed.  Returns the invalid advertising type.
-    BadAdvertisingType(::AdvertisingType),
+    BadAdvertisingType(crate::AdvertisingType),
 
     /// For the [GAP Set Limited Discoverable](Commands::set_limited_discoverable)
     /// command, the advertising interval is inverted (that is, the max is less than the
@@ -1197,12 +1202,12 @@ pub enum Error<E> {
     /// range (must be less than or equal to 999999).  Includes the provided PIN.
     BadFixedPin(u32),
 
-    /// For the [GAP Set Undirected Connectable](Commands::set_undirected_connectable)
-    /// command, the advertising filter policy is not one of the allowed values. Only
-    /// [AllowConnectionAndScan](::AdvertisingFilterPolicy::AllowConnectionAndScan) and
-    /// [WhiteListConnectionAndScan](::AdvertisingFilterPolicy::WhiteListConnectionAndScan) are
+    /// For the [GAP Set Undirected Connectable](Commands::set_undirected_connectable) command, the
+    /// advertising filter policy is not one of the allowed values. Only
+    /// [AllowConnectionAndScan](crate::AdvertisingFilterPolicy::AllowConnectionAndScan) and
+    /// [WhiteListConnectionAndScan](crate::AdvertisingFilterPolicy::WhiteListConnectionAndScan) are
     /// allowed.
-    BadAdvertisingFilterPolicy(::AdvertisingFilterPolicy),
+    BadAdvertisingFilterPolicy(crate::AdvertisingFilterPolicy),
 
     /// For the [GAP Update Advertising Data](Commands::update_advertising_data) and [GAP
     /// Set Broadcast Mode](Commands::set_broadcast_mode) commands, the advertising data
@@ -1211,7 +1216,7 @@ pub enum Error<E> {
 
     /// For the [GAP Terminate](Commands::terminate) command, the termination reason was
     /// not one of the allowed reason. The reason is returned.
-    BadTerminationReason(hci::Status<::event::Status>),
+    BadTerminationReason(hci::Status<crate::event::Status>),
 
     /// For the [GAP Start Auto Connection
     /// Establishment](Commands::start_auto_connection_establishment) or [GAP Start
@@ -1326,7 +1331,7 @@ impl<'a, 'b> DiscoverableParameters<'a, 'b> {
         Ok(())
     }
 
-    fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+    fn copy_into_slice(&self, bytes: &mut [u8]) -> usize {
         let len = self.required_len();
         assert!(len <= bytes.len());
 
@@ -1475,20 +1480,20 @@ impl DirectConnectableParameters {
         Ok(())
     }
 
-    fn into_bytes(&self, bytes: &mut [u8]) {
+    fn copy_into_slice(&self, bytes: &mut [u8]) {
         assert_eq!(bytes.len(), Self::LENGTH);
 
         bytes[0] = self.own_address_type as u8;
 
         #[cfg(not(feature = "ms"))]
         {
-            self.initiator_address.into_bytes(&mut bytes[1..8]);
+            self.initiator_address.copy_into_slice(&mut bytes[1..8]);
         }
 
         #[cfg(feature = "ms")]
         {
             bytes[1] = self.advertising_type as u8;
-            self.initiator_address.into_bytes(&mut bytes[2..9]);
+            self.initiator_address.copy_into_slice(&mut bytes[2..9]);
             LittleEndian::write_u16(
                 &mut bytes[9..],
                 to_connection_length_value(self.advertising_interval.0),
@@ -1557,7 +1562,7 @@ impl AuthenticationRequirements {
         Ok(())
     }
 
-    fn into_bytes(&self, bytes: &mut [u8]) {
+    fn copy_into_slice(&self, bytes: &mut [u8]) {
         assert_eq!(bytes.len(), Self::LENGTH);
 
         bytes[0] = self.mitm_protection_required as u8;
@@ -1600,7 +1605,7 @@ pub enum OutOfBandAuthentication {
 /// Options for [`fixed_pin`](AuthenticationRequirements::fixed_pin).
 pub enum Pin {
     /// Do not use fixed pin during the pairing process.  In this case, GAP will generate a [GAP
-    /// Pass Key Request](::event::BlueNRGEvent::GapPassKeyRequest) event to the host.
+    /// Pass Key Request](crate::event::BlueNRGEvent::GapPassKeyRequest) event to the host.
     Requested,
 
     /// Use a fixed pin during pairing. The provided value is used as the PIN, and must be 999999 or
@@ -1664,7 +1669,7 @@ pub struct SecurityRequestParameters {
 impl SecurityRequestParameters {
     const LENGTH: usize = 4;
 
-    fn into_bytes(&self, bytes: &mut [u8]) {
+    fn copy_into_slice(&self, bytes: &mut [u8]) {
         assert_eq!(bytes.len(), Self::LENGTH);
 
         LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
@@ -1747,10 +1752,10 @@ pub struct DiscoveryProcedureParameters {
 impl DiscoveryProcedureParameters {
     const LENGTH: usize = 6;
 
-    fn into_bytes(&self, bytes: &mut [u8]) {
+    fn copy_into_slice(&self, bytes: &mut [u8]) {
         assert_eq!(bytes.len(), Self::LENGTH);
 
-        self.scan_window.into_bytes(&mut bytes[0..4]);
+        self.scan_window.copy_into_slice(&mut bytes[0..4]);
         bytes[4] = self.own_address_type as u8;
         bytes[5] = self.filter_duplicates as u8;
     }
@@ -1778,15 +1783,15 @@ pub struct NameDiscoveryProcedureParameters {
 impl NameDiscoveryProcedureParameters {
     const LENGTH: usize = 24;
 
-    fn into_bytes(&self, bytes: &mut [u8]) {
+    fn copy_into_slice(&self, bytes: &mut [u8]) {
         assert_eq!(bytes.len(), Self::LENGTH);
 
-        self.scan_window.into_bytes(&mut bytes[0..4]);
-        self.peer_address.into_bytes(&mut bytes[4..11]);
+        self.scan_window.copy_into_slice(&mut bytes[0..4]);
+        self.peer_address.copy_into_slice(&mut bytes[4..11]);
         bytes[11] = self.own_address_type as u8;
-        self.conn_interval.into_bytes(&mut bytes[12..20]);
+        self.conn_interval.copy_into_slice(&mut bytes[12..20]);
         self.expected_connection_length
-            .into_bytes(&mut bytes[20..24]);
+            .copy_into_slice(&mut bytes[20..24]);
     }
 }
 
@@ -1828,15 +1833,15 @@ impl<'a> AutoConnectionEstablishmentParameters<'a> {
         Ok(())
     }
 
-    fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+    fn copy_into_slice(&self, bytes: &mut [u8]) -> usize {
         let len = self.len();
         assert!(bytes.len() >= len);
 
-        self.scan_window.into_bytes(&mut bytes[0..4]);
+        self.scan_window.copy_into_slice(&mut bytes[0..4]);
         bytes[4] = self.own_address_type as u8;
-        self.conn_interval.into_bytes(&mut bytes[5..13]);
+        self.conn_interval.copy_into_slice(&mut bytes[5..13]);
         self.expected_connection_length
-            .into_bytes(&mut bytes[13..17]);
+            .copy_into_slice(&mut bytes[13..17]);
 
         #[cfg(not(feature = "ms"))]
         {
@@ -1853,7 +1858,7 @@ impl<'a> AutoConnectionEstablishmentParameters<'a> {
         bytes[index] = self.white_list.len() as u8;
         let index = index + 1;
         for i in 0..self.white_list.len() {
-            self.white_list[i].into_bytes(&mut bytes[(index + 7 * i)..(index + 7 * (i + 1))]);
+            self.white_list[i].copy_into_slice(&mut bytes[(index + 7 * i)..(index + 7 * (i + 1))]);
         }
 
         len
@@ -1891,10 +1896,10 @@ impl GeneralConnectionEstablishmentParameters {
     #[cfg(feature = "ms")]
     const LENGTH: usize = 6;
 
-    fn into_bytes(&self, bytes: &mut [u8]) {
+    fn copy_into_slice(&self, bytes: &mut [u8]) {
         assert!(bytes.len() >= Self::LENGTH);
 
-        self.scan_window.into_bytes(&mut bytes[0..4]);
+        self.scan_window.copy_into_slice(&mut bytes[0..4]);
         bytes[4] = self.own_address_type as u8;
         bytes[5] = self.filter_duplicates as u8;
 
@@ -1941,17 +1946,17 @@ impl<'a> SelectiveConnectionEstablishmentParameters<'a> {
         Ok(())
     }
 
-    fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+    fn copy_into_slice(&self, bytes: &mut [u8]) -> usize {
         let len = self.len();
         assert!(bytes.len() >= len);
 
         bytes[0] = self.scan_type as u8;
-        self.scan_window.into_bytes(&mut bytes[1..5]);
+        self.scan_window.copy_into_slice(&mut bytes[1..5]);
         bytes[5] = self.own_address_type as u8;
         bytes[6] = self.filter_duplicates as u8;
         bytes[7] = self.white_list.len() as u8;
         for i in 0..self.white_list.len() {
-            self.white_list[i].into_bytes(&mut bytes[(8 + 7 * i)..(8 + 7 * (i + 1))]);
+            self.white_list[i].copy_into_slice(&mut bytes[(8 + 7 * i)..(8 + 7 * (i + 1))]);
         }
 
         len
@@ -2007,11 +2012,11 @@ pub struct ConnectionUpdateParameters {
 impl ConnectionUpdateParameters {
     const LENGTH: usize = 14;
 
-    fn into_bytes(&self, bytes: &mut [u8]) {
+    fn copy_into_slice(&self, bytes: &mut [u8]) {
         LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
-        self.conn_interval.into_bytes(&mut bytes[2..10]);
+        self.conn_interval.copy_into_slice(&mut bytes[2..10]);
         self.expected_connection_length
-            .into_bytes(&mut bytes[10..14]);
+            .copy_into_slice(&mut bytes[10..14]);
     }
 }
 
@@ -2032,7 +2037,7 @@ pub struct PairingRequest {
 impl PairingRequest {
     const LENGTH: usize = 3;
 
-    fn into_bytes(&self, bytes: &mut [u8]) {
+    fn copy_into_slice(&self, bytes: &mut [u8]) {
         assert!(bytes.len() >= Self::LENGTH);
 
         LittleEndian::write_u16(&mut bytes[0..2], self.conn_handle.0);
@@ -2101,10 +2106,10 @@ impl<'a, 'b> BroadcastModeParameters<'a, 'b> {
             1 + 7 * self.white_list.len() // white_list
     }
 
-    fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+    fn copy_into_slice(&self, bytes: &mut [u8]) -> usize {
         assert!(self.len() <= bytes.len());
 
-        self.advertising_interval.into_bytes(&mut bytes[0..5]);
+        self.advertising_interval.copy_into_slice(&mut bytes[0..5]);
         bytes[5] = self.own_address_type as u8;
         bytes[6] = self.advertising_data.len() as u8;
         bytes[7..7 + self.advertising_data.len()].copy_from_slice(self.advertising_data);
@@ -2112,7 +2117,7 @@ impl<'a, 'b> BroadcastModeParameters<'a, 'b> {
 
         let mut index = 8 + self.advertising_data.len();
         for addr in self.white_list.iter() {
-            addr.into_bytes(&mut bytes[index..index + 7]);
+            addr.copy_into_slice(&mut bytes[index..index + 7]);
             index += 7;
         }
 
@@ -2142,10 +2147,10 @@ pub struct ObservationProcedureParameters {
 impl ObservationProcedureParameters {
     const LENGTH: usize = 7;
 
-    fn into_bytes(&self, bytes: &mut [u8]) {
+    fn copy_into_slice(&self, bytes: &mut [u8]) {
         assert!(bytes.len() >= Self::LENGTH);
 
-        self.scan_window.into_bytes(&mut bytes[0..4]);
+        self.scan_window.copy_into_slice(&mut bytes[0..4]);
         bytes[4] = self.scan_type as u8;
         bytes[5] = self.own_address_type as u8;
         bytes[6] = self.filter_duplicates as u8;

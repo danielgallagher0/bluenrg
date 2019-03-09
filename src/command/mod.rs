@@ -2,7 +2,7 @@ macro_rules! impl_params {
     ($method:ident, $param_type:ident, $opcode:path) => {
         fn $method(&mut self, params: &$param_type) -> nb::Result<(), Self::Error> {
             let mut bytes = [0; $param_type::LENGTH];
-            params.into_bytes(&mut bytes);
+            params.copy_into_slice(&mut bytes);
 
             self.write_command($opcode, &bytes)
         }
@@ -13,7 +13,7 @@ macro_rules! impl_value_params {
     ($method:ident, $param_type:ident, $opcode:path) => {
         fn $method(&mut self, params: $param_type) -> nb::Result<(), Self::Error> {
             let mut bytes = [0; $param_type::LENGTH];
-            params.into_bytes(&mut bytes);
+            params.copy_into_slice(&mut bytes);
 
             self.write_command($opcode, &bytes)
         }
@@ -26,7 +26,7 @@ macro_rules! impl_validate_params {
             params.validate().map_err(nb::Error::Other)?;
 
             let mut bytes = [0; $param_type::LENGTH];
-            params.into_bytes(&mut bytes);
+            params.copy_into_slice(&mut bytes);
 
             self.write_command($opcode, &bytes)
                 .map_err(rewrap_error)
@@ -38,7 +38,7 @@ macro_rules! impl_variable_length_params {
     ($method:ident, $param_type:ident, $opcode:path) => {
         fn $method(&mut self, params: &$param_type) -> nb::Result<(), Self::Error> {
             let mut bytes = [0; $param_type::MAX_LENGTH];
-            let len = params.into_bytes(&mut bytes);
+            let len = params.copy_into_slice(&mut bytes);
 
             self.write_command($opcode, &bytes[..len])
         }
@@ -51,7 +51,7 @@ macro_rules! impl_validate_variable_length_params {
             params.validate().map_err(nb::Error::Other)?;
 
             let mut bytes = [0; $param_type::MAX_LENGTH];
-            let len = params.into_bytes(&mut bytes);
+            let len = params.copy_into_slice(&mut bytes);
 
             self.write_command($opcode, &bytes[..len])
                 .map_err(rewrap_error)
@@ -65,7 +65,7 @@ macro_rules! impl_validate_variable_length_params {
             params.validate().map_err(nb::Error::Other)?;
 
             let mut bytes = [0; $param_type::MAX_LENGTH];
-            let len = params.into_bytes(&mut bytes);
+            let len = params.copy_into_slice(&mut bytes);
 
             self.write_command($opcode, &bytes[..len])
                 .map_err(rewrap_error)

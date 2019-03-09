@@ -7,7 +7,7 @@ extern crate nb;
 
 use byteorder::{ByteOrder, LittleEndian};
 
-/// Vendor-specific HCI commands for the [ActiveBlueNRG](::ActiveBlueNRG).
+/// Vendor-specific HCI commands for the [ActiveBlueNRG](crate::ActiveBlueNRG).
 pub trait Commands {
     /// Type of communication errors.
     type Error;
@@ -21,7 +21,7 @@ pub trait Commands {
     /// # Generated events
     ///
     /// The controller will generate a [command
-    /// complete](::event::command::ReturnParameters::HalGetFirmwareRevision) event.
+    /// complete](crate::event::command::ReturnParameters::HalGetFirmwareRevision) event.
     fn get_firmware_revision(&mut self) -> nb::Result<(), Self::Error>;
 
     /// This command writes a value to a low level configure data structure. It is useful to setup
@@ -34,7 +34,7 @@ pub trait Commands {
     /// # Generated events
     ///
     /// The controller will generate a [command
-    /// complete](::event::command::ReturnParameters::HalWriteConfigData) event.
+    /// complete](crate::event::command::ReturnParameters::HalWriteConfigData) event.
     fn write_config_data(&mut self, config: &ConfigData) -> nb::Result<(), Self::Error>;
 
     /// This command requests the value in the low level configure data structure.
@@ -46,7 +46,7 @@ pub trait Commands {
     /// # Generated events
     ///
     /// The controller will generate a [command
-    /// complete](::event::command::ReturnParameters::HalReadConfigData) event.
+    /// complete](crate::event::command::ReturnParameters::HalReadConfigData) event.
     fn read_config_data(&mut self, param: ConfigParameter) -> nb::Result<(), Self::Error>;
 
     /// This command sets the TX power level of the BlueNRG-MS.
@@ -68,7 +68,7 @@ pub trait Commands {
     /// # Generated events
     ///
     /// The controller will generate a [command
-    /// complete](::event::command::ReturnParameters::HalSetTxPowerLevel) event.
+    /// complete](crate::event::command::ReturnParameters::HalSetTxPowerLevel) event.
     fn set_tx_power_level(&mut self, level: PowerLevel) -> nb::Result<(), Self::Error>;
 
     /// Puts the device in standby mode.
@@ -89,7 +89,7 @@ pub trait Commands {
     /// # Generated events
     ///
     /// The controller will generate a [command
-    /// complete](::event::command::ReturnParameters::HalDeviceStandby) event.
+    /// complete](crate::event::command::ReturnParameters::HalDeviceStandby) event.
     ///
     /// The command is only accepted when there is no other Bluetooth activity. Otherwise an error
     /// code [command disallowed](hci::Status::CommandDisallowed) will return.
@@ -115,7 +115,7 @@ pub trait Commands {
     /// # Generated events
     ///
     /// The controller will generate a [command
-    /// complete](::event::command::ReturnParameters::HalGetTxTestPacketCount) event.
+    /// complete](crate::event::command::ReturnParameters::HalGetTxTestPacketCount) event.
     fn get_tx_test_packet_count(&mut self) -> nb::Result<(), Self::Error>;
 
     /// This command starts a carrier frequency, i.e. a tone, on a specific channel.
@@ -135,7 +135,7 @@ pub trait Commands {
     /// # Generated events
     ///
     /// The controller will generate a [command
-    /// complete](::event::command::ReturnParameters::HalStartTone) event.
+    /// complete](crate::event::command::ReturnParameters::HalStartTone) event.
     fn start_tone(&mut self, channel: u8) -> nb::Result<(), Error<Self::Error>>;
 
     /// Stops the previously started by the [`start_tone`](Commands::start_tone) command.
@@ -147,7 +147,7 @@ pub trait Commands {
     /// # Generated events
     ///
     /// The controller will generate a [command
-    /// complete](::event::command::ReturnParameters::HalStopTone) event.
+    /// complete](crate::event::command::ReturnParameters::HalStopTone) event.
     fn stop_tone(&mut self) -> nb::Result<(), Self::Error>;
 
     /// This command is intended to return the Link Layer Status and Connection Handles.
@@ -159,7 +159,7 @@ pub trait Commands {
     /// # Generated events
     ///
     /// The controller will generate a [command
-    /// complete](::event::command::ReturnParameters::HalGetLinkStatus) event.
+    /// complete](crate::event::command::ReturnParameters::HalGetLinkStatus) event.
     fn get_link_status(&mut self) -> nb::Result<(), Self::Error>;
 
     /// This command is intended to retrieve information about the current Anchor Interval and
@@ -172,12 +172,12 @@ pub trait Commands {
     /// # Generated events
     ///
     /// The controller will generate a [command
-    /// complete](::event::command::ReturnParameters::HalGetAnchorPeriod) event.
+    /// complete](crate::event::command::ReturnParameters::HalGetAnchorPeriod) event.
     fn get_anchor_period(&mut self) -> nb::Result<(), Self::Error>;
 }
 
 impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
-    for ::ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
+    for crate::ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
 where
     SPI: hal::blocking::spi::Transfer<u8, Error = E> + hal::blocking::spi::Write<u8, Error = E>,
     OutputPin1: hal::digital::OutputPin,
@@ -187,32 +187,32 @@ where
     type Error = E;
 
     fn get_firmware_revision(&mut self) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::HAL_GET_FIRMWARE_REVISION, &[])
+        self.write_command(crate::opcode::HAL_GET_FIRMWARE_REVISION, &[])
     }
 
     impl_variable_length_params!(
         write_config_data,
         ConfigData,
-        ::opcode::HAL_WRITE_CONFIG_DATA
+        crate::opcode::HAL_WRITE_CONFIG_DATA
     );
 
     fn read_config_data(&mut self, param: ConfigParameter) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::HAL_READ_CONFIG_DATA, &[param as u8])
+        self.write_command(crate::opcode::HAL_READ_CONFIG_DATA, &[param as u8])
     }
 
     fn set_tx_power_level(&mut self, level: PowerLevel) -> nb::Result<(), Self::Error> {
         let mut bytes = [0; 2];
         LittleEndian::write_u16(&mut bytes, level as u16);
 
-        self.write_command(::opcode::HAL_SET_TX_POWER_LEVEL, &bytes)
+        self.write_command(crate::opcode::HAL_SET_TX_POWER_LEVEL, &bytes)
     }
 
     fn device_standby(&mut self) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::HAL_DEVICE_STANDBY, &[])
+        self.write_command(crate::opcode::HAL_DEVICE_STANDBY, &[])
     }
 
     fn get_tx_test_packet_count(&mut self) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::HAL_TX_TEST_PACKET_COUNT, &[])
+        self.write_command(crate::opcode::HAL_TX_TEST_PACKET_COUNT, &[])
     }
 
     fn start_tone(&mut self, channel: u8) -> nb::Result<(), Error<Self::Error>> {
@@ -221,20 +221,20 @@ where
             return Err(nb::Error::Other(Error::InvalidChannel(channel)));
         }
 
-        self.write_command(::opcode::HAL_START_TONE, &[channel as u8])
+        self.write_command(crate::opcode::HAL_START_TONE, &[channel as u8])
             .map_err(rewrap_error)
     }
 
     fn stop_tone(&mut self) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::HAL_STOP_TONE, &[])
+        self.write_command(crate::opcode::HAL_STOP_TONE, &[])
     }
 
     fn get_link_status(&mut self) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::HAL_GET_LINK_STATUS, &[])
+        self.write_command(crate::opcode::HAL_GET_LINK_STATUS, &[])
     }
 
     fn get_anchor_period(&mut self) -> nb::Result<(), Self::Error> {
-        self.write_command(::opcode::HAL_GET_ANCHOR_PERIOD, &[])
+        self.write_command(crate::opcode::HAL_GET_ANCHOR_PERIOD, &[])
     }
 }
 
@@ -279,7 +279,7 @@ impl ConfigData {
     ///
     /// The buffer must be large enough to support the serialized data (at least
     /// [`MAX_LENGTH`](ConfigData::MAX_LENGTH) bytes).
-    pub fn into_bytes(&self, bytes: &mut [u8]) -> usize {
+    pub fn copy_into_slice(&self, bytes: &mut [u8]) -> usize {
         bytes[0] = self.offset;
         bytes[1] = self.length;
 

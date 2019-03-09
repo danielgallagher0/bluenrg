@@ -96,7 +96,7 @@ pub enum BlueNRGEvent {
 
     /// This event is generated when the central device responds to the L2CAP connection update
     /// request packet. For more info see
-    /// [ConnectionParameterUpdateResponse](::l2cap::ConnectionParameterUpdateResponse)
+    /// [ConnectionParameterUpdateResponse](crate::l2cap::ConnectionParameterUpdateResponse)
     /// and CommandReject in Bluetooth Core v4.0 spec.
     L2CapConnectionUpdateResponse(L2CapConnectionUpdateResponse),
 
@@ -106,7 +106,7 @@ pub enum BlueNRGEvent {
 
     /// The event is given by the L2CAP layer when a connection update request is received from the
     /// peripheral. The application has to respond by calling
-    /// [`l2cap_connection_parameter_update_response`](::l2cap::Commands::connection_parameter_update_response).
+    /// [`l2cap_connection_parameter_update_response`](crate::l2cap::Commands::connection_parameter_update_response).
     L2CapConnectionUpdateRequest(L2CapConnectionUpdateRequest),
 
     /// This event is generated to the application by the ATT server when a client modifies any
@@ -203,8 +203,8 @@ pub enum BlueNRGEvent {
     /// by the server from the client. This event will be given to the application only if the event
     /// bit for this event generation is set when the characteristic was added. On receiving this
     /// event, the application can update the value of the handle if it desires and when done it has
-    /// to use the [`allow_read`](::gatt::Commands::allow_read) command to indicate to the stack
-    /// that it can send the response to the client.
+    /// to use the [`allow_read`](crate::gatt::Commands::allow_read) command to indicate to the
+    /// stack that it can send the response to the client.
     ///
     /// See the Bluetooth Core v4.1 spec, Vol 3, Part F, section 3.4.4.
     AttReadPermitRequest(AttReadPermitRequest),
@@ -213,7 +213,7 @@ pub enum BlueNRGEvent {
     /// is received by the server from the client. This event will be given to the application only
     /// if the event bit for this event generation is set when the characteristic was added.  On
     /// receiving this event, the application can update the values of the handles if it desires and
-    /// when done it has to send the [`allow_read`](::gatt::Commands::allow_read) command to
+    /// when done it has to send the [`allow_read`](crate::gatt::Commands::allow_read) command to
     /// indicate to the stack that it can send the response to the client.
     ///
     /// See the Bluetooth Core v4.1 spec, Vol 3, Part F, section 3.4.4.
@@ -507,18 +507,18 @@ pub enum BlueNRGError {
     /// event: The packet ends with a partial attribute handle.
     AttReadMultiplePermitRequestPartial,
 
-    /// For the [HAL Read Config Data](::hal::Commands::read_config_data) command complete
+    /// For the [HAL Read Config Data](crate::hal::Commands::read_config_data) command complete
     /// [event](command::ReturnParameters::HalReadConfigData): The returned value has a length that
     /// does not correspond to a requested parameter. Known lengths are 1, 2, 6, or 16. Includes the
     /// number of bytes returned.
     BadConfigParameterLength(usize),
 
-    /// For the [HAL Get Link Status](::hal::Commands::get_link_status) command complete
+    /// For the [HAL Get Link Status](crate::hal::Commands::get_link_status) command complete
     /// [event](command::ReturnParameters::HalGetLinkStatus): One of the bytes representing a link
     /// state does not represent a known link state. Returns the unknown value.
     UnknownLinkState(u8),
 
-    /// For the [GAP Get Security Level](::gap::Commands::get_security_level) command complete
+    /// For the [GAP Get Security Level](crate::gap::Commands::get_security_level) command complete
     /// [event](command::ReturnParameters::GapGetSecurityLevel): One of the boolean values
     /// ([`mitm_protection_required`](command::GapSecurityLevel::mitm_protection_required),
     /// [`bonding_required`](command::GapSecurityLevel::bonding_required), or
@@ -526,17 +526,17 @@ pub enum BlueNRGError {
     /// neither 0 nor 1. The unknown value is provided.
     BadBooleanValue(u8),
 
-    /// For the [GAP Get Security Level](::gap::Commands::get_security_level) command complete
+    /// For the [GAP Get Security Level](crate::gap::Commands::get_security_level) command complete
     /// [event](command::ReturnParameters::GapGetSecurityLevel): the pass key requirement field was
     /// an invalid value. The unknown byte is provided.
     BadPassKeyRequirement(u8),
 
-    /// For the [GAP Get Bonded Devices](::gap::Commands::get_bonded_devices) command complete
+    /// For the [GAP Get Bonded Devices](crate::gap::Commands::get_bonded_devices) command complete
     /// [event](command::ReturnParameters::GapGetBondedDevices): the packat was not long enough to
     /// contain the number of addresses it claimed to contain.
     PartialBondedDeviceAddress,
 
-    /// For the [GAP Get Bonded Devices](::gap::Commands::get_bonded_devices) command complete
+    /// For the [GAP Get Bonded Devices](crate::gap::Commands::get_bonded_devices) command complete
     /// [event](command::ReturnParameters::GapGetBondedDevices): one of the address type bytes was
     /// invalid. Includes the invalid byte.
     BadBdAddrType(u8),
@@ -1197,21 +1197,21 @@ fn to_l2cap_procedure_timeout(
 /// peripheral.
 ///
 /// The application has to respond by calling
-/// [`l2cap_connection_parameter_update_response`](::l2cap::Commands::connection_parameter_update_response).
+/// [`l2cap_connection_parameter_update_response`](crate::l2cap::Commands::connection_parameter_update_response).
 ///
 /// Defined in Vol 3, Part A, section 4.20 of the Bluetooth specification.
 #[derive(Copy, Clone, Debug)]
 pub struct L2CapConnectionUpdateRequest {
     /// Handle of the connection for which the connection update request has been received.  The
-    /// [same handle](::l2cap::ConnectionParameterUpdateResponse::conn_handle) has to be returned
-    /// while responding to the event with the command
-    /// [`l2cap_connection_parameter_update_response`](::l2cap::Commands::connection_parameter_update_response).
+    /// [same handle](crate::l2cap::ConnectionParameterUpdateResponse::conn_handle) has to be
+    /// returned while responding to the event with the command
+    /// [`l2cap_connection_parameter_update_response`](crate::l2cap::Commands::connection_parameter_update_response).
     pub conn_handle: ConnectionHandle,
 
     /// This is the identifier which associates the request to the response. The [same
-    /// identifier](::l2cap::ConnectionParameterUpdateResponse::identifier) has to be returned by
-    /// the upper layer in the command
-    /// [`l2cap_connection_parameter_update_response`](::l2cap::Commands::connection_parameter_update_response).
+    /// identifier](crate::l2cap::ConnectionParameterUpdateResponse::identifier) has to be returned
+    /// by the upper layer in the command
+    /// [`l2cap_connection_parameter_update_response`](crate::l2cap::Commands::connection_parameter_update_response).
     pub identifier: u8,
 
     /// Defines the range of the connection interval, the latency, and the supervision timeout.
@@ -2722,8 +2722,8 @@ fn to_att_error_response(
 /// the server from the client. This event will be given to the application only if the event bit
 /// for this event generation is set when the characteristic was added. On receiving this event, the
 /// application can update the value of the handle if it desires and when done it has to use the
-/// [`allow_read`](::gatt::Commands::allow_read) command to indicate to the stack that it can send
-/// the response to the client.
+/// [`allow_read`](crate::gatt::Commands::allow_read) command to indicate to the stack that it can
+/// send the response to the client.
 ///
 /// See the Bluetooth Core v4.1 spec, Vol 3, Part F, section 3.4.4.
 #[derive(Copy, Clone, Debug)]

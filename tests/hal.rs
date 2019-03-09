@@ -19,7 +19,7 @@ fn get_firmware_revision() {
 
 fn becomes_bytes(data: ConfigData, expected: &[u8]) -> bool {
     let mut actual = [0; ConfigData::MAX_LENGTH];
-    let len = data.into_bytes(&mut actual);
+    let len = data.copy_into_slice(&mut actual);
     assert_eq!(&actual[..len], expected);
 
     true
@@ -35,7 +35,8 @@ fn config_data() {
 
     let encryption_root = ConfigData::encryption_root(hci::host::EncryptionKey([
         0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF,
-    ])).build();
+    ]))
+    .build();
     assert!(becomes_bytes(
         encryption_root,
         &[8, 16, 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF]
@@ -43,7 +44,8 @@ fn config_data() {
 
     let identity_root = ConfigData::identity_root(hci::host::EncryptionKey([
         0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF,
-    ])).build();
+    ]))
+    .build();
     assert!(becomes_bytes(
         identity_root,
         &[24, 16, 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF]
@@ -59,9 +61,11 @@ fn config_data() {
         .diversifier(0x0201)
         .encryption_root(hci::host::EncryptionKey([
             0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF,
-        ])).identity_root(hci::host::EncryptionKey([
+        ]))
+        .identity_root(hci::host::EncryptionKey([
             0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF,
-        ])).link_layer_only(true)
+        ]))
+        .link_layer_only(true)
         .role(Role::Peripheral6Kb)
         .build();
     assert!(becomes_bytes(
@@ -80,7 +84,8 @@ fn write_config_data() {
     fixture
         .act(|controller| {
             controller.write_config_data(&ConfigData::role(Role::Peripheral12Kb).build())
-        }).unwrap();
+        })
+        .unwrap();
     assert!(fixture.wrote_header());
     assert!(fixture.wrote(&[1, 0x0C, 0xFC, 3, 41, 1, 0x2]));
 }
