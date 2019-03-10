@@ -93,9 +93,9 @@ pub struct BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin> {
 
 /// Handle for actively communicating with the controller over the SPI bus.
 ///
-/// An ActiveBlueNRG should not be created by the application, but is passed to closures given to
-/// [BlueNRG::with_spi].  ActiveBlueNRG implements [`bluetooth_hci::Controller`], so it is used to
-/// access the HCI functions for the controller.
+/// An `ActiveBlueNRG` should not be created by the application, but is passed to closures given to
+/// [`BlueNRG::with_spi`].  `ActiveBlueNRG` implements [`bluetooth_hci::Controller`], so it is used
+/// to access the HCI functions for the controller.
 pub struct ActiveBlueNRG<
     'spi,
     'dbuf: 'spi,
@@ -119,17 +119,17 @@ pub struct ActiveBlueNRG<
 ///
 /// # Errors
 ///
-/// - Returns nb::Error::WouldBlock if the first byte indicates that the controller is not yet
+/// - Returns `nb::Error::WouldBlock` if the first byte indicates that the controller is not yet
 ///   ready.
 fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<E>> {
     const BNRG_READY: u8 = 0x02;
-    if header[0] != BNRG_READY {
-        Err(nb::Error::WouldBlock)
-    } else {
+    if header[0] == BNRG_READY {
         Ok((
             LittleEndian::read_u16(&header[1..]),
             LittleEndian::read_u16(&header[3..]),
         ))
+    } else {
+        Err(nb::Error::WouldBlock)
     }
 }
 
@@ -167,10 +167,10 @@ where
             return Err(nb::Error::WouldBlock);
         }
 
-        if header.len() > 0 {
+        if !header.is_empty() {
             self.spi.write(header).map_err(nb::Error::Other)?;
         }
-        if payload.len() > 0 {
+        if !payload.is_empty() {
             self.spi.write(payload).map_err(nb::Error::Other)?;
         }
 
@@ -211,8 +211,8 @@ where
             );
             {
                 let rx = self.d.rx_buffer.next_mut_slice(transfer_count);
-                for i in 0..rx.len() {
-                    rx[i] = 0;
+                for byte in rx.iter_mut() {
+                    *byte = 0;
                 }
                 self.spi.transfer(rx).map_err(nb::Error::Other)?;
             }
@@ -265,12 +265,10 @@ where
         if buffer.len() <= self.d.rx_buffer.size() {
             self.d.rx_buffer.take_slice(buffer.len(), buffer);
             Ok(())
+        } else if let Err(e) = result {
+            Err(e)
         } else {
-            if let Err(e) = result {
-                Err(e)
-            } else {
-                Err(nb::Error::WouldBlock)
-            }
+            Err(nb::Error::WouldBlock)
         }
     }
 
@@ -341,8 +339,7 @@ where
         SPI: emhal::blocking::spi::transfer::Default<u8, Error = E>
             + emhal::blocking::spi::write::Default<u8, Error = E>,
     {
-        let mut active =
-            ActiveBlueNRG::<SPI, OutputPin1, OutputPin2, InputPin> { spi: spi, d: self };
+        let mut active = ActiveBlueNRG::<SPI, OutputPin1, OutputPin2, InputPin> { spi, d: self };
         body(&mut active)
     }
 
@@ -403,35 +400,35 @@ impl<VS> LocalVersionInfoExt for hci::event::command::LocalVersionInfo<VS> {
     }
 }
 
-/// Hardware event codes returned by the HardwareError HCI event.
+/// Hardware event codes returned by the `HardwareError` HCI event.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum HardwareError {
     /// Error on the SPI bus has been detected, most likely caused by incorrect SPI configuration on
     /// the external micro-controller.
-    SpiFramingError,
+    SpiFraming,
 
     /// Caused by a slow crystal startup and they are an indication that the HS_STARTUP_TIME in the
     /// device configuration needs to be tuned. After this event is recommended to hardware reset
     /// the device.
-    RadioStateError,
+    RadioState,
 
     /// Caused by a slow crystal startup and they are an indication that the HS_STARTUP_TIME in the
     /// device configuration needs to be tuned. After this event is recommended to hardware reset
     /// the device.
-    TimerOverrunError,
+    TimerOverrun,
 }
 
-/// Error type for TryFrom<u8> to HardwareError. Includes the invalid byte.
+/// Error type for `TryFrom<u8>` to `HardwareError`. Includes the invalid byte.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct InvalidHardwareError(pub u8);
 
 impl TryFrom<u8> for HardwareError {
     type Error = InvalidHardwareError;
-    fn try_from(value: u8) -> Result<HardwareError, Self::Error> {
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(HardwareError::SpiFramingError),
-            1 => Ok(HardwareError::RadioStateError),
-            2 => Ok(HardwareError::TimerOverrunError),
+            0 => Ok(HardwareError::SpiFraming),
+            1 => Ok(HardwareError::RadioState),
+            2 => Ok(HardwareError::TimerOverrun),
             _ => Err(InvalidHardwareError(value)),
         }
     }

@@ -8,7 +8,7 @@ extern crate nb;
 use byteorder::{ByteOrder, LittleEndian};
 use hci::types::{ConnectionInterval, ExpectedConnectionLength};
 
-/// L2Cap-specific commands for the [ActiveBlueNRG](crate::ActiveBlueNRG).
+/// L2Cap-specific commands for the [`ActiveBlueNRG`](crate::ActiveBlueNRG).
 pub trait Commands {
     /// Type of communication errors.
     type Error;

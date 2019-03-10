@@ -18,6 +18,7 @@ pub use hci::types::{ConnectionInterval, ConnectionIntervalError};
 pub use hci::{BdAddr, BdAddrType, ConnectionHandle};
 
 /// Vendor-specific events for the BlueNRG-MS controllers.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Copy, Debug)]
 pub enum BlueNRGEvent {
     /// When the BlueNRG-MS firmware is started normally, it gives this event to the user to
@@ -325,7 +326,7 @@ pub enum Status {
 impl TryFrom<u8> for Status {
     type Error = hci::BadStatusError;
 
-    fn try_from(value: u8) -> Result<Status, <Status as TryFrom<u8>>::Error> {
+    fn try_from(value: u8) -> Result<Self, <Self as TryFrom<u8>>::Error> {
         match value {
             0x41 => Ok(Status::Failed),
             0x42 => Ok(Status::InvalidParameters),
@@ -571,7 +572,7 @@ impl hci::event::VendorEvent for BlueNRGEvent {
     type ReturnParameters = command::ReturnParameters;
     type Status = Status;
 
-    fn new(buffer: &[u8]) -> Result<BlueNRGEvent, hci::event::Error<BlueNRGError>> {
+    fn new(buffer: &[u8]) -> Result<Self, hci::event::Error<BlueNRGError>> {
         require_len_at_least!(buffer, 2);
 
         let event_code = LittleEndian::read_u16(&buffer[0..=1]);
@@ -745,7 +746,8 @@ impl hci::event::VendorEvent for BlueNRGEvent {
     }
 }
 
-/// Potential reasons the controller sent the [HalInitialized](BlueNRGEvent::HalInitialized) event.
+/// Potential reasons the controller sent the [`HalInitialized`](BlueNRGEvent::HalInitialized)
+/// event.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ResetReason {
     /// Firmware started properly
@@ -771,7 +773,7 @@ pub enum ResetReason {
 impl TryFrom<u8> for ResetReason {
     type Error = BlueNRGError;
 
-    fn try_from(value: u8) -> Result<ResetReason, Self::Error> {
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             1 => Ok(ResetReason::Normal),
             2 => Ok(ResetReason::Updater),
@@ -787,19 +789,17 @@ impl TryFrom<u8> for ResetReason {
     }
 }
 
-/// Convert a buffer to the HalInitialized BlueNRGEvent.
+/// Convert a buffer to the `HalInitialized` `BlueNRGEvent`.
 ///
 /// # Errors
 ///
-/// - Returns a BadLength HCI error if the buffer is not exactly 3 bytes long
+/// - Returns a `BadLength` HCI error if the buffer is not exactly 3 bytes long
 ///
-/// - Returns a UnknownResetReason BlueNRG error if the reset reason is not recognized.
+/// - Returns a `UnknownResetReason` BlueNRG error if the reset reason is not recognized.
 fn to_hal_initialized(buffer: &[u8]) -> Result<ResetReason, hci::event::Error<BlueNRGError>> {
     require_len!(buffer, 3);
 
-    Ok(buffer[2]
-        .try_into()
-        .map_err(|e| hci::event::Error::Vendor(e))?)
+    Ok(buffer[2].try_into().map_err(hci::event::Error::Vendor)?)
 }
 
 #[cfg(feature = "ms")]
@@ -923,19 +923,20 @@ bitflags! {
     }
 }
 
-/// Convert a buffer to the EventsLost BlueNRGEvent.
+/// Convert a buffer to the `EventsLost` `BlueNRGEvent`.
 ///
 /// # Errors
 ///
-/// - Returns a BadLength HCI error if the buffer is not exactly 10 bytes long
-///
-/// - Returns BadEventFlags if a bit is set that does not represent a lost event.
+/// - Returns a `BadLength` HCI error if the buffer is not exactly 10 bytes long
+/// - Returns [`BadEventFlags`](BlueNRGError::BadEventFlags) if a bit is set that does not represent
+///   a lost event.
 #[cfg(feature = "ms")]
 fn to_lost_event(buffer: &[u8]) -> Result<EventFlags, hci::event::Error<BlueNRGError>> {
     require_len!(buffer, 10);
 
     let bits = LittleEndian::read_u64(&buffer[2..]);
-    EventFlags::from_bits(bits).ok_or(hci::event::Error::Vendor(BlueNRGError::BadEventFlags(bits)))
+    EventFlags::from_bits(bits)
+        .ok_or_else(|| hci::event::Error::Vendor(BlueNRGError::BadEventFlags(bits)))
 }
 
 // The maximum length of [`FaultData::debug_data`]. The maximum length of an event is 255 bytes,
@@ -943,7 +944,7 @@ fn to_lost_event(buffer: &[u8]) -> Result<EventFlags, hci::event::Error<BlueNRGE
 #[cfg(feature = "ms")]
 const MAX_DEBUG_DATA_LEN: usize = 215;
 
-/// Specific reason for the fault reported with [FaultData].
+/// Specific reason for the fault reported with [`FaultData`].
 #[cfg(feature = "ms")]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum CrashReason {
@@ -959,7 +960,7 @@ pub enum CrashReason {
 impl TryFrom<u8> for CrashReason {
     type Error = BlueNRGError;
 
-    fn try_from(value: u8) -> Result<CrashReason, Self::Error> {
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(CrashReason::Assertion),
 
@@ -1054,7 +1055,7 @@ fn to_crash_report(buffer: &[u8]) -> Result<FaultData, hci::event::Error<BlueNRG
         lr: LittleEndian::read_u32(&buffer[27..]),
         pc: LittleEndian::read_u32(&buffer[31..]),
         xpsr: LittleEndian::read_u32(&buffer[35..]),
-        debug_data_len: debug_data_len,
+        debug_data_len,
         debug_data_buf: [0; MAX_DEBUG_DATA_LEN],
     };
     fault_data.debug_data_buf[..debug_data_len].copy_from_slice(&buffer[40..]);
@@ -1113,7 +1114,7 @@ pub enum L2CapRejectionReason {
 impl TryFrom<u16> for L2CapRejectionReason {
     type Error = BlueNRGError;
 
-    fn try_from(value: u16) -> Result<L2CapRejectionReason, Self::Error> {
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(L2CapRejectionReason::CommandNotUnderstood),
             1 => Ok(L2CapRejectionReason::SignalingMtuExceeded),
@@ -1144,9 +1145,7 @@ fn to_l2cap_connection_update_accepted_result(
     match value {
         0x0000 => Ok(L2CapConnectionUpdateResult::ParametersUpdated),
         0x0001 => Ok(L2CapConnectionUpdateResult::ParametersRejected),
-        _ => {
-            return Err(BlueNRGError::BadL2CapConnectionResponseResult(value));
-        }
+        _ => Err(BlueNRGError::BadL2CapConnectionResponseResult(value)),
     }
 }
 
@@ -1264,7 +1263,7 @@ pub enum GapPairingStatus {
 impl TryFrom<u8> for GapPairingStatus {
     type Error = BlueNRGError;
 
-    fn try_from(value: u8) -> Result<GapPairingStatus, Self::Error> {
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(GapPairingStatus::Success),
             1 => Ok(GapPairingStatus::Timeout),
@@ -1319,12 +1318,13 @@ impl GapDeviceFound {
 pub use hci::event::AdvertisementEvent as GapDeviceFoundEvent;
 
 fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Error<BlueNRGError>> {
+    const RSSI_UNAVAILABLE: i8 = 127;
+
     require_len_at_least!(buffer, 12);
 
     let data_len = buffer[10] as usize;
     require_len!(buffer, 12 + data_len);
 
-    const RSSI_UNAVAILABLE: i8 = 127;
     let rssi = unsafe { mem::transmute::<u8, i8>(buffer[buffer.len() - 1]) };
 
     let mut addr = BdAddr([0; 6]);
@@ -1339,7 +1339,7 @@ fn to_gap_device_found(buffer: &[u8]) -> Result<GapDeviceFound, hci::event::Erro
         })?,
         bdaddr: hci::to_bd_addr_type(buffer[3], addr)
             .map_err(|e| hci::event::Error::Vendor(BlueNRGError::BadGapBdAddrType(e.0)))?,
-        data_len: data_len,
+        data_len,
         data_buf: [0; 31],
         rssi: if rssi == RSSI_UNAVAILABLE {
             None
@@ -1362,12 +1362,12 @@ pub struct GapProcedureComplete {
     pub status: GapProcedureStatus,
 }
 
-/// Maximum length of the name returned in the [NameDiscovery](GapProcedure::NameDiscovery)
+/// Maximum length of the name returned in the [`NameDiscovery`](GapProcedure::NameDiscovery)
 /// procedure.
 pub const MAX_NAME_LEN: usize = 248;
 
 /// Newtype for the name buffer returned after successful
-/// [NameDiscovery](GapProcedure::NameDiscovery).
+/// [`NameDiscovery`](GapProcedure::NameDiscovery).
 #[derive(Copy, Clone)]
 pub struct NameBuffer(pub [u8; MAX_NAME_LEN]);
 
@@ -1378,7 +1378,7 @@ impl Debug for NameBuffer {
 }
 
 impl PartialEq<NameBuffer> for NameBuffer {
-    fn eq(&self, other: &NameBuffer) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         if self.0.len() != other.0.len() {
             return false;
         }
@@ -1389,12 +1389,13 @@ impl PartialEq<NameBuffer> for NameBuffer {
             }
         }
 
-        return true;
+        true
     }
 }
 
 /// Procedures whose completion may be reported by
-/// [GapProcedureComplete](BlueNRGEvent::GapProcedureComplete).
+/// [`GapProcedureComplete`](BlueNRGEvent::GapProcedureComplete).
+#[allow(clippy::large_enum_variant)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum GapProcedure {
     /// See Vol 3, Part C, section 9.2.5.
@@ -1428,7 +1429,7 @@ pub enum GapProcedureStatus {
 impl TryFrom<u8> for GapProcedureStatus {
     type Error = BlueNRGError;
 
-    fn try_from(value: u8) -> Result<GapProcedureStatus, Self::Error> {
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0x00 => Ok(GapProcedureStatus::Success),
             0x41 => Ok(GapProcedureStatus::Failed),
@@ -1471,7 +1472,7 @@ fn to_gap_procedure_complete(
     };
 
     Ok(GapProcedureComplete {
-        procedure: procedure,
+        procedure,
         status: buffer[3].try_into().map_err(hci::event::Error::Vendor)?,
     })
 }
@@ -1576,7 +1577,7 @@ fn to_gatt_attribute_modified(
         attr_handle: AttributeHandle(LittleEndian::read_u16(&buffer[4..])),
         offset: (offset_field & 0x7FFF) as usize,
         continued: (offset_field & 0x8000) > 0,
-        data_len: data_len,
+        data_len,
         data_buf: data,
     })
 }
@@ -1596,7 +1597,7 @@ fn to_gatt_attribute_modified(
     Ok(GattAttributeModified {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         attr_handle: AttributeHandle(LittleEndian::read_u16(&buffer[4..])),
-        data_len: data_len,
+        data_len,
         data_buf: data,
     })
 }
@@ -1639,19 +1640,19 @@ impl AttFindInformationResponse {
     /// split across response packets; this also implies that a handleUUID pair shall fit into a
     /// single response packet. The handle-UUID pairs shall be returned in ascending order of
     /// attribute handles.
-    pub fn handle_uuid_pair_iter<'a>(&'a self) -> HandleUuidPairIterator<'a> {
+    pub fn handle_uuid_pair_iter(&self) -> HandleUuidPairIterator {
         match self.handle_uuid_pairs {
             HandleUuidPairs::Format16(count, ref data) => {
                 HandleUuidPairIterator::Format16(HandleUuid16PairIterator {
-                    data: data,
-                    count: count,
+                    data,
+                    count,
                     next_index: 0,
                 })
             }
             HandleUuidPairs::Format128(count, ref data) => {
                 HandleUuidPairIterator::Format128(HandleUuid128PairIterator {
-                    data: data,
-                    count: count,
+                    data,
+                    count,
                     next_index: 0,
                 })
             }
@@ -1811,10 +1812,10 @@ fn to_handle_uuid16_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, BlueNRGError
         handle: AttributeHandle(0),
         uuid: Uuid16(0),
     }; MAX_FORMAT16_PAIR_COUNT];
-    for i in 0..count {
+    for (i, pair) in pairs.iter_mut().enumerate().take(count) {
         let index = i * PAIR_LEN;
-        pairs[i].handle = AttributeHandle(LittleEndian::read_u16(&buffer[index..]));
-        pairs[i].uuid = Uuid16(LittleEndian::read_u16(&buffer[2 + index..]));
+        pair.handle = AttributeHandle(LittleEndian::read_u16(&buffer[index..]));
+        pair.uuid = Uuid16(LittleEndian::read_u16(&buffer[2 + index..]));
     }
 
     Ok(HandleUuidPairs::Format16(count, pairs))
@@ -1831,14 +1832,11 @@ fn to_handle_uuid128_pairs(buffer: &[u8]) -> Result<HandleUuidPairs, BlueNRGErro
         handle: AttributeHandle(0),
         uuid: Uuid128([0; 16]),
     }; MAX_FORMAT128_PAIR_COUNT];
-    for i in 0..count {
+    for (i, pair) in pairs.iter_mut().enumerate().take(count) {
         let index = i * PAIR_LEN;
         let next_index = (i + 1) * PAIR_LEN;
-        pairs[i].handle = AttributeHandle(LittleEndian::read_u16(&buffer[index..]));
-        pairs[i]
-            .uuid
-            .0
-            .copy_from_slice(&buffer[2 + index..next_index]);
+        pair.handle = AttributeHandle(LittleEndian::read_u16(&buffer[index..]));
+        pair.uuid.0.copy_from_slice(&buffer[2 + index..next_index]);
     }
 
     Ok(HandleUuidPairs::Format128(count, pairs))
@@ -1860,7 +1858,7 @@ pub struct AttFindByTypeValueResponse {
 impl AttFindByTypeValueResponse {
     /// Returns an iterator over the Handles Information List as defined in Bluetooth Core v4.1
     /// spec.
-    pub fn handle_pairs_iter<'a>(&'a self) -> HandleInfoPairIterator<'a> {
+    pub fn handle_pairs_iter(&self) -> HandleInfoPairIterator {
         HandleInfoPairIterator {
             event: &self,
             next_index: 0,
@@ -1923,12 +1921,13 @@ impl<'a> Iterator for HandleInfoPairIterator<'a> {
 fn to_att_find_by_value_type_response(
     buffer: &[u8],
 ) -> Result<AttFindByTypeValueResponse, hci::event::Error<BlueNRGError>> {
+    const PAIR_LEN: usize = 4;
+
     require_len_at_least!(buffer, 5);
 
     let data_len = buffer[4] as usize;
     require_len!(buffer, 5 + data_len);
 
-    const PAIR_LEN: usize = 4;
     let pair_buffer = &buffer[5..];
     if pair_buffer.len() % PAIR_LEN != 0 {
         return Err(hci::event::Error::Vendor(
@@ -1941,10 +1940,10 @@ fn to_att_find_by_value_type_response(
         attribute: AttributeHandle(0),
         group_end: GroupEndHandle(0),
     }; MAX_HANDLE_INFO_PAIR_COUNT];
-    for i in 0..count {
+    for (i, pair) in pairs.iter_mut().enumerate().take(count) {
         let index = i * PAIR_LEN;
-        pairs[i].attribute = AttributeHandle(LittleEndian::read_u16(&pair_buffer[index..]));
-        pairs[i].group_end = GroupEndHandle(LittleEndian::read_u16(&pair_buffer[2 + index..]));
+        pair.attribute = AttributeHandle(LittleEndian::read_u16(&pair_buffer[index..]));
+        pair.group_end = GroupEndHandle(LittleEndian::read_u16(&pair_buffer[2 + index..]));
     }
     Ok(AttFindByTypeValueResponse {
         conn_handle: to_conn_handle(buffer)?,
@@ -1989,7 +1988,7 @@ impl Debug for AttReadByTypeResponse {
 
 impl AttReadByTypeResponse {
     /// Return an iterator over all valid handle-value pairs returned with the response.
-    pub fn handle_value_pair_iter<'a>(&'a self) -> HandleValuePairIterator<'a> {
+    pub fn handle_value_pair_iter(&self) -> HandleValuePairIterator {
         HandleValuePairIterator {
             event: &self,
             index: 0,
@@ -2108,7 +2107,7 @@ fn to_att_read_response(buffer: &[u8]) -> Result<AttReadResponse, hci::event::Er
     Ok(AttReadResponse {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         value_len: data_len,
-        value_buf: value_buf,
+        value_buf,
     })
 }
 
@@ -2139,7 +2138,7 @@ const MAX_ATTRIBUTE_DATA_BUF_LEN: usize = 249;
 
 impl AttReadByGroupTypeResponse {
     /// Create and return an iterator for the attribute data returned with the response.
-    pub fn attribute_data_iter<'a>(&'a self) -> AttributeDataIterator<'a> {
+    pub fn attribute_data_iter(&self) -> AttributeDataIterator {
         AttributeDataIterator {
             event: self,
             next_index: 0,
@@ -2192,7 +2191,7 @@ impl<'a> Iterator for AttributeDataIterator<'a> {
     }
 }
 
-/// Attribute data returned in the [AttReadByGroupTypeResponse] event.
+/// Attribute data returned in the [`AttReadByGroupTypeResponse`] event.
 pub struct AttributeData<'a> {
     /// Attribute handle
     pub attribute_handle: AttributeHandle,
@@ -2212,7 +2211,7 @@ fn to_att_read_by_group_type_response(
 
     let attribute_group_len = buffer[5] as usize;
 
-    if &buffer[6..].len() % attribute_group_len != 0 {
+    if buffer[6..].len() % attribute_group_len != 0 {
         return Err(hci::event::Error::Vendor(
             BlueNRGError::AttReadByGroupTypeResponsePartial,
         ));
@@ -2223,8 +2222,8 @@ fn to_att_read_by_group_type_response(
     Ok(AttReadByGroupTypeResponse {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         data_len: data_len - 1, // lose 1 byte to attribute_group_len
-        attribute_group_len: attribute_group_len,
-        attribute_data_buf: attribute_data_buf,
+        attribute_group_len,
+        attribute_data_buf,
     })
 }
 
@@ -2283,8 +2282,8 @@ fn to_att_prepare_write_response(
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[5..])),
         offset: LittleEndian::read_u16(&buffer[7..]) as usize,
-        value_len: value_len,
-        value_buf: value_buf,
+        value_len,
+        value_buf,
     })
 }
 
@@ -2338,8 +2337,8 @@ fn to_attribute_value(buffer: &[u8]) -> Result<AttributeValue, hci::event::Error
     Ok(AttributeValue {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[5..])),
-        value_len: value_len,
-        value_buf: value_buf,
+        value_len,
+        value_buf,
     })
 }
 
@@ -2357,8 +2356,8 @@ fn to_write_permit_request(
     Ok(AttributeValue {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
         attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[4..])),
-        value_len: value_len,
-        value_buf: value_buf,
+        value_len,
+        value_buf,
     })
 }
 
@@ -2387,7 +2386,7 @@ pub enum GattProcedureStatus {
 impl TryFrom<u8> for GattProcedureStatus {
     type Error = BlueNRGError;
 
-    fn try_from(value: u8) -> Result<GattProcedureStatus, Self::Error> {
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0x00 => Ok(GattProcedureStatus::Success),
             0x41 => Ok(GattProcedureStatus::Failed),
@@ -2422,7 +2421,7 @@ pub struct AttErrorResponse {
 }
 
 /// Potential error codes for the [ATT Error Response](BlueNRGEvent::AttErrorResponse). See Table
-/// 3.3 in the Bluetooth Core Specification, v4.1, Vol 3, PartF, Section 3.4.1.1 and The Bluetooth
+/// 3.3 in the Bluetooth Core Specification, v4.1, Vol 3, Part F, Section 3.4.1.1 and The Bluetooth
 /// Core Specification Supplement, Table 1.1.
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -2542,7 +2541,7 @@ pub enum AttError {
 impl TryFrom<u8> for AttError {
     type Error = u8;
 
-    fn try_from(value: u8) -> Result<AttError, Self::Error> {
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0x01 => Ok(AttError::InvalidHandle),
             0x02 => Ok(AttError::ReadNotPermitted),
@@ -2668,7 +2667,7 @@ pub enum AttRequest {
 impl TryFrom<u8> for AttRequest {
     type Error = BlueNRGError;
 
-    fn try_from(value: u8) -> Result<AttRequest, Self::Error> {
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0x01 => Ok(AttRequest::ErrorResponse),
             0x02 => Ok(AttRequest::ExchangeMtuRequest),
@@ -2713,7 +2712,7 @@ fn to_att_error_response(
         attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[6..])),
         error: buffer[8]
             .try_into()
-            .map_err(|e| BlueNRGError::BadAttError(e))
+            .map_err(BlueNRGError::BadAttError)
             .map_err(hci::event::Error::Vendor)?,
     })
 }
@@ -2805,9 +2804,9 @@ fn to_att_read_multiple_permit_request(
 
     let handle_len = data_len / 2;
     let mut handles = [AttributeHandle(0); MAX_ATTRIBUTE_HANDLE_BUFFER_LEN];
-    for i in 0..handle_len {
+    for (i, handle) in handles.iter_mut().enumerate().take(handle_len) {
         let index = 5 + 2 * i;
-        handles[i] = AttributeHandle(LittleEndian::read_u16(&buffer[index..]));
+        *handle = AttributeHandle(LittleEndian::read_u16(&buffer[index..]));
     }
 
     Ok(AttReadMultiplePermitRequest {
@@ -2819,7 +2818,7 @@ fn to_att_read_multiple_permit_request(
 
 /// This event is raised when the number of available TX buffers is above a threshold TH (TH = 2).
 /// The event will be given only if a previous ACI command returned with
-/// [InsufficientResources](AttError::InsufficientResources).
+/// [`InsufficientResources`](AttError::InsufficientResources).
 #[cfg(feature = "ms")]
 #[derive(Copy, Clone, Debug)]
 pub struct GattTxPoolAvailable {
@@ -2909,6 +2908,6 @@ fn to_att_prepare_write_permit_request(
         attribute_handle: AttributeHandle(LittleEndian::read_u16(&buffer[4..])),
         offset: LittleEndian::read_u16(&buffer[6..]) as usize,
         value_len: data_len,
-        value_buf: value_buf,
+        value_buf,
     })
 }

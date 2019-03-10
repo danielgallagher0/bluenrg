@@ -16,9 +16,9 @@ macro_rules! assert_eq_hw_error {
 
 #[test]
 fn hardware_error() {
-    assert_eq_hw_error!(0, HardwareError::SpiFramingError);
-    assert_eq_hw_error!(1, HardwareError::RadioStateError);
-    assert_eq_hw_error!(2, HardwareError::TimerOverrunError);
+    assert_eq_hw_error!(0, HardwareError::SpiFraming);
+    assert_eq_hw_error!(1, HardwareError::RadioState);
+    assert_eq_hw_error!(2, HardwareError::TimerOverrun);
 }
 
 #[test]

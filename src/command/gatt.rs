@@ -7,7 +7,7 @@ extern crate nb;
 
 use byteorder::{ByteOrder, LittleEndian};
 
-/// GATT-specific commands for the [ActiveBlueNRG](crate::ActiveBlueNRG).
+/// GATT-specific commands for the [`ActiveBlueNRG`](crate::ActiveBlueNRG).
 pub trait Commands {
     /// Type of communication errors.
     type Error;
@@ -1326,8 +1326,8 @@ pub enum Uuid {
 
 impl Uuid {
     fn copy_into_slice(&self, bytes: &mut [u8]) -> usize {
-        match self {
-            &Uuid::Uuid16(uuid) => {
+        match *self {
+            Uuid::Uuid16(uuid) => {
                 assert!(bytes.len() >= 3);
 
                 bytes[0] = 0x01;
@@ -1335,7 +1335,7 @@ impl Uuid {
 
                 3
             }
-            &Uuid::Uuid128(uuid) => {
+            Uuid::Uuid128(uuid) => {
                 assert!(bytes.len() >= 17);
 
                 bytes[0] = 0x02;
@@ -1401,12 +1401,12 @@ impl<T: PartialOrd> Range<T> {
     /// # Errors
     ///
     /// - [Inverted](RangeError::Inverted) if the beginning value is greater than the ending value.
-    pub fn new(from: T, to: T) -> Result<Range<T>, RangeError> {
+    pub fn new(from: T, to: T) -> Result<Self, RangeError> {
         if to < from {
             return Err(RangeError::Inverted);
         }
 
-        Ok(Range { from, to })
+        Ok(Self { from, to })
     }
 }
 
@@ -1578,7 +1578,7 @@ impl EncryptionKeySize {
     ///
     /// - [TooShort](EncryptionKeySizeError::TooShort) if the provided size is less than 7.
     /// - [TooLong](EncryptionKeySizeError::TooLong) if the provided size is greater than 16.
-    pub fn with_value(sz: usize) -> Result<EncryptionKeySize, EncryptionKeySizeError> {
+    pub fn with_value(sz: usize) -> Result<Self, EncryptionKeySizeError> {
         const MIN: usize = 7;
         const MAX: usize = 16;
 
@@ -1590,7 +1590,7 @@ impl EncryptionKeySize {
             return Err(EncryptionKeySizeError::TooLong);
         }
 
-        Ok(EncryptionKeySize(sz as u8))
+        Ok(Self(sz as u8))
     }
 
     /// Retrieve the key size.
@@ -1599,7 +1599,7 @@ impl EncryptionKeySize {
     }
 }
 
-/// Errors that can occur when creating an [EncryptionKeySize].
+/// Errors that can occur when creating an [`EncryptionKeySize`].
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EncryptionKeySizeError {
     /// The provided size was less than the minimum allowed size.
@@ -1814,44 +1814,44 @@ bitflags! {
     /// Mask](Commands::set_event_mask) command.
     pub struct Event: u32 {
         /// [GATT Attribute Modified](crate::event::BlueNRGEvent::GattAttributeModified).
-        const ATTRIBUTE_MODIFIED = 0x00000001;
+        const ATTRIBUTE_MODIFIED = 0x0000_0001;
         /// [GATT Procedure Timeout](crate::event::BlueNRGEvent::GattProcedureTimeout).
-        const PROCEDURE_TIMEOUT = 0x00000002;
+        const PROCEDURE_TIMEOUT = 0x0000_0002;
         /// [ATT Exchange MTU Response](crate::event::BlueNRGEvent::AttExchangeMtuResponse).
-        const EXCHANGE_MTU_RESPONSE = 0x00000004;
+        const EXCHANGE_MTU_RESPONSE = 0x0000_0004;
         /// [ATT Find Information Response](crate::event::BlueNRGEvent::AttFindInformationResponse).
-        const FIND_INFORMATION_RESPONSE = 0x00000008;
+        const FIND_INFORMATION_RESPONSE = 0x0000_0008;
         /// [ATT Find By Type Value
         /// Response](crate::event::BlueNRGEvent::AttFindByTypeValueResponse).
-        const FIND_BY_TYPE_VALUE_RESPONSE = 0x00000010;
+        const FIND_BY_TYPE_VALUE_RESPONSE = 0x0000_0010;
         /// [ATT Find By Type Response](crate::event::BlueNRGEvent::AttFindByTypeResponse).
-        const READ_BY_TYPE_RESPONSE = 0x00000020;
+        const READ_BY_TYPE_RESPONSE = 0x0000_0020;
         /// [ATT Read Response](crate::event::BlueNRGEvent::AttReadResponse).
-        const READ_RESPONSE = 0x00000040;
+        const READ_RESPONSE = 0x0000_0040;
         /// [ATT Read Blob Response](crate::event::BlueNRGEvent::AttReadBlobResponse).
-        const READ_BLOB_RESPONSE = 0x00000080;
+        const READ_BLOB_RESPONSE = 0x0000_0080;
         /// [ATT Read Multiple Response](crate::event::BlueNRGEvent::AttReadMultipleResponse).
-        const READ_MULTIPLE_RESPONSE = 0x00000100;
+        const READ_MULTIPLE_RESPONSE = 0x0000_0100;
         /// [ATT Read By Group](crate::event::BlueNRGEvent::AttReadByGroupTypeResponse).
-        const READ_BY_GROUP_RESPONSE = 0x00000200;
+        const READ_BY_GROUP_RESPONSE = 0x0000_0200;
         /// [ATT Prepare Write Response](crate::event::BlueNRGEvent::AttPrepareWriteResponse).
-        const PREPARE_WRITE_RESPONSE = 0x00000800;
+        const PREPARE_WRITE_RESPONSE = 0x0000_0800;
         /// [ATT Execute Write Response](crate::event::BlueNRGEvent::AttExecuteWriteResponse).
-        const EXECUTE_WRITE_RESPONSE = 0x00001000;
+        const EXECUTE_WRITE_RESPONSE = 0x0000_1000;
         /// [GATT Indication](crate::event::BlueNRGEvent::GattIndication).
-        const INDICATION = 0x00002000;
+        const INDICATION = 0x0000_2000;
         /// [GATT Notification](crate::event::BlueNRGEvent::GattNotification).
-        const NOTIFICATION = 0x00004000;
+        const NOTIFICATION = 0x0000_4000;
         /// [GATT Error Response](crate::event::BlueNRGEvent::AttErrorResponse).
-        const ERROR_RESPONSE = 0x00008000;
+        const ERROR_RESPONSE = 0x0000_8000;
         /// [GATT Procedure Complete](crate::event::BlueNRGEvent::GattProcedureComplete).
-        const PROCEDURE_COMPLETE = 0x00010000;
+        const PROCEDURE_COMPLETE = 0x0001_0000;
         /// [GATT Discover Characteristic by UUID or Read Using Characteristic
         /// UUID](crate::event::BlueNRGEvent::GattDiscoverOrReadCharacteristicByUuidResponse).
-        const DISCOVER_OR_READ_CHARACTERISTIC_BY_UUID_RESPONSE = 0x00020000;
+        const DISCOVER_OR_READ_CHARACTERISTIC_BY_UUID_RESPONSE = 0x0002_0000;
         #[cfg(feature = "ms")]
         /// [GATT Tx Pool Available](crate::event::BlueNRGEvent::GattTxPoolAvailable)
-        const TX_POOL_AVAILABLE = 0x00040000;
+        const TX_POOL_AVAILABLE = 0x0004_0000;
     }
 }
 

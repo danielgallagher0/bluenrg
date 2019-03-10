@@ -14,6 +14,7 @@ use core::time::Duration;
 /// Vendor-specific commands that may generate the [Command
 /// Complete](hci::event::command::ReturnParameters::Vendor) event. If the commands have defined
 /// return parameters, they are included in the enum.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
 pub enum ReturnParameters {
     /// Parameters returned by the [HAL Get Firmware
@@ -659,7 +660,7 @@ pub enum LinkState {
 impl TryFrom<u8> for LinkState {
     type Error = super::BlueNRGError;
 
-    fn try_from(value: u8) -> Result<LinkState, Self::Error> {
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(LinkState::Idle),
             1 => Ok(LinkState::Advertising),
@@ -720,8 +721,10 @@ fn to_hal_anchor_period(
 
     Ok(HalAnchorPeriod {
         status: to_status(bytes)?,
-        anchor_interval: Duration::from_micros(625 * LittleEndian::read_u32(&bytes[1..5]) as u64),
-        max_slot: Duration::from_micros(625 * LittleEndian::read_u32(&bytes[5..9]) as u64),
+        anchor_interval: Duration::from_micros(
+            625 * u64::from(LittleEndian::read_u32(&bytes[1..5])),
+        ),
+        max_slot: Duration::from_micros(625 * u64::from(LittleEndian::read_u32(&bytes[5..9]))),
     })
 }
 
@@ -790,7 +793,7 @@ pub enum PassKeyRequirement {
 impl TryFrom<u8> for PassKeyRequirement {
     type Error = super::BlueNRGError;
 
-    fn try_from(value: u8) -> Result<PassKeyRequirement, Self::Error> {
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0x00 => Ok(PassKeyRequirement::NotRequired),
             0x01 => Ok(PassKeyRequirement::FixedPin),
@@ -847,12 +850,12 @@ fn to_gap_resolve_private_address(
         addr.copy_from_slice(&bytes[1..7]);
 
         Ok(GapResolvePrivateAddress {
-            status: status,
+            status,
             bd_addr: Some(hci::BdAddr(addr)),
         })
     } else {
         Ok(GapResolvePrivateAddress {
-            status: status,
+            status,
             bd_addr: None,
         })
     }
@@ -908,14 +911,13 @@ fn to_gap_bonded_devices(
             }
 
             let mut address_buffer = [hci::BdAddrType::Public(hci::BdAddr([0; 6])); MAX_ADDRESSES];
-            for i in 0..address_count {
+            for (i, byte) in address_buffer.iter_mut().enumerate().take(address_count) {
                 let index = HEADER_LEN + i * ADDR_LEN;
                 let mut addr = [0; 6];
                 addr.copy_from_slice(&bytes[(1 + index)..(7 + index)]);
-                address_buffer[i] =
-                    hci::to_bd_addr_type(bytes[index], hci::BdAddr(addr)).map_err(|e| {
-                        hci::event::Error::Vendor(super::BlueNRGError::BadBdAddrType(e.0))
-                    })?;
+                *byte = hci::to_bd_addr_type(bytes[index], hci::BdAddr(addr)).map_err(|e| {
+                    hci::event::Error::Vendor(super::BlueNRGError::BadBdAddrType(e.0))
+                })?;
             }
 
             Ok(GapBondedDevices {

@@ -11,7 +11,7 @@ pub use hci::host::{AdvertisingFilterPolicy, AdvertisingType, OwnAddressType};
 pub use hci::types::{ConnectionInterval, ExpectedConnectionLength, ScanWindow};
 pub use hci::{BdAddr, BdAddrType};
 
-/// GAP-specific commands for the [ActiveBlueNRG](crate::ActiveBlueNRG).
+/// GAP-specific commands for the [`ActiveBlueNRG`](crate::ActiveBlueNRG).
 pub trait Commands {
     /// Type of communication errors.
     type Error;
@@ -266,7 +266,7 @@ pub trait Commands {
         &mut self,
         role: Role,
         privacy_enabled: bool,
-        dev_name_characteristic_len: usize,
+        dev_name_characteristic_len: u8,
     ) -> nb::Result<(), Self::Error>;
 
     #[cfg(not(feature = "ms"))]
@@ -883,7 +883,7 @@ where
         conn_handle: hci::ConnectionHandle,
         pin: u32,
     ) -> nb::Result<(), Error<Self::Error>> {
-        if pin > 999999 {
+        if pin > 999_999 {
             return Err(nb::Error::Other(Error::BadFixedPin(pin)));
         }
 
@@ -917,7 +917,7 @@ where
         &mut self,
         role: Role,
         privacy_enabled: bool,
-        dev_name_characteristic_len: usize,
+        dev_name_characteristic_len: u8,
     ) -> nb::Result<(), Self::Error> {
         let mut bytes = [0; 3];
         bytes[0] = role.bits();
@@ -1012,7 +1012,7 @@ where
 
         self.write_command(
             crate::opcode::GAP_UPDATE_ADVERTISING_DATA,
-            &bytes[0..1 + data.len()],
+            &bytes[0..=data.len()],
         )
         .map_err(rewrap_error)
     }
@@ -1319,19 +1319,18 @@ impl<'a, 'b> DiscoverableParameters<'a, 'b> {
             }
         }
 
-        match self.conn_interval {
-            (Some(min), Some(max)) => {
-                if min > max {
-                    return Err(Error::BadConnectionInterval(min, max));
-                }
+        if let (Some(min), Some(max)) = self.conn_interval {
+            if min > max {
+                return Err(Error::BadConnectionInterval(min, max));
             }
-            _ => (),
         }
 
         Ok(())
     }
 
     fn copy_into_slice(&self, bytes: &mut [u8]) -> usize {
+        const NO_SPECIFIC_CONN_INTERVAL: u16 = 0xFFFF;
+
         let len = self.required_len();
         assert!(len <= bytes.len());
 
@@ -1374,7 +1373,6 @@ impl<'a, 'b> DiscoverableParameters<'a, 'b> {
             ..(advertising_data_len_index + 1 + self.advertising_data.len())]
             .copy_from_slice(self.advertising_data);
         let conn_interval_index = advertising_data_len_index + 1 + self.advertising_data.len();
-        const NO_SPECIFIC_CONN_INTERVAL: u16 = 0xFFFF;
         LittleEndian::write_u16(
             &mut bytes[conn_interval_index..],
             if self.conn_interval.0.is_some() {
@@ -1405,8 +1403,7 @@ impl<'a, 'b> DiscoverableParameters<'a, 'b> {
         // The serialized name includes one byte indicating the type of name. That byte is not
         // included if the name is empty.
         match self.local_name {
-            Some(LocalName::Shortened(bytes)) => 1 + bytes.len(),
-            Some(LocalName::Complete(bytes)) => 1 + bytes.len(),
+            Some(LocalName::Shortened(bytes)) | Some(LocalName::Complete(bytes)) => 1 + bytes.len(),
             None => 0,
         }
     }
@@ -1457,14 +1454,14 @@ impl DirectConnectableParameters {
     fn validate<E>(&self) -> Result<(), Error<E>> {
         #[cfg(feature = "ms")]
         {
+            const MIN_DURATION: Duration = Duration::from_millis(20);
+            const MAX_DURATION: Duration = Duration::from_millis(10240);
+
             match self.advertising_type {
                 AdvertisingType::ConnectableDirectedHighDutyCycle
                 | AdvertisingType::ConnectableDirectedLowDutyCycle => (),
                 _ => return Err(Error::BadAdvertisingType(self.advertising_type)),
             }
-
-            const MIN_DURATION: Duration = Duration::from_millis(20);
-            const MAX_DURATION: Duration = Duration::from_millis(10240);
 
             if self.advertising_interval.0 < MIN_DURATION
                 || self.advertising_interval.1 > MAX_DURATION
@@ -1554,7 +1551,7 @@ impl AuthenticationRequirements {
         }
 
         if let Pin::Fixed(pin) = self.fixed_pin {
-            if pin > 999999 {
+            if pin > 999_999 {
                 return Err(Error::BadFixedPin(pin));
             }
         }
@@ -2081,13 +2078,14 @@ impl<'a, 'b> BroadcastModeParameters<'a, 'b> {
     const MAX_LENGTH: usize = 255;
 
     fn validate<E>(&self) -> Result<(), Error<E>> {
+        const MAX_ADVERTISING_DATA_LENGTH: usize = 31;
+
         match self.advertising_interval.advertising_type() {
             hci::types::AdvertisingType::ScannableUndirected
             | hci::types::AdvertisingType::NonConnectableUndirected => (),
             other => return Err(Error::BadAdvertisingType(other)),
         }
 
-        const MAX_ADVERTISING_DATA_LENGTH: usize = 31;
         if self.advertising_data.len() > MAX_ADVERTISING_DATA_LENGTH {
             return Err(Error::BadAdvertisingDataLength(self.advertising_data.len()));
         }

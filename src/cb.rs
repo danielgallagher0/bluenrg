@@ -12,7 +12,7 @@ where
 {
     pub fn new(buffer: &'a mut [T]) -> Buffer<T> {
         Buffer::<T> {
-            buffer: buffer,
+            buffer,
             read_index: 0,
             write_index: 0,
         }
@@ -73,8 +73,8 @@ where
                 self.size()
             );
         }
-        for i in 0..n {
-            buf[i] = self.buffer[(self.read_index + i) % self.buffer.len()];
+        for (i, byte) in buf.iter_mut().enumerate().take(n) {
+            *byte = self.buffer[(self.read_index + i) % self.buffer.len()];
         }
         self.read_index = (self.read_index + n) % self.buffer.len();
     }

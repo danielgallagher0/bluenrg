@@ -7,7 +7,7 @@ extern crate nb;
 
 use byteorder::{ByteOrder, LittleEndian};
 
-/// Vendor-specific HCI commands for the [ActiveBlueNRG](crate::ActiveBlueNRG).
+/// Vendor-specific HCI commands for the [`ActiveBlueNRG`](crate::ActiveBlueNRG).
 pub trait Commands {
     /// Type of communication errors.
     type Error;
@@ -296,7 +296,7 @@ impl ConfigData {
     /// us to start with any field, and the returned builder allows only either chaining the next
     /// field or building the structure to write.
     pub fn public_address(addr: hci::BdAddr) -> ConfigDataDiversifierBuilder {
-        let mut data = ConfigData {
+        let mut data = Self {
             offset: 0,
             length: 6,
             value_buf: [0; Self::MAX_LENGTH],
@@ -314,7 +314,7 @@ impl ConfigData {
     /// us to start with any field, and the returned builder allows only either chaining the next
     /// field or building the structure to write.
     pub fn diversifier(d: u16) -> ConfigDataEncryptionRootBuilder {
-        let mut data = ConfigData {
+        let mut data = Self {
             offset: 6,
             length: 2,
             value_buf: [0; Self::MAX_LENGTH],
@@ -330,8 +330,8 @@ impl ConfigData {
     /// [`write_config_data`](Commands::write_config_data).  The builder associated functions allow
     /// us to start with any field, and the returned builder allows only either chaining the next
     /// field or building the structure to write.
-    pub fn encryption_root(key: hci::host::EncryptionKey) -> ConfigDataIdentityRootBuilder {
-        let mut data = ConfigData {
+    pub fn encryption_root(key: &hci::host::EncryptionKey) -> ConfigDataIdentityRootBuilder {
+        let mut data = Self {
             offset: 8,
             length: 16,
             value_buf: [0; Self::MAX_LENGTH],
@@ -347,8 +347,8 @@ impl ConfigData {
     /// [`write_config_data`](Commands::write_config_data).  The builder associated functions allow
     /// us to start with any field, and the returned builder allows only either chaining the next
     /// field or building the structure to write.
-    pub fn identity_root(key: hci::host::EncryptionKey) -> ConfigDataLinkLayerOnlyBuilder {
-        let mut data = ConfigData {
+    pub fn identity_root(key: &hci::host::EncryptionKey) -> ConfigDataLinkLayerOnlyBuilder {
+        let mut data = Self {
             offset: 24,
             length: 16,
             value_buf: [0; Self::MAX_LENGTH],
@@ -364,7 +364,7 @@ impl ConfigData {
     /// us to start with any field, and the returned builder allows only either chaining the next
     /// field or building the structure to write.
     pub fn link_layer_only(ll_only: bool) -> ConfigDataRoleBuilder {
-        let mut data = ConfigData {
+        let mut data = Self {
             offset: 40,
             length: 1,
             value_buf: [0; Self::MAX_LENGTH],
@@ -380,7 +380,7 @@ impl ConfigData {
     /// us to start with any field, and the returned builder allows only either chaining the next
     /// field or building the structure to write.
     pub fn role(role: Role) -> ConfigDataCompleteBuilder {
-        let mut data = ConfigData {
+        let mut data = Self {
             offset: 41,
             length: 1,
             value_buf: [0; Self::MAX_LENGTH],
@@ -390,7 +390,7 @@ impl ConfigData {
     }
 }
 
-/// Builder for [ConfigData].
+/// Builder for [`ConfigData`].
 pub struct ConfigDataDiversifierBuilder {
     data: ConfigData,
 }
@@ -411,7 +411,7 @@ impl ConfigDataDiversifierBuilder {
     }
 }
 
-/// Builder for [ConfigData].
+/// Builder for [`ConfigData`].
 pub struct ConfigDataEncryptionRootBuilder {
     data: ConfigData,
 }
@@ -420,7 +420,7 @@ impl ConfigDataEncryptionRootBuilder {
     /// Specify the encryption root and continue building.
     pub fn encryption_root(
         mut self,
-        key: hci::host::EncryptionKey,
+        key: &hci::host::EncryptionKey,
     ) -> ConfigDataIdentityRootBuilder {
         let len = self.data.length as usize;
         self.data.value_buf[len..16 + len].copy_from_slice(&key.0);
@@ -436,7 +436,7 @@ impl ConfigDataEncryptionRootBuilder {
     }
 }
 
-/// Builder for [ConfigData].
+/// Builder for [`ConfigData`].
 pub struct ConfigDataIdentityRootBuilder {
     data: ConfigData,
 }
@@ -445,7 +445,7 @@ impl ConfigDataIdentityRootBuilder {
     /// Specify the identity root and continue building.
     pub fn identity_root(
         mut self,
-        key: hci::host::EncryptionKey,
+        key: &hci::host::EncryptionKey,
     ) -> ConfigDataLinkLayerOnlyBuilder {
         let len = self.data.length as usize;
         self.data.value_buf[len..16 + len].copy_from_slice(&key.0);
@@ -461,7 +461,7 @@ impl ConfigDataIdentityRootBuilder {
     }
 }
 
-/// Builder for [ConfigData].
+/// Builder for [`ConfigData`].
 pub struct ConfigDataLinkLayerOnlyBuilder {
     data: ConfigData,
 }
@@ -481,7 +481,7 @@ impl ConfigDataLinkLayerOnlyBuilder {
     }
 }
 
-/// Builder for [ConfigData].
+/// Builder for [`ConfigData`].
 pub struct ConfigDataRoleBuilder {
     data: ConfigData,
 }
@@ -501,7 +501,7 @@ impl ConfigDataRoleBuilder {
     }
 }
 
-/// Builder for [ConfigData].
+/// Builder for [`ConfigData`].
 pub struct ConfigDataCompleteBuilder {
     data: ConfigData,
 }
