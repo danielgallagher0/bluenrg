@@ -30,4 +30,4 @@ version = "1"
 default-features = false
 
 [patch.crates-io]
-bluetooth-hci = { path = "/home/daniel/stm32/bluetooth-hci" }
+bluetooth-hci = { git = "https://github.com/danielgallagher0/bluetooth-hci", branch = "master" }
