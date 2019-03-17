@@ -248,6 +248,14 @@ pub trait Commands {
     /// A [Command Complete](::event::command::ReturnParameters::GapInit) event is generated.
     fn init(&mut self, role: Role) -> nb::Result<(), Self::Error>;
 
+    #[cfg(not(feature = "ms"))]
+    /// Register the GAP service with the GATT.
+    ///
+    /// This function exists to prevent name conflicts with other Commands traits' init methods.
+    fn init_gap(&mut self, role: Role) -> nb::Result<(), Self::Error> {
+        self.init(role)
+    }
+
     #[cfg(feature = "ms")]
     /// Register the GAP service with the GATT.
     ///
@@ -268,6 +276,19 @@ pub trait Commands {
         privacy_enabled: bool,
         dev_name_characteristic_len: u8,
     ) -> nb::Result<(), Self::Error>;
+
+    #[cfg(feature = "ms")]
+    /// Register the GAP service with the GATT.
+    ///
+    /// This function exists to prevent name conflicts with other Commands traits' init methods.
+    fn init_gap(
+        &mut self,
+        role: Role,
+        privacy_enabled: bool,
+        dev_name_characteristic_len: u8,
+    ) -> nb::Result<(), Self::Error> {
+        self.init(role, privacy_enabled, dev_name_characteristic_len)
+    }
 
     #[cfg(not(feature = "ms"))]
     /// Put the device into non-connectable mode.

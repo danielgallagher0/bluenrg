@@ -26,6 +26,13 @@ pub trait Commands {
     /// A [Command Complete](crate::event::command::ReturnParameters::GattInit) event is generated.
     fn init(&mut self) -> nb::Result<(), Self::Error>;
 
+    /// Initialize the GATT server on a slave device.
+    ///
+    /// This function exists to prevent name conflicts with other Commands traits' init methods.
+    fn init_gatt(&mut self) -> nb::Result<(), Self::Error> {
+        self.init()
+    }
+
     /// Add a service to GATT Server.
     ///
     /// When a service is created in the server, the host needs to reserve the handle ranges for
