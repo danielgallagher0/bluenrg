@@ -5,16 +5,19 @@ extern crate nb;
 mod fixture;
 
 use bluenrg::hal::*;
-use fixture::Fixture;
+use fixture::{Fixture, RecordingSink};
 
 #[test]
 fn get_firmware_revision() {
-    let mut fixture = Fixture::new();
-    fixture
-        .act(|controller| controller.get_firmware_revision())
-        .unwrap();
-    assert!(fixture.wrote_header());
-    assert!(fixture.wrote(&[1, 0x00, 0xFC, 0]));
+    let mut sink = RecordingSink::new();
+    {
+        let mut fixture = Fixture::new(&mut sink);
+        fixture
+            .act(|controller| controller.get_firmware_revision())
+            .unwrap();
+    }
+    assert!(sink.wrote_header());
+    assert!(sink.wrote(&[1, 0x00, 0xFC, 0]));
 }
 
 fn becomes_bytes(data: ConfigData, expected: &[u8]) -> bool {
@@ -80,99 +83,129 @@ fn config_data() {
 
 #[test]
 fn write_config_data() {
-    let mut fixture = Fixture::new();
-    fixture
-        .act(|controller| {
-            controller.write_config_data(&ConfigData::role(Role::Peripheral12Kb).build())
-        })
-        .unwrap();
-    assert!(fixture.wrote_header());
-    assert!(fixture.wrote(&[1, 0x0C, 0xFC, 3, 41, 1, 0x2]));
+    let mut sink = RecordingSink::new();
+    {
+        let mut fixture = Fixture::new(&mut sink);
+        fixture
+            .act(|controller| {
+                controller.write_config_data(&ConfigData::role(Role::Peripheral12Kb).build())
+            })
+            .unwrap();
+    }
+    assert!(sink.wrote_header());
+    assert!(sink.wrote(&[1, 0x0C, 0xFC, 3, 41, 1, 0x2]));
 }
 
 #[test]
 fn read_config_data() {
-    let mut fixture = Fixture::new();
-    fixture
-        .act(|controller| controller.read_config_data(ConfigParameter::PublicAddress))
-        .unwrap();
-    assert!(fixture.wrote_header());
-    assert!(fixture.wrote(&[1, 0x0D, 0xFC, 1, 0]));
+    let mut sink = RecordingSink::new();
+    {
+        let mut fixture = Fixture::new(&mut sink);
+        fixture
+            .act(|controller| controller.read_config_data(ConfigParameter::PublicAddress))
+            .unwrap();
+    }
+    assert!(sink.wrote_header());
+    assert!(sink.wrote(&[1, 0x0D, 0xFC, 1, 0]));
 }
 
 #[test]
 fn set_tx_power_level() {
-    let mut fixture = Fixture::new();
-    fixture
-        .act(|controller| controller.set_tx_power_level(PowerLevel::DbmNeg8_4))
-        .unwrap();
-    assert!(fixture.wrote_header());
-    assert!(fixture.wrote(&[1, 0x0F, 0xFC, 2, 1, 2]));
+    let mut sink = RecordingSink::new();
+    {
+        let mut fixture = Fixture::new(&mut sink);
+        fixture
+            .act(|controller| controller.set_tx_power_level(PowerLevel::DbmNeg8_4))
+            .unwrap();
+    }
+    assert!(sink.wrote_header());
+    assert!(sink.wrote(&[1, 0x0F, 0xFC, 2, 1, 2]));
 }
 
 #[test]
 fn device_standby() {
-    let mut fixture = Fixture::new();
-    fixture
-        .act(|controller| controller.device_standby())
-        .unwrap();
-    assert!(fixture.wrote_header());
-    assert!(fixture.wrote(&[1, 0x13, 0xFC, 0]));
+    let mut sink = RecordingSink::new();
+    {
+        let mut fixture = Fixture::new(&mut sink);
+        fixture
+            .act(|controller| controller.device_standby())
+            .unwrap();
+    }
+    assert!(sink.wrote_header());
+    assert!(sink.wrote(&[1, 0x13, 0xFC, 0]));
 }
 
 #[test]
 fn get_tx_test_packet_count() {
-    let mut fixture = Fixture::new();
-    fixture
-        .act(|controller| controller.get_tx_test_packet_count())
-        .unwrap();
-    assert!(fixture.wrote_header());
-    assert!(fixture.wrote(&[1, 0x14, 0xFC, 0]));
+    let mut sink = RecordingSink::new();
+    {
+        let mut fixture = Fixture::new(&mut sink);
+        fixture
+            .act(|controller| controller.get_tx_test_packet_count())
+            .unwrap();
+    }
+    assert!(sink.wrote_header());
+    assert!(sink.wrote(&[1, 0x14, 0xFC, 0]));
 }
 
 #[test]
 fn start_tone() {
-    let mut fixture = Fixture::new();
-    fixture.act(|controller| controller.start_tone(12)).unwrap();
-    assert!(fixture.wrote_header());
-    assert!(fixture.wrote(&[1, 0x15, 0xFC, 1, 12]));
+    let mut sink = RecordingSink::new();
+    {
+        let mut fixture = Fixture::new(&mut sink);
+        fixture.act(|controller| controller.start_tone(12)).unwrap();
+    }
+    assert!(sink.wrote_header());
+    assert!(sink.wrote(&[1, 0x15, 0xFC, 1, 12]));
 }
 
 #[test]
 fn start_tone_invalid() {
-    let mut fixture = Fixture::new();
-    let err = fixture
-        .act(|controller| controller.start_tone(40))
-        .err()
-        .unwrap();
-    assert_eq!(err, nb::Error::Other(Error::InvalidChannel(40)));
-    assert!(!fixture.wrote_header());
+    let mut sink = RecordingSink::new();
+    {
+        let mut fixture = Fixture::new(&mut sink);
+        let err = fixture
+            .act(|controller| controller.start_tone(40))
+            .err()
+            .unwrap();
+        assert_eq!(err, nb::Error::Other(Error::InvalidChannel(40)));
+    }
+    assert!(!sink.wrote_header());
 }
 
 #[test]
 fn stop_tone() {
-    let mut fixture = Fixture::new();
-    fixture.act(|controller| controller.stop_tone()).unwrap();
-    assert!(fixture.wrote_header());
-    assert!(fixture.wrote(&[1, 0x16, 0xFC, 0]));
+    let mut sink = RecordingSink::new();
+    {
+        let mut fixture = Fixture::new(&mut sink);
+        fixture.act(|controller| controller.stop_tone()).unwrap();
+    }
+    assert!(sink.wrote_header());
+    assert!(sink.wrote(&[1, 0x16, 0xFC, 0]));
 }
 
 #[test]
 fn get_link_status() {
-    let mut fixture = Fixture::new();
-    fixture
-        .act(|controller| controller.get_link_status())
-        .unwrap();
-    assert!(fixture.wrote_header());
-    assert!(fixture.wrote(&[1, 0x17, 0xFC, 0]));
+    let mut sink = RecordingSink::new();
+    {
+        let mut fixture = Fixture::new(&mut sink);
+        fixture
+            .act(|controller| controller.get_link_status())
+            .unwrap();
+    }
+    assert!(sink.wrote_header());
+    assert!(sink.wrote(&[1, 0x17, 0xFC, 0]));
 }
 
 #[test]
 fn get_anchor_period() {
-    let mut fixture = Fixture::new();
-    fixture
-        .act(|controller| controller.get_anchor_period())
-        .unwrap();
-    assert!(fixture.wrote_header());
-    assert!(fixture.wrote(&[1, 0x19, 0xFC, 0]));
+    let mut sink = RecordingSink::new();
+    {
+        let mut fixture = Fixture::new(&mut sink);
+        fixture
+            .act(|controller| controller.get_anchor_period())
+            .unwrap();
+    }
+    assert!(sink.wrote_header());
+    assert!(sink.wrote(&[1, 0x19, 0xFC, 0]));
 }

@@ -9,15 +9,15 @@ use std::cmp;
 
 static mut DUMMY_RX_BUFFER: [u8; 8] = [0; 8];
 
-pub struct Fixture {
-    pub sink: RecordingSink,
-    bnrg: BlueNRG<'static, RecordingSink, DummyPin, DummyPin, DummyPin>,
+pub struct Fixture<'sink, 'buf> {
+    pub sink: &'sink mut RecordingSink,
+    bnrg: BlueNRG<'buf, RecordingSink, DummyPin, DummyPin, DummyPin>,
 }
 
-impl Fixture {
-    pub fn new() -> Fixture {
+impl<'sink, 'buf> Fixture<'sink, 'buf> {
+    pub fn new(sink: &'sink mut RecordingSink) -> Fixture<'sink, 'buf> {
         Fixture {
-            sink: RecordingSink::new(),
+            sink,
             bnrg: unsafe { BlueNRG::new(&mut DUMMY_RX_BUFFER, DummyPin, DummyPin, DummyPin) },
         }
     }
@@ -58,7 +58,7 @@ pub struct RecordingSink {
 }
 
 impl RecordingSink {
-    fn new() -> RecordingSink {
+    pub fn new() -> RecordingSink {
         RecordingSink {
             written_header: Vec::new(),
             written_data: Vec::new(),
@@ -66,6 +66,27 @@ impl RecordingSink {
             // The reply is returned in reverse order
             canned_reply: vec![0x00, 0x00, 0xFF, 0xFF, 0x02],
         }
+    }
+
+    pub fn wrote_header(&self) -> bool {
+        self.written_header == [0x0A, 0x00, 0x00, 0x00, 0x00]
+    }
+
+    pub fn wrote(&self, bytes: &[u8]) -> bool {
+        assert_eq!(self.written_header, [0x0A, 0x00, 0x00, 0x00, 0x00]);
+        // assert_eq!(self.written_data.len(), bytes.len());
+        for section in 0..=bytes.len() / 16 {
+            let actual_first = cmp::min(section * 16, self.written_data.len());
+            let actual_last = cmp::min((1 + section) * 16, self.written_data.len());
+            let expected_first = cmp::min(section * 16, bytes.len());
+            let expected_last = cmp::min((section + 1) * 16, bytes.len());
+            assert_eq!(
+                self.written_data[actual_first..actual_last],
+                bytes[expected_first..expected_last]
+            );
+        }
+
+        true
     }
 }
 
