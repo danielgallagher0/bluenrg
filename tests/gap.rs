@@ -573,7 +573,7 @@ fn init() {
     {
         let mut fixture = Fixture::new(&mut sink);
         fixture
-            .act(|controller| controller.init(Role::PERIPHERAL | Role::BROADCASTER))
+            .act(|controller| controller.init_gap(Role::PERIPHERAL | Role::BROADCASTER))
             .unwrap();
     }
     assert!(sink.wrote_header());
@@ -1024,7 +1024,7 @@ fn start_auto_connection_establishment() {
         2, 1,
     ];
 
-    assert_eq!(&sink.wrote(&expected));
+    assert!(&sink.wrote(&expected));
 }
 
 #[cfg(feature = "ms")]
@@ -1111,9 +1111,9 @@ fn start_auto_connection_establishment_white_list_too_long() {
             })
             .err()
             .unwrap();
+        assert_eq!(err, nb::Error::Other(Error::WhiteListTooLong));
     }
     assert!(!sink.wrote_header());
-    assert_eq!(err, nb::Error::Other(Error::WhiteListTooLong));
 }
 
 #[cfg(feature = "ms")]
@@ -1178,7 +1178,7 @@ fn start_general_connection_establishment() {
             .unwrap();
     }
     assert!(sink.wrote_header());
-    assert_eq!(
+    assert!(
         sink.wrote(&[1, 0x9A, 0xFC, 13, 0x04, 0x00, 0x04, 0x00, 0x01, 0x1, 0x1, 1, 2, 3, 4, 5, 6])
     );
 }
