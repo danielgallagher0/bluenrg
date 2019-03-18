@@ -51,8 +51,8 @@ pub trait Commands {
     ) -> nb::Result<(), Self::Error>;
 }
 
-impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
-    for crate::ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
+impl<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
+    for crate::ActiveBlueNRG<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
 where
     SPI: hal::blocking::spi::Transfer<u8, Error = E> + hal::blocking::spi::Write<u8, Error = E>,
     OutputPin1: hal::digital::OutputPin,

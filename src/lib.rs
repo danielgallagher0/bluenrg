@@ -96,16 +96,9 @@ pub struct BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin> {
 /// An `ActiveBlueNRG` should not be created by the application, but is passed to closures given to
 /// [`BlueNRG::with_spi`].  `ActiveBlueNRG` implements [`bluetooth_hci::Controller`], so it is used
 /// to access the HCI functions for the controller.
-pub struct ActiveBlueNRG<
-    'spi,
-    'dbuf: 'spi,
-    SPI: 'spi,
-    OutputPin1: 'spi,
-    OutputPin2: 'spi,
-    InputPin: 'spi,
-> {
+pub struct ActiveBlueNRG<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin> {
     /// Mutably borrow the BlueNRG handle so we can access pin and buffer.
-    d: &'spi mut BlueNRG<'dbuf, SPI, OutputPin1, OutputPin2, InputPin>,
+    d: &'bnrg mut BlueNRG<'dbuf, SPI, OutputPin1, OutputPin2, InputPin>,
 
     /// Mutably borrow the SPI bus so we can communicate with the controller.
     spi: &'spi mut SPI,
@@ -133,8 +126,8 @@ fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<E>> {
     }
 }
 
-impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E>
-    ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
+impl<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E>
+    ActiveBlueNRG<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
 where
     SPI: emhal::blocking::spi::Transfer<u8, Error = E> + emhal::blocking::spi::Write<u8, Error = E>,
     OutputPin1: emhal::digital::OutputPin,
@@ -231,8 +224,8 @@ where
     }
 }
 
-impl<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller
-    for ActiveBlueNRG<'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
+impl<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller
+    for ActiveBlueNRG<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
 where
     SPI: emhal::blocking::spi::Transfer<u8, Error = E> + emhal::blocking::spi::Write<u8, Error = E>,
     OutputPin1: emhal::digital::OutputPin,
@@ -333,9 +326,11 @@ where
     /// provided SPI bus handle.
     ///
     /// Returns the result of the invoked body.
-    pub fn with_spi<'spi, T, F, E>(&mut self, spi: &'spi mut SPI, body: F) -> T
+    pub fn with_spi<'bnrg, 'spi, T, F, E>(&'bnrg mut self, spi: &'spi mut SPI, body: F) -> T
     where
-        F: FnOnce(&mut ActiveBlueNRG<SPI, OutputPin1, OutputPin2, InputPin>) -> T,
+        F: FnOnce(
+            &mut ActiveBlueNRG<'bnrg, 'spi, 'buf, SPI, OutputPin1, OutputPin2, InputPin>,
+        ) -> T,
         SPI: emhal::blocking::spi::transfer::Default<u8, Error = E>
             + emhal::blocking::spi::write::Default<u8, Error = E>,
     {
