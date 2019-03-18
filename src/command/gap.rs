@@ -436,6 +436,14 @@ pub trait Commands {
     /// generated.
     fn set_event_mask(&mut self, flags: EventFlags) -> nb::Result<(), Self::Error>;
 
+    /// Allows masking events from the GAP.
+    ///
+    /// This function exists to prevent name conflicts with other Commands traits' set_event_mask
+    /// methods.
+    fn set_gap_event_mask(&mut self, flags: EventFlags) -> nb::Result<(), Self::Error> {
+        self.set_event_mask(flags)
+    }
+
     /// Configure the controller's white list with devices that are present in the security
     /// database.
     ///

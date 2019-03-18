@@ -182,6 +182,14 @@ pub trait Commands {
     /// generated on the completion of the command.
     fn set_event_mask(&mut self, mask: Event) -> nb::Result<(), Self::Error>;
 
+    /// Allows masking events from the GATT.
+    ///
+    /// This function exists to prevent name conflicts with other Commands traits' set_event_mask
+    /// methods.
+    fn set_gatt_event_mask(&mut self, mask: Event) -> nb::Result<(), Self::Error> {
+        self.set_event_mask(mask)
+    }
+
     /// Perform an ATT MTU exchange.
     ///
     /// # Errors
