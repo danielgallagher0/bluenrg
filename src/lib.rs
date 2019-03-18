@@ -299,6 +299,24 @@ impl hci::Vendor for BlueNRGTypes {
     type Event = event::BlueNRGEvent;
 }
 
+/// Master trait that encompasses all commands, and communicates over UART.
+pub trait UartController<E>:
+    crate::gap::Commands<Error = E>
+    + crate::gatt::Commands<Error = E>
+    + crate::hal::Commands<Error = E>
+    + crate::l2cap::Commands<Error = E>
+    + bluetooth_hci::host::uart::Hci<E, crate::event::BlueNRGEvent, crate::event::BlueNRGError>
+{
+}
+impl<T, E> UartController<E> for T where
+    T: crate::gap::Commands<Error = E>
+        + crate::gatt::Commands<Error = E>
+        + crate::hal::Commands<Error = E>
+        + crate::l2cap::Commands<Error = E>
+        + bluetooth_hci::host::uart::Hci<E, crate::event::BlueNRGEvent, crate::event::BlueNRGError>
+{
+}
+
 impl<'buf, SPI, OutputPin1, OutputPin2, InputPin>
     BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin>
 where
@@ -328,9 +346,7 @@ where
     /// Returns the result of the invoked body.
     pub fn with_spi<'bnrg, 'spi, T, F, E>(&'bnrg mut self, spi: &'spi mut SPI, body: F) -> T
     where
-        F: FnOnce(
-            &mut ActiveBlueNRG<'bnrg, 'spi, 'buf, SPI, OutputPin1, OutputPin2, InputPin>,
-        ) -> T,
+        F: FnOnce(&mut dyn UartController<E, VS = crate::event::Status>) -> T,
         SPI: emhal::blocking::spi::transfer::Default<u8, Error = E>
             + emhal::blocking::spi::write::Default<u8, Error = E>,
     {

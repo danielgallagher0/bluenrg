@@ -587,7 +587,7 @@ fn init() {
     {
         let mut fixture = Fixture::new(&mut sink);
         fixture
-            .act(|controller| controller.init(Role::PERIPHERAL | Role::BROADCASTER, true, 3))
+            .act(|controller| controller.init_gap(Role::PERIPHERAL | Role::BROADCASTER, true, 3))
             .unwrap();
     }
     assert!(sink.wrote_header());
@@ -795,7 +795,7 @@ fn set_event_mask() {
         let mut fixture = Fixture::new(&mut sink);
         fixture
             .act(|controller| {
-                controller.set_event_mask(
+                controller.set_gap_event_mask(
                     EventFlags::LIMITED_DISCOVERABLE_TIMEOUT | EventFlags::PAIRING_COMPLETE,
                 )
             })

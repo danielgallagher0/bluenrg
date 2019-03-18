@@ -12,7 +12,7 @@ fn init() {
     let mut sink = RecordingSink::new();
     {
         let mut fixture = Fixture::new(&mut sink);
-        fixture.act(|controller| controller.init()).unwrap();
+        fixture.act(|controller| controller.init_gatt()).unwrap();
     }
     assert!(sink.wrote_header());
     assert!(sink.wrote(&[1, 0x01, 0xFD, 0]));
@@ -473,7 +473,7 @@ fn set_event_mask() {
         let mut fixture = Fixture::new(&mut sink);
         fixture
             .act(|controller| {
-                controller.set_event_mask(
+                controller.set_gatt_event_mask(
                     Event::ATTRIBUTE_MODIFIED
                         | Event::FIND_INFORMATION_RESPONSE
                         | Event::INDICATION

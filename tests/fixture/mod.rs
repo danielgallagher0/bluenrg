@@ -4,7 +4,7 @@ extern crate bluenrg;
 extern crate embedded_hal as hal;
 extern crate nb;
 
-use bluenrg::{ActiveBlueNRG, BlueNRG};
+use bluenrg::{BlueNRG, UartController};
 use std::cmp;
 
 static mut DUMMY_RX_BUFFER: [u8; 8] = [0; 8];
@@ -24,7 +24,7 @@ impl<'sink, 'buf> Fixture<'sink, 'buf> {
 
     pub fn act<T, F>(&mut self, body: F) -> T
     where
-        F: FnOnce(&mut ActiveBlueNRG<RecordingSink, DummyPin, DummyPin, DummyPin>) -> T,
+        F: FnOnce(&mut dyn UartController<(), VS = bluenrg::event::Status>) -> T,
     {
         self.bnrg.with_spi(&mut self.sink, body)
     }
