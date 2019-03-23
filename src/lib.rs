@@ -342,7 +342,7 @@ where
     /// provided SPI bus handle.
     ///
     /// Returns the result of the invoked body.
-    pub fn with_spi<'bnrg, 'spi, T, F, E>(&'bnrg mut self, spi: &'spi mut SPI, body: F) -> T
+    pub fn with_spi<'spi, T, F, E>(&mut self, spi: &'spi mut SPI, body: F) -> T
     where
         F: FnOnce(&mut dyn UartController<E, VS = crate::event::Status>) -> T,
         SPI: emhal::blocking::spi::transfer::Default<u8, Error = E>
