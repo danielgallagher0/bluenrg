@@ -38,8 +38,6 @@
 //! [specification]: https://www.bluetooth.com/specifications/bluetooth-core-specification
 
 #![no_std]
-#![feature(const_fn)]
-#![feature(never_type)]
 #![deny(missing_docs)]
 
 #[macro_use]
