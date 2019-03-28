@@ -132,6 +132,33 @@ where
     OutputPin2: emhal::digital::OutputPin,
     InputPin: emhal::digital::InputPin,
 {
+    /// Wait for the chip to respond that it is awake and ready.  The chip select line must be
+    /// toggled before sending another SPI header.
+    ///
+    /// On entry, the chip select line must be low. On exit, the chip select line is low.
+    ///
+    /// Empirically, the loop runs 2 to 4 times when the chip is not awake.
+    ///
+    /// Returns the number of bytes that can be written to the chip, and the number of bytes that
+    /// should be read from the chip.  Returns an error if there is an underlying SPI error.
+    fn block_until_ready(&mut self) -> nb::Result<(u16, u16), E> {
+        loop {
+            let mut write_header = [0x0a, 0x00, 0x00, 0x00, 0x00];
+            self.spi
+                .transfer(&mut write_header)
+                .map_err(nb::Error::Other)?;
+
+            match parse_spi_header(&write_header) {
+                Ok(lengths) => return Ok(lengths),
+                Err(nb::Error::WouldBlock) => {
+                    self.d.chip_select.set_high();
+                    self.d.chip_select.set_low();
+                }
+                Err(err) => return Err(err),
+            }
+        }
+    }
+
     /// Write data to the chip over the SPI bus. First writes a BlueNRG SPI header to the
     /// controller, indicating the host wants to write. The controller returns one byte indicating
     /// whether or not it is ready, followed by a pair of u16s in little endian: the first is the
@@ -148,16 +175,6 @@ where
     ///
     /// - Returns a communication error if there is an error communicating over the SPI bus.
     fn try_write(&mut self, header: &[u8], payload: &[u8]) -> nb::Result<(), E> {
-        let mut write_header = [0x0a, 0x00, 0x00, 0x00, 0x00];
-        self.spi
-            .transfer(&mut write_header)
-            .map_err(nb::Error::Other)?;
-
-        let (write_len, _read_len) = parse_spi_header(&write_header)?;
-        if (write_len as usize) < header.len() + payload.len() {
-            return Err(nb::Error::WouldBlock);
-        }
-
         if !header.is_empty() {
             self.spi.write(header).map_err(nb::Error::Other)?;
         }
@@ -188,12 +205,7 @@ where
             return Err(nb::Error::WouldBlock);
         }
 
-        let mut read_header = [0x0b, 0x00, 0x00, 0x00, 0x00];
-        self.spi
-            .transfer(&mut read_header)
-            .map_err(nb::Error::Other)?;
-
-        let (_write_len, read_len) = parse_spi_header(&read_header)?;
+        let (_write_len, read_len) = self.block_until_ready()?;
         let mut bytes_available = read_len as usize;
         while bytes_available > 0 && self.d.rx_buffer.next_contiguous_slice_len() > 0 {
             let transfer_count = min(
@@ -236,6 +248,11 @@ where
 
     fn write(&mut self, header: &[u8], payload: &[u8]) -> nb::Result<(), Self::Error> {
         self.d.chip_select.set_low();
+        let (write_len, _read_len) = self.block_until_ready()?;
+        if (write_len as usize) < header.len() + payload.len() {
+            return Err(nb::Error::WouldBlock);
+        }
+
         let result = self.try_write(header, payload);
         self.d.chip_select.set_high();
 
