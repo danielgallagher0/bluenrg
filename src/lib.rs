@@ -68,8 +68,19 @@ pub use command::l2cap;
 
 pub use hci::host::{AdvertisingFilterPolicy, AdvertisingType, OwnAddressType};
 
+/// Enumeration of potential errors that may occur when reading from or writing to the chip.
+#[derive(Debug, PartialEq)]
+pub enum Error<SpiError, GpioError> {
+    /// SPI errors occur if there is an underlying error during a transfer.
+    Spi(SpiError),
+
+    /// GPIO errors occur if there is an underlying error resetting the pin, setting the chip select
+    /// pin, or reading if data is available.
+    Gpio(GpioError),
+}
+
 /// Handle for interfacing with the BlueNRG-MS.
-pub struct BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin> {
+pub struct BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin, GpioError> {
     /// Dedicated GPIO pin that is used to select the BlueNRG-MS chip on the SPI bus. This allows
     /// multiple chips to share the same SPI bus.
     chip_select: OutputPin1,
@@ -87,6 +98,9 @@ pub struct BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin> {
 
     #[doc(hidden)]
     _spi: PhantomData<SPI>,
+
+    #[doc(hidden)]
+    _gpio_error: PhantomData<GpioError>,
 }
 
 /// Handle for actively communicating with the controller over the SPI bus.
@@ -94,9 +108,9 @@ pub struct BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin> {
 /// An `ActiveBlueNRG` should not be created by the application, but is passed to closures given to
 /// [`BlueNRG::with_spi`].  `ActiveBlueNRG` implements [`bluetooth_hci::Controller`], so it is used
 /// to access the HCI functions for the controller.
-pub struct ActiveBlueNRG<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin> {
+pub struct ActiveBlueNRG<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, GpioError> {
     /// Mutably borrow the BlueNRG handle so we can access pin and buffer.
-    d: &'bnrg mut BlueNRG<'dbuf, SPI, OutputPin1, OutputPin2, InputPin>,
+    d: &'bnrg mut BlueNRG<'dbuf, SPI, OutputPin1, OutputPin2, InputPin, GpioError>,
 
     /// Mutably borrow the SPI bus so we can communicate with the controller.
     spi: &'spi mut SPI,
@@ -124,13 +138,14 @@ fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<E>> {
     }
 }
 
-impl<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E>
-    ActiveBlueNRG<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
+impl<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, SpiError, GpioError>
+    ActiveBlueNRG<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, GpioError>
 where
-    SPI: emhal::blocking::spi::Transfer<u8, Error = E> + emhal::blocking::spi::Write<u8, Error = E>,
-    OutputPin1: emhal::digital::OutputPin,
-    OutputPin2: emhal::digital::OutputPin,
-    InputPin: emhal::digital::InputPin,
+    SPI: emhal::blocking::spi::Transfer<u8, Error = SpiError>
+        + emhal::blocking::spi::Write<u8, Error = SpiError>,
+    OutputPin1: emhal::digital::v2::OutputPin<Error = GpioError>,
+    OutputPin2: emhal::digital::v2::OutputPin<Error = GpioError>,
+    InputPin: emhal::digital::v2::InputPin<Error = GpioError>,
 {
     /// Wait for the chip to respond that it is awake and ready.  The chip select line must be
     /// toggled before sending another SPI header.
@@ -141,18 +156,27 @@ where
     ///
     /// Returns the number of bytes that can be written to the chip, and the number of bytes that
     /// should be read from the chip.  Returns an error if there is an underlying SPI error.
-    fn block_until_ready(&mut self) -> nb::Result<(u16, u16), E> {
+    fn block_until_ready(&mut self) -> nb::Result<(u16, u16), Error<SpiError, GpioError>> {
         loop {
             let mut write_header = [0x0a, 0x00, 0x00, 0x00, 0x00];
             self.spi
                 .transfer(&mut write_header)
+                .map_err(Error::Spi)
                 .map_err(nb::Error::Other)?;
 
             match parse_spi_header(&write_header) {
                 Ok(lengths) => return Ok(lengths),
                 Err(nb::Error::WouldBlock) => {
-                    self.d.chip_select.set_high();
-                    self.d.chip_select.set_low();
+                    self.d
+                        .chip_select
+                        .set_high()
+                        .map_err(Error::Gpio)
+                        .map_err(nb::Error::Other)?;
+                    self.d
+                        .chip_select
+                        .set_low()
+                        .map_err(Error::Gpio)
+                        .map_err(nb::Error::Other)?;
                 }
                 Err(err) => return Err(err),
             }
@@ -174,12 +198,22 @@ where
     ///   reports that it does not have enough space to accept the combined header and payload.
     ///
     /// - Returns a communication error if there is an error communicating over the SPI bus.
-    fn try_write(&mut self, header: &[u8], payload: &[u8]) -> nb::Result<(), E> {
+    fn try_write(
+        &mut self,
+        header: &[u8],
+        payload: &[u8],
+    ) -> nb::Result<(), Error<SpiError, GpioError>> {
         if !header.is_empty() {
-            self.spi.write(header).map_err(nb::Error::Other)?;
+            self.spi
+                .write(header)
+                .map_err(Error::Spi)
+                .map_err(nb::Error::Other)?;
         }
         if !payload.is_empty() {
-            self.spi.write(payload).map_err(nb::Error::Other)?;
+            self.spi
+                .write(payload)
+                .map_err(Error::Spi)
+                .map_err(nb::Error::Other)?;
         }
 
         Ok(())
@@ -200,8 +234,13 @@ where
     /// - Returns nb::Error::WouldBlock if the controller is not ready.
     ///
     /// - Returns a communication error if there is an error communicating over the SPI bus.
-    fn read_available_data(&mut self) -> nb::Result<(), E> {
-        if !self.d.data_ready() {
+    fn read_available_data(&mut self) -> nb::Result<(), Error<SpiError, GpioError>> {
+        if !self
+            .d
+            .data_ready()
+            .map_err(Error::Gpio)
+            .map_err(nb::Error::Other)?
+        {
             return Err(nb::Error::WouldBlock);
         }
 
@@ -217,7 +256,10 @@ where
                 for byte in rx.iter_mut() {
                     *byte = 0;
                 }
-                self.spi.transfer(rx).map_err(nb::Error::Other)?;
+                self.spi
+                    .transfer(rx)
+                    .map_err(Error::Spi)
+                    .map_err(nb::Error::Other)?;
             }
             bytes_available -= transfer_count;
         }
@@ -225,7 +267,11 @@ where
         Ok(())
     }
 
-    fn write_command(&mut self, opcode: opcode::Opcode, params: &[u8]) -> nb::Result<(), E> {
+    fn write_command(
+        &mut self,
+        opcode: opcode::Opcode,
+        params: &[u8],
+    ) -> nb::Result<(), Error<SpiError, GpioError>> {
         const HEADER_LEN: usize = 4;
         let mut header = [0; HEADER_LEN];
         hci::host::uart::CommandHeader::new(opcode, params.len()).copy_into_slice(&mut header);
@@ -234,36 +280,53 @@ where
     }
 }
 
-impl<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> hci::Controller
-    for ActiveBlueNRG<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
+impl<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, SpiError, GpioError> hci::Controller
+    for ActiveBlueNRG<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, GpioError>
 where
-    SPI: emhal::blocking::spi::Transfer<u8, Error = E> + emhal::blocking::spi::Write<u8, Error = E>,
-    OutputPin1: emhal::digital::OutputPin,
-    OutputPin2: emhal::digital::OutputPin,
-    InputPin: emhal::digital::InputPin,
+    SPI: emhal::blocking::spi::Transfer<u8, Error = SpiError>
+        + emhal::blocking::spi::Write<u8, Error = SpiError>,
+    OutputPin1: emhal::digital::v2::OutputPin<Error = GpioError>,
+    OutputPin2: emhal::digital::v2::OutputPin<Error = GpioError>,
+    InputPin: emhal::digital::v2::InputPin<Error = GpioError>,
 {
-    type Error = E;
+    type Error = Error<SpiError, GpioError>;
     type Header = hci::host::uart::CommandHeader;
     type Vendor = BlueNRGTypes;
 
     fn write(&mut self, header: &[u8], payload: &[u8]) -> nb::Result<(), Self::Error> {
-        self.d.chip_select.set_low();
+        self.d
+            .chip_select
+            .set_low()
+            .map_err(Error::Gpio)
+            .map_err(nb::Error::Other)?;
         let (write_len, _read_len) = self.block_until_ready()?;
         if (write_len as usize) < header.len() + payload.len() {
             return Err(nb::Error::WouldBlock);
         }
 
         let result = self.try_write(header, payload);
-        self.d.chip_select.set_high();
+        self.d
+            .chip_select
+            .set_high()
+            .map_err(Error::Gpio)
+            .map_err(nb::Error::Other)?;
 
         result
     }
 
     fn read_into(&mut self, buffer: &mut [u8]) -> nb::Result<(), Self::Error> {
         let result = if buffer.len() > self.d.rx_buffer.size() {
-            self.d.chip_select.set_low();
+            self.d
+                .chip_select
+                .set_low()
+                .map_err(Error::Gpio)
+                .map_err(nb::Error::Other)?;
             let r = self.read_available_data();
-            self.d.chip_select.set_high();
+            self.d
+                .chip_select
+                .set_high()
+                .map_err(Error::Gpio)
+                .map_err(nb::Error::Other)?;
 
             r
         } else {
@@ -282,13 +345,26 @@ where
 
     fn peek(&mut self, n: usize) -> nb::Result<u8, Self::Error> {
         if n >= self.d.rx_buffer.size() {
-            if !self.d.data_ready() {
+            if !self
+                .d
+                .data_ready()
+                .map_err(Error::Gpio)
+                .map_err(nb::Error::Other)?
+            {
                 return Err(nb::Error::WouldBlock);
             }
 
-            self.d.chip_select.set_low();
+            self.d
+                .chip_select
+                .set_low()
+                .map_err(Error::Gpio)
+                .map_err(nb::Error::Other)?;
             let result = self.read_available_data();
-            self.d.chip_select.set_high();
+            self.d
+                .chip_select
+                .set_high()
+                .map_err(Error::Gpio)
+                .map_err(nb::Error::Other)?;
 
             if n >= self.d.rx_buffer.size() {
                 if let Err(e) = result {
@@ -332,12 +408,12 @@ impl<T, E> UartController<E> for T where
 {
 }
 
-impl<'buf, SPI, OutputPin1, OutputPin2, InputPin>
-    BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin>
+impl<'buf, SPI, OutputPin1, OutputPin2, InputPin, GpioError>
+    BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin, GpioError>
 where
-    OutputPin1: emhal::digital::OutputPin,
-    OutputPin2: emhal::digital::OutputPin,
-    InputPin: emhal::digital::InputPin,
+    OutputPin1: emhal::digital::v2::OutputPin<Error = GpioError>,
+    OutputPin2: emhal::digital::v2::OutputPin<Error = GpioError>,
+    InputPin: emhal::digital::v2::InputPin<Error = GpioError>,
 {
     /// Returns a new BlueNRG struct with the given RX Buffer and pins. Resets the controller.
     pub fn new(
@@ -345,13 +421,14 @@ where
         cs: OutputPin1,
         dr: InputPin,
         rst: OutputPin2,
-    ) -> BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin> {
+    ) -> BlueNRG<'buf, SPI, OutputPin1, OutputPin2, InputPin, GpioError> {
         BlueNRG {
             chip_select: cs,
             rx_buffer: cb::Buffer::new(rx_buffer),
             data_ready: dr,
             reset: rst,
             _spi: PhantomData,
+            _gpio_error: PhantomData,
         }
     }
 
@@ -361,32 +438,35 @@ where
     /// Returns the result of the invoked body.
     pub fn with_spi<'spi, T, F, E>(&mut self, spi: &'spi mut SPI, body: F) -> T
     where
-        F: FnOnce(&mut dyn UartController<E, VS = crate::event::Status>) -> T,
+        F: FnOnce(&mut ActiveBlueNRG<SPI, OutputPin1, OutputPin2, InputPin, GpioError>) -> T,
         SPI: emhal::blocking::spi::transfer::Default<u8, Error = E>
             + emhal::blocking::spi::write::Default<u8, Error = E>,
     {
-        let mut active = ActiveBlueNRG::<SPI, OutputPin1, OutputPin2, InputPin> { spi, d: self };
+        let mut active =
+            ActiveBlueNRG::<SPI, OutputPin1, OutputPin2, InputPin, GpioError> { spi, d: self };
         body(&mut active)
     }
 
     /// Resets the BlueNRG Controller. Uses the given timer to delay 1 cycle at `freq` Hz after
     /// toggling the reset pin.
-    pub fn reset<T, Time>(&mut self, timer: &mut T, freq: Time)
+    pub fn reset<T, Time>(&mut self, timer: &mut T, freq: Time) -> nb::Result<(), OutputPin2::Error>
     where
         T: emhal::timer::CountDown<Time = Time>,
         Time: Copy,
     {
-        self.reset.set_low();
+        self.reset.set_low().map_err(nb::Error::Other)?;
         timer.start(freq);
         block!(timer.wait()).unwrap();
 
-        self.reset.set_high();
+        self.reset.set_high().map_err(nb::Error::Other)?;
         timer.start(freq);
         block!(timer.wait()).unwrap();
+
+        Ok(())
     }
 
     /// Returns true if the controller has data ready to transmit to the host.
-    fn data_ready(&self) -> bool {
+    fn data_ready(&self) -> Result<bool, InputPin::Error> {
         self.data_ready.is_high()
     }
 }

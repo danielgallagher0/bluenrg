@@ -373,7 +373,7 @@ fn set_direct_connectable_bad_adv_interval() {
             (Duration::from_millis(20), Duration::from_millis(10241)),
             (Duration::from_millis(500), Duration::from_millis(499)),
         ]
-        .into_iter()
+        .iter()
         {
             let err = fixture
                 .act(|controller| {

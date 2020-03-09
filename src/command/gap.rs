@@ -853,15 +853,16 @@ pub trait Commands {
     fn is_device_bonded(&mut self, addr: hci::host::PeerAddrType) -> nb::Result<(), Self::Error>;
 }
 
-impl<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, E> Commands
-    for crate::ActiveBlueNRG<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin>
+impl<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, SpiError, GpioError> Commands
+    for crate::ActiveBlueNRG<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, GpioError>
 where
-    SPI: hal::blocking::spi::Transfer<u8, Error = E> + hal::blocking::spi::Write<u8, Error = E>,
-    OutputPin1: hal::digital::OutputPin,
-    OutputPin2: hal::digital::OutputPin,
-    InputPin: hal::digital::InputPin,
+    SPI: hal::blocking::spi::Transfer<u8, Error = SpiError>
+        + hal::blocking::spi::Write<u8, Error = SpiError>,
+    OutputPin1: hal::digital::v2::OutputPin<Error = GpioError>,
+    OutputPin2: hal::digital::v2::OutputPin<Error = GpioError>,
+    InputPin: hal::digital::v2::InputPin<Error = GpioError>,
 {
-    type Error = E;
+    type Error = crate::Error<SpiError, GpioError>;
 
     fn set_nondiscoverable(&mut self) -> nb::Result<(), Self::Error> {
         self.write_command(crate::opcode::GAP_SET_NONDISCOVERABLE, &[])

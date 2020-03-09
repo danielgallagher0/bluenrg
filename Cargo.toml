@@ -17,12 +17,12 @@ default = ["ms"]
 ms = []
 
 [dependencies]
-nb = "0.1.1"
-bluetooth-hci = "0.0.4"
-bitflags = "1.0"
+nb = "*"
+bluetooth-hci = "*"
+bitflags = "*"
 
 [dependencies.embedded-hal]
-version = "0.2.0"
+version = "*"
 features = ["unproven"]
 
 [dependencies.byteorder]

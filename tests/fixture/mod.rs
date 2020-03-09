@@ -4,14 +4,14 @@ extern crate bluenrg;
 extern crate embedded_hal as hal;
 extern crate nb;
 
-use bluenrg::{BlueNRG, UartController};
+use bluenrg::{ActiveBlueNRG, BlueNRG};
 use std::cmp;
 
 static mut DUMMY_RX_BUFFER: [u8; 8] = [0; 8];
 
 pub struct Fixture<'sink, 'buf> {
     pub sink: &'sink mut RecordingSink,
-    bnrg: BlueNRG<'buf, RecordingSink, DummyPin, DummyPin, DummyPin>,
+    bnrg: BlueNRG<'buf, RecordingSink, DummyPin, DummyPin, DummyPin, NeverError>,
 }
 
 impl<'sink, 'buf> Fixture<'sink, 'buf> {
@@ -24,7 +24,7 @@ impl<'sink, 'buf> Fixture<'sink, 'buf> {
 
     pub fn act<T, F>(&mut self, body: F) -> T
     where
-        F: FnOnce(&mut dyn UartController<(), VS = bluenrg::event::Status>) -> T,
+        F: FnOnce(&mut ActiveBlueNRG<RecordingSink, DummyPin, DummyPin, DummyPin, NeverError>) -> T,
     {
         self.bnrg.with_spi(&mut self.sink, body)
     }
@@ -113,28 +113,41 @@ impl hal::blocking::spi::write::Default<u8> for RecordingSink {}
 
 pub struct DummyPin;
 
-impl hal::digital::OutputPin for DummyPin {
-    fn set_low(&mut self) {}
+#[derive(Debug, PartialEq)]
+pub enum NeverError {}
 
-    fn set_high(&mut self) {}
-}
+impl hal::digital::v2::OutputPin for DummyPin {
+    type Error = NeverError;
 
-impl hal::digital::StatefulOutputPin for DummyPin {
-    fn is_set_high(&self) -> bool {
-        true // Needs to indicate data ready
+    fn set_low(&mut self) -> Result<(), Self::Error> {
+        Ok(())
     }
 
-    fn is_set_low(&self) -> bool {
-        false
-    }
-}
-
-impl hal::digital::InputPin for DummyPin {
-    fn is_high(&self) -> bool {
-        true // Needs to indicate data ready
-    }
-
-    fn is_low(&self) -> bool {
-        false
+    fn set_high(&mut self) -> Result<(), Self::Error> {
+        Ok(())
     }
 }
+
+impl hal::digital::v2::StatefulOutputPin for DummyPin {
+    fn is_set_high(&self) -> Result<bool, Self::Error> {
+        Ok(true) // Needs to indicate data ready
+    }
+
+    fn is_set_low(&self) -> Result<bool, Self::Error> {
+        Ok(false)
+    }
+}
+
+impl hal::digital::v2::InputPin for DummyPin {
+    type Error = NeverError;
+
+    fn is_high(&self) -> Result<bool, Self::Error> {
+        Ok(true) // Needs to indicate data ready
+    }
+
+    fn is_low(&self) -> Result<bool, Self::Error> {
+        Ok(false)
+    }
+}
+
+pub struct DummySpi;
