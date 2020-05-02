@@ -6,7 +6,7 @@ macro_rules! impl_params {
 
             self.write_command($opcode, &bytes)
         }
-    }
+    };
 }
 
 macro_rules! impl_value_params {
@@ -17,7 +17,7 @@ macro_rules! impl_value_params {
 
             self.write_command($opcode, &bytes)
         }
-    }
+    };
 }
 
 macro_rules! impl_validate_params {
@@ -28,10 +28,9 @@ macro_rules! impl_validate_params {
             let mut bytes = [0; $param_type::LENGTH];
             params.copy_into_slice(&mut bytes);
 
-            self.write_command($opcode, &bytes)
-                .map_err(rewrap_error)
+            self.write_command($opcode, &bytes).map_err(rewrap_error)
         }
-    }
+    };
 }
 
 macro_rules! impl_variable_length_params {
@@ -42,7 +41,7 @@ macro_rules! impl_variable_length_params {
 
             self.write_command($opcode, &bytes[..len])
         }
-    }
+    };
 }
 
 macro_rules! impl_validate_variable_length_params {

@@ -138,6 +138,20 @@ fn parse_spi_header<E>(header: &[u8; 5]) -> Result<(u16, u16), nb::Error<E>> {
     }
 }
 
+enum Access {
+    Read,
+    Write,
+}
+
+impl Access {
+    fn byte(&self) -> u8 {
+        match self {
+            Access::Read => 0x0b,
+            Access::Write => 0x0a,
+        }
+    }
+}
+
 impl<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, SpiError, GpioError>
     ActiveBlueNRG<'bnrg, 'spi, 'dbuf, SPI, OutputPin1, OutputPin2, InputPin, GpioError>
 where
@@ -156,9 +170,12 @@ where
     ///
     /// Returns the number of bytes that can be written to the chip, and the number of bytes that
     /// should be read from the chip.  Returns an error if there is an underlying SPI error.
-    fn block_until_ready(&mut self) -> nb::Result<(u16, u16), Error<SpiError, GpioError>> {
+    fn block_until_ready(
+        &mut self,
+        access_byte: u8,
+    ) -> nb::Result<(u16, u16), Error<SpiError, GpioError>> {
         loop {
-            let mut write_header = [0x0a, 0x00, 0x00, 0x00, 0x00];
+            let mut write_header = [access_byte, 0x00, 0x00, 0x00, 0x00];
             self.spi
                 .transfer(&mut write_header)
                 .map_err(Error::Spi)
@@ -181,6 +198,17 @@ where
                 Err(err) => return Err(err),
             }
         }
+    }
+
+    fn block_until_ready_for(
+        &mut self,
+        access: Access,
+    ) -> nb::Result<u16, Error<SpiError, GpioError>> {
+        let (write_len, read_len) = self.block_until_ready(access.byte())?;
+        Ok(match access {
+            Access::Read => read_len,
+            Access::Write => write_len,
+        })
     }
 
     /// Write data to the chip over the SPI bus. First writes a BlueNRG SPI header to the
@@ -244,7 +272,7 @@ where
             return Err(nb::Error::WouldBlock);
         }
 
-        let (_write_len, read_len) = self.block_until_ready()?;
+        let read_len = self.block_until_ready_for(Access::Read)?;
         let mut bytes_available = read_len as usize;
         while bytes_available > 0 && self.d.rx_buffer.next_contiguous_slice_len() > 0 {
             let transfer_count = min(
@@ -299,7 +327,7 @@ where
             .set_low()
             .map_err(Error::Gpio)
             .map_err(nb::Error::Other)?;
-        let (write_len, _read_len) = self.block_until_ready()?;
+        let write_len = self.block_until_ready_for(Access::Write)?;
         if (write_len as usize) < header.len() + payload.len() {
             return Err(nb::Error::WouldBlock);
         }
