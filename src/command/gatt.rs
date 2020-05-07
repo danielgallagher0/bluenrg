@@ -1303,6 +1303,7 @@ fn rewrap_error<E>(e: nb::Error<E>) -> nb::Error<Error<E>> {
 }
 
 /// Parameters for the [GATT Add Service](Commands::add_service) command.
+#[derive(Debug)]
 pub struct AddServiceParameters {
     /// UUID of the service
     pub uuid: Uuid,
@@ -1434,6 +1435,7 @@ pub enum RangeError {
 }
 
 /// Parameters for the [GATT Add Characteristic](Commands::add_characteristic) command.
+#[derive(Debug)]
 pub struct AddCharacteristicParameters {
     /// Handle of the service to which the characteristic has to be added
     pub service_handle: ServiceHandle,
