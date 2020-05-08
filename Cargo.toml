@@ -17,17 +17,14 @@ default = ["ms"]
 ms = []
 
 [dependencies]
-nb = "*"
-bluetooth-hci = "*"
-bitflags = "*"
+nb = "0.1.2"
+bluetooth-hci = "0.1.0"
+bitflags = "1.2"
 
 [dependencies.embedded-hal]
-version = "*"
+version = "0.2.3"
 features = ["unproven"]
 
 [dependencies.byteorder]
 version = "1"
 default-features = false
-
-[patch.crates-io]
-bluetooth-hci = { git = "https://github.com/danielgallagher0/bluetooth-hci", branch = "master" }
