@@ -132,7 +132,7 @@ fn hal_write_config_data_nonstandard_status() {
         (0xF0, Status::ProfileAlreadyInitialized),
         (0xF1, Status::NullParameter),
     ]
-        .iter()
+    .iter()
     {
         let buffer = [0x0E, 4, 8, 0x0C, 0xFC, *code];
         match Event::new(Packet(&buffer)) {

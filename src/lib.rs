@@ -304,7 +304,7 @@ where
         let mut header = [0; HEADER_LEN];
         hci::host::uart::CommandHeader::new(opcode, params.len()).copy_into_slice(&mut header);
 
-        self.write(&header, &params)
+        self.write(&header, params)
     }
 }
 
@@ -464,7 +464,7 @@ where
     /// provided SPI bus handle.
     ///
     /// Returns the result of the invoked body.
-    pub fn with_spi<'spi, T, F, E>(&mut self, spi: &'spi mut SPI, body: F) -> T
+    pub fn with_spi<T, F, E>(&mut self, spi: &mut SPI, body: F) -> T
     where
         F: FnOnce(&mut ActiveBlueNRG<SPI, OutputPin1, OutputPin2, InputPin, GpioError>) -> T,
         SPI: emhal::blocking::spi::transfer::Default<u8, Error = E>

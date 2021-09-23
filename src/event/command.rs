@@ -578,7 +578,7 @@ fn to_hal_config_parameter(
             Ok(HalConfigParameter::PublicAddress(hci::BdAddr(buf)))
         }
         2 => Ok(HalConfigParameter::Diversifier(LittleEndian::read_u16(
-            &bytes,
+            bytes,
         ))),
         16 => {
             let mut buf = [0; 16];
@@ -842,7 +842,7 @@ pub struct GapResolvePrivateAddress {
 fn to_gap_resolve_private_address(
     bytes: &[u8],
 ) -> Result<GapResolvePrivateAddress, hci::event::Error<super::BlueNRGError>> {
-    let status = to_status(&bytes)?;
+    let status = to_status(bytes)?;
     if status == hci::Status::Success {
         require_len!(bytes, 7);
 
@@ -896,7 +896,7 @@ impl Debug for GapBondedDevices {
 fn to_gap_bonded_devices(
     bytes: &[u8],
 ) -> Result<GapBondedDevices, hci::event::Error<super::BlueNRGError>> {
-    let status = to_status(&bytes)?;
+    let status = to_status(bytes)?;
     match status {
         hci::Status::Success => {
             const HEADER_LEN: usize = 2;
@@ -954,7 +954,7 @@ fn to_gatt_service(bytes: &[u8]) -> Result<GattService, hci::event::Error<super:
     require_len!(bytes, 3);
 
     Ok(GattService {
-        status: to_status(&bytes)?,
+        status: to_status(bytes)?,
         service_handle: crate::gatt::ServiceHandle(LittleEndian::read_u16(&bytes[1..3])),
     })
 }
@@ -976,7 +976,7 @@ fn to_gatt_characteristic(
     require_len!(bytes, 3);
 
     Ok(GattCharacteristic {
-        status: to_status(&bytes)?,
+        status: to_status(bytes)?,
         characteristic_handle: crate::gatt::CharacteristicHandle(LittleEndian::read_u16(
             &bytes[1..3],
         )),
@@ -1000,7 +1000,7 @@ fn to_gatt_characteristic_descriptor(
     require_len!(bytes, 3);
 
     Ok(GattCharacteristicDescriptor {
-        status: to_status(&bytes)?,
+        status: to_status(bytes)?,
         descriptor_handle: crate::gatt::DescriptorHandle(LittleEndian::read_u16(&bytes[1..3])),
     })
 }

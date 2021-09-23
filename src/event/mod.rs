@@ -365,9 +365,9 @@ impl TryFrom<u8> for Status {
     }
 }
 
-impl Into<u8> for Status {
-    fn into(self) -> u8 {
-        self as u8
+impl From<Status> for u8 {
+    fn from(status: Status) -> Self {
+        status as u8
     }
 }
 
@@ -561,7 +561,7 @@ macro_rules! require_len_at_least {
 
 fn first_16<T>(buffer: &[T]) -> &[T] {
     if buffer.len() < 16 {
-        &buffer
+        buffer
     } else {
         &buffer[..16]
     }
@@ -799,7 +799,7 @@ impl TryFrom<u8> for ResetReason {
 fn to_hal_initialized(buffer: &[u8]) -> Result<ResetReason, hci::event::Error<BlueNRGError>> {
     require_len!(buffer, 3);
 
-    Ok(buffer[2].try_into().map_err(hci::event::Error::Vendor)?)
+    buffer[2].try_into().map_err(hci::event::Error::Vendor)
 }
 
 #[cfg(feature = "ms")]
@@ -935,8 +935,7 @@ fn to_lost_event(buffer: &[u8]) -> Result<EventFlags, hci::event::Error<BlueNRGE
     require_len!(buffer, 10);
 
     let bits = LittleEndian::read_u64(&buffer[2..]);
-    EventFlags::from_bits(bits)
-        .ok_or_else(|| hci::event::Error::Vendor(BlueNRGError::BadEventFlags(bits)))
+    EventFlags::from_bits(bits).ok_or(hci::event::Error::Vendor(BlueNRGError::BadEventFlags(bits)))
 }
 
 // The maximum length of [`FaultData::debug_data`]. The maximum length of an event is 255 bytes,
@@ -1860,7 +1859,7 @@ impl AttFindByTypeValueResponse {
     /// spec.
     pub fn handle_pairs_iter(&self) -> HandleInfoPairIterator {
         HandleInfoPairIterator {
-            event: &self,
+            event: self,
             next_index: 0,
         }
     }
@@ -1990,7 +1989,7 @@ impl AttReadByTypeResponse {
     /// Return an iterator over all valid handle-value pairs returned with the response.
     pub fn handle_value_pair_iter(&self) -> HandleValuePairIterator {
         HandleValuePairIterator {
-            event: &self,
+            event: self,
             index: 0,
         }
     }
@@ -2050,7 +2049,7 @@ fn to_att_read_by_type_response(
 
     let mut full_handle_value_pair_buf = [0; MAX_HANDLE_VALUE_PAIR_BUF_LEN];
     full_handle_value_pair_buf[..handle_value_pair_buf.len()]
-        .copy_from_slice(&handle_value_pair_buf);
+        .copy_from_slice(handle_value_pair_buf);
 
     Ok(AttReadByTypeResponse {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
