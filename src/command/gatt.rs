@@ -1922,7 +1922,7 @@ impl<'a> FindByTypeValueParameters<'a> {
         LittleEndian::write_u16(&mut bytes[4..6], self.attribute_handle_range.to.0);
         LittleEndian::write_u16(&mut bytes[6..8], self.uuid.0);
         bytes[8] = self.value.len() as u8;
-        bytes[9..9 + self.value.len()].copy_from_slice(&self.value);
+        bytes[9..9 + self.value.len()].copy_from_slice(self.value);
 
         9 + self.value.len()
     }
@@ -1989,7 +1989,7 @@ impl<'a> WriteRequest<'a> {
         LittleEndian::write_u16(&mut bytes[2..4], self.attribute_handle.0);
         LittleEndian::write_u16(&mut bytes[4..6], self.offset as u16);
         bytes[6] = self.value.len() as u8;
-        bytes[7..7 + self.value.len()].copy_from_slice(&self.value);
+        bytes[7..7 + self.value.len()].copy_from_slice(self.value);
 
         7 + self.value.len()
     }

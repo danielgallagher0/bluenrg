@@ -65,7 +65,7 @@ where
         self.buffer[(self.read_index + n) % self.buffer.len()]
     }
 
-    pub fn take_slice<'b>(&mut self, n: usize, buf: &'b mut [T]) {
+    pub fn take_slice(&mut self, n: usize, buf: &mut [T]) {
         if n > self.size() {
             panic!(
                 "Not enough data to read (wanted {}, have {})",
