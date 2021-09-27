@@ -1549,6 +1549,9 @@ bitflags! {
     /// [Permissions](AddCharacteristicParameter::security_permissions) available for
     /// characteristics.
     pub struct CharacteristicPermission: u8 {
+        /// No security.
+        const NONE = 0x00;
+
         /// Need authentication to read.
         const AUTHENTICATED_READ = 0x01;
 
@@ -1572,6 +1575,9 @@ bitflags! {
 bitflags! {
     /// Which events may be generated when a characteristic is accessed.
     pub struct CharacteristicEvent: u8 {
+        /// No events.
+        const NONE = 0x00;
+
         /// The application will be notified when a client writes to this attribute.
         const ATTRIBUTE_WRITE = 0x01;
 
