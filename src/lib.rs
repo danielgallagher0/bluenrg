@@ -50,6 +50,7 @@ extern crate embedded_hal as emhal;
 extern crate nb;
 
 use byteorder::{ByteOrder, LittleEndian};
+use emhal::blocking;
 use core::cmp::min;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
@@ -489,6 +490,22 @@ where
         self.reset.set_high().map_err(nb::Error::Other)?;
         timer.start(freq);
         block!(timer.wait()).unwrap();
+
+        Ok(())
+    }
+
+    /// Resets the BlueNRG Controller. Uses the given delay to wait
+    /// `time` milliseconds after toggling the reset pin.
+    pub fn reset_with_delay<D, UXX>(&mut self, delay: &mut D, time: UXX) -> nb::Result<(), OutputPin2::Error>
+    where
+        D: blocking::delay::DelayMs<UXX>,
+        UXX: Copy,
+    {
+        self.reset.set_low().map_err(nb::Error::Other)?;
+        delay.delay_ms(time);
+
+        self.reset.set_high().map_err(nb::Error::Other)?;
+        delay.delay_ms(time);
 
         Ok(())
     }
