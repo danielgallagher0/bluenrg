@@ -514,6 +514,11 @@ where
     fn data_ready(&self) -> Result<bool, InputPin::Error> {
         self.data_ready.is_high()
     }
+
+    /// Mutable reference to the data ready pin
+    pub fn data_ready_pin_mut(&mut self) -> &mut InputPin {
+        &mut self.data_ready
+    }
 }
 
 /// Vendor-specific interpretation of the local version information from the controller.
