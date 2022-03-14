@@ -1737,6 +1737,10 @@ impl From<KnownDescriptor> for Uuid {
 bitflags! {
     /// Permissions available for characteristic descriptors.
     pub struct DescriptorPermission: u8 {
+
+        /// No permissions required.
+        const NONE = 0x00;
+
         /// Authentication required.
         const AUTHENTICATED = 0x01;
 
